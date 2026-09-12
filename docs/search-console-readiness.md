@@ -1,6 +1,6 @@
 # Search Console readiness
 
-The technical SEO changes in this repository need to be deployed before Google can see them. Localhost cannot be submitted for public indexing.
+The public deployment at https://veyrnlabs.com now passes the production SEO audit. Localhost cannot be submitted for public indexing.
 
 ## Production configuration
 
@@ -46,7 +46,9 @@ Regenerate icon sizes with node scripts/generate-brand-icons.mjs.
 
 ## Official references
 
-Validation on 12 September 2026: lint and production build passed. The production-server SEO check passed for metadata, indexing directives, canonical URLs, JSON-LD, robots, sitemap, favicon resolutions, social image dimensions, and a real 404. The social preview was visually inspected. Public https://veyrnlabs.com returned ERR_NAME_NOT_RESOLVED in the browser; production accessibility and domain redirects remain unverified until DNS and deployment are ready.
+Local validation: lint and production build passed, and the social preview was visually inspected.
+
+Live validation after domain configuration: node scripts/check-seo.mjs https://veyrnlabs.com https://veyrnlabs.com passed. The public homepage returns 200, metadata permits indexing, canonical URLs agree, JSON-LD is present, robots and sitemap are accessible, favicon resolutions and social image dimensions are correct, and an unknown path returns 404. The earlier DNS-resolution blocker is resolved. Alternate-host redirects, Search Console ownership, and Google's actual indexing status have not been verified.
 
 - [Search Essentials](https://developers.google.com/search/docs/essentials)
 - [Favicon requirements](https://developers.google.com/search/docs/appearance/favicon-in-search)
