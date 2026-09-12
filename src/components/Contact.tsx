@@ -1,29 +1,27 @@
 import { Section } from "./Section";
 import { Eyebrow } from "./ui/Eyebrow";
 import { ButtonLink } from "./ui/Button";
+import { site } from "@/lib/site";
 
 export function Contact() {
   return (
     <Section id="contact">
-      <div className="contact-progress">
+      <div className="contact-options">
         <Eyebrow>Get in touch</Eyebrow>
         <h2 className="mt-6">Let&apos;s talk about your project.</h2>
-        <div className="work-in-progress">
-          <span className="progress-rule" aria-hidden="true" />
-          <p><span aria-hidden="true">×</span> System work in progress</p>
-          <span className="progress-rule" aria-hidden="true" />
-        </div>
-        <p className="prose-measure text-body">
-          Our contact system is currently being updated. For now, contact us
-          directly by sending an email.
+        <p className="prose-measure mt-6 text-body">
+          Tell us what you want to build. Send an email or book a discovery
+          call to explore how we can help.
         </p>
-        <ButtonLink
-          className="mt-7"
-          href="mailto:hello@veyrnlabs.com?subject=Project%20inquiry%20for%20Veyrn%20Labs"
-          variant="primary"
-        >
-          hello@veyrnlabs.com <span aria-hidden="true">↗</span>
-        </ButtonLink>
+        <div className="mt-8 flex flex-col items-stretch justify-center gap-4 sm:flex-row">
+          <ButtonLink href={`mailto:${site.email}`} variant="outline">
+            Email Satyabrata <span aria-hidden="true">↗</span>
+          </ButtonLink>
+          <ButtonLink href={site.discoveryCallUrl} variant="primary">
+            Book a discovery call <span aria-hidden="true">↗</span>
+          </ButtonLink>
+        </div>
+        <p className="mt-5 text-sm text-mute">{site.email}</p>
       </div>
     </Section>
   );

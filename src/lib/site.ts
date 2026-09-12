@@ -15,7 +15,8 @@ export const site = {
   url: configuredUrl.origin,
   title: "Veyrn Labs | AI Engineering & Custom Software",
   description: "AI agents, custom business software, and workflow automation. Veyrn Labs connects your operations with systems engineered and verified before delivery.",
-  email: "hello@veyrnlabs.com",
+  email: "satyabrata@veyrnlabs.com",
+  discoveryCallUrl: "https://calendar.app.google/wyhAbVw49rkcG3M78",
 };
 
 // Public production remains indexable. Preview deployments can be crawled
@@ -26,3 +27,4 @@ export const isIndexable = process.env.VERCEL_ENV !== "preview" &&
 export function siteUrl(path = "/") {
   return new URL(path, `${site.url}/`).href;
 }
+
