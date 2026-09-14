@@ -181,6 +181,35 @@ test("demoMutate: bulkStage moves multiple leads and blocks a converted lead in 
   );
 });
 
+test("demoMutate: saveView and deleteView manage saved filters, rejecting duplicate names", () => {
+  const data = demoWorkspace();
+  const withView = demoMutate(data, {
+    action: "saveView",
+    name: "My open leads",
+    search: "",
+    source: "Website",
+    owner: "unassigned",
+  });
+  assert.equal(withView.saved_views.length, 1);
+  assert.equal(withView.saved_views[0].source, "Website");
+  assert.throws(
+    () =>
+      demoMutate(withView, {
+        action: "saveView",
+        name: "my open leads",
+        search: "",
+        source: "",
+        owner: "",
+      }),
+    /already exists/,
+  );
+  const removed = demoMutate(withView, {
+    action: "deleteView",
+    id: withView.saved_views[0].id,
+  });
+  assert.equal(removed.saved_views.length, 0);
+});
+
 test("demoMutate: activity, task, completeTask, and duplicate stage-name rejection", () => {
   const data = demoWorkspace();
   const leadId = data.leads[0].id;

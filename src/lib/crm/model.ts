@@ -47,6 +47,15 @@ export type Activity = {
   kind: string;
   created_at: string;
 };
+export type SavedView = {
+  id: string;
+  member_id: string;
+  name: string;
+  search: string;
+  source: string;
+  owner: string;
+  created_at: string;
+};
 export type Workspace = {
   leads: Lead[];
   clients: Client[];
@@ -54,6 +63,7 @@ export type Workspace = {
   activities: Activity[];
   stages: Stage[];
   members: Member[];
+  saved_views: SavedView[];
   user: Member;
 };
 export const defaultStages: Stage[] = [
@@ -271,6 +281,7 @@ export function demoWorkspace(): Workspace {
     stages: defaultStages,
     clients: [],
     members: [user],
+    saved_views: [],
     user,
     tasks: [
       {

@@ -15,6 +15,7 @@ export async function GET() {
     "activities",
     "stages",
     "members",
+    "saved_views",
   ] as const;
   const data: Record<string, unknown> = { user: auth.member };
   for (const name of names) {
@@ -186,6 +187,25 @@ export async function POST(request: Request) {
               position: body.position,
               kind: "open",
             });
+    } else if (action === "saveView") {
+      if (
+        typeof body.name !== "string" ||
+        !body.name.trim() ||
+        body.name.length > 60 ||
+        typeof body.search !== "string" ||
+        typeof body.source !== "string" ||
+        typeof body.owner !== "string"
+      )
+        throw new Error("Enter a name for this view.");
+      result = await auth.db.from("crm_saved_views").insert({
+        member_id: auth.member.id,
+        name: body.name.trim(),
+        search: body.search.slice(0, 200),
+        source: body.source.slice(0, 200),
+        owner: body.owner.slice(0, 200),
+      });
+    } else if (action === "deleteView") {
+      result = await auth.db.from("crm_saved_views").delete().eq("id", id);
     } else throw new Error("Unknown action.");
     if (result.error)
       return Response.json(

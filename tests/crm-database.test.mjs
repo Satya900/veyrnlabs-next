@@ -17,6 +17,15 @@ test("CRM migration: roles, RLS, conversion, activity history, and capture idemp
       "utf8",
     ),
   );
+  await db.exec(
+    await readFile(
+      new URL(
+        "../supabase/migrations/202609150001_crm_saved_views.sql",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
+  );
   const ids = [
     "00000000-0000-0000-0000-000000000001",
     "00000000-0000-0000-0000-000000000002",
@@ -203,6 +212,35 @@ test("CRM migration: roles, RLS, conversion, activity history, and capture idemp
         await db.query("select stage_id from crm_leads where id=$1", [bulkOther])
       ).rows[0].stage_id;
       assert.equal(otherStage, stages[0].id);
+    },
+  );
+  await t.test(
+    "saved views (crm_saved_views) are private to the member who created them",
+    async () => {
+      await login(ids[1]);
+      const view = (
+        await db.query(
+          "insert into crm_saved_views(member_id,name,source) values($1,$2,$3) returning id",
+          [ids[1], "My open leads", "Website"],
+        )
+      ).rows[0].id;
+      await assert.rejects(
+        db.query(
+          "insert into crm_saved_views(member_id,name) values($1,$2)",
+          [ids[0], "Forged for owner"],
+        ),
+      );
+      await login(ids[0]);
+      assert.equal(
+        (await db.query("select * from crm_saved_views where id=$1", [view]))
+          .rows.length,
+        0,
+      );
+      await login(ids[1]);
+      assert.equal(
+        (await db.query("select * from crm_saved_views")).rows.length,
+        1,
+      );
     },
   );
   await t.test(

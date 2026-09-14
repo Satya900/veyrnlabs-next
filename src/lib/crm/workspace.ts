@@ -255,6 +255,20 @@ export function demoMutate(
         position: Number(body.position),
         kind: "open",
       });
+  } else if (body.action === "saveView") {
+    if (next.saved_views.some((v) => v.name.toLowerCase() === String(body.name).trim().toLowerCase()))
+      throw new Error("A saved view with this name already exists.");
+    next.saved_views.push({
+      id: crypto.randomUUID(),
+      member_id: next.user.id,
+      name: String(body.name).trim(),
+      search: String(body.search ?? ""),
+      source: String(body.source ?? ""),
+      owner: String(body.owner ?? ""),
+      created_at: timestamp,
+    });
+  } else if (body.action === "deleteView") {
+    next.saved_views = next.saved_views.filter((v) => v.id !== body.id);
   }
   return next;
 }

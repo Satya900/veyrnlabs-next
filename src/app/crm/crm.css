@@ -706,6 +706,48 @@
   gap: 12px;
   margin-bottom: 24px;
 }
+.crm-saved-views {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+.crm-saved-view-chip {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid var(--color-hairline-strong);
+  border-radius: 20px;
+  overflow: hidden;
+}
+.crm-root .crm-saved-view-chip button {
+  border: 0;
+  border-radius: 0;
+  padding: 6px 12px;
+  font-size: 11px;
+}
+.crm-root .crm-saved-view-chip button:first-child {
+  color: var(--color-body);
+}
+.crm-root .crm-saved-view-chip button:last-child {
+  padding: 6px 10px;
+  color: var(--color-mute);
+  border-left: 1px solid var(--color-hairline-strong);
+}
+.crm-save-view-form {
+  display: flex;
+  gap: 8px;
+}
+.crm-save-view-form input {
+  width: 180px;
+  padding: 7px 10px;
+  font-size: 11px;
+}
+.crm-save-view-form button {
+  padding: 7px 12px;
+  font-size: 11px;
+  white-space: nowrap;
+}
 .crm-toolbar .crm-search {
   flex: 1;
   min-width: 200px;

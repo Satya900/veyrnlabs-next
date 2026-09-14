@@ -16,7 +16,7 @@ Open `http://localhost:3000/crm/demo`. This is an explicitly labeled, in-memory 
 ## Connect Supabase
 
 1. Create a dedicated Supabase project for Veyrn Labs CRM.
-2. Apply `supabase/migrations/202609140001_crm.sql` once using the SQL editor or your normal migration workflow. The migration is transactional and creates only `crm_*` objects.
+2. Apply `supabase/migrations/202609140001_crm.sql`, then `supabase/migrations/202609150001_crm_saved_views.sql`, once each and in order, using the SQL editor or your normal migration workflow. Each migration is transactional and creates only `crm_*` objects.
 3. Copy `.env.crm.example` to `.env.local` and replace the placeholders with the project's URL, anon/publishable key, and server-only service-role key. Never put the service key in a `NEXT_PUBLIC_*` variable or commit it.
 4. Provision your initial account through Supabase Authentication and set its password there. Turn off public signup for this private workspace. Add the account to the workspace with the SQL below, replacing the UUID with the account's actual Auth user ID.
 5. Restart Next.js and sign in at `/crm/login`.
@@ -43,6 +43,11 @@ The form only reports success after the database saves the enquiry. No emails or
 ## Behavior and scope
 
 - Overview, board/list pipeline, lead create/edit/search, source and owner filters.
+- Global search (workspace topbar) queries leads and clients directly in Postgres, RLS-scoped, instead of only filtering what happened to already be loaded. Hidden automatically in `/crm/demo`, since there is no database to query.
+- Saving an email that matches an existing lead or client shows who it is, non-blocking, with a link to open the existing lead instead.
+- Multi-select in the Leads list view supports moving several open leads to a stage at once (`bulkStage`); converted leads are excluded from selection, matching the board's drag-and-drop rule.
+- Follow-ups has a Calendar view (month grid) alongside the List view, combining incomplete tasks and open-lead follow-ups by local calendar day.
+- Saved views (Leads toolbar) store a named search/source/owner combination per member in `crm_saved_views`, private to that member.
 - Editable stage labels/order; extra open stages. Won/lost meanings are fixed. Stages are not deleted because leads/history reference them.
 - Notes, call/meeting summaries, server-generated lead activity, follow-up dates, dated tasks, completion checkboxes, and in-app overdue indicators. Indicators refresh once per minute while the app is open; no background push/email jobs are enabled.
 - Atomic lead-to-client conversion. Repeated conversion returns the same client. Matching nonempty client emails reuse the existing accessible client; inaccessible matches require an administrator. Converted leads remain won. Repeat business should be entered as another lead. Client records retain a snapshot of contact information at conversion.

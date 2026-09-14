@@ -127,6 +127,45 @@ export function Leads({
           }}
         />
       </div>
+      {(data.saved_views.length > 0 || search || source || owner) && (
+        <div className="crm-saved-views">
+          {data.saved_views.map((v) => (
+            <span className="crm-saved-view-chip" key={v.id}>
+              <button
+                onClick={() => {
+                  setSearch(v.search);
+                  setSource(v.source);
+                  setOwner(v.owner);
+                }}
+              >
+                {v.name}
+              </button>
+              <button
+                aria-label={`Delete saved view ${v.name}`}
+                onClick={() => void mutate({ action: "deleteView", id: v.id })}
+              >
+                ×
+              </button>
+            </span>
+          ))}
+          {(search || source || owner) && (
+            <form
+              className="crm-save-view-form"
+              onSubmit={async (e) => {
+                e.preventDefault();
+                const form = e.currentTarget;
+                const name = new FormData(form).get("name");
+                if (typeof name !== "string" || !name.trim()) return;
+                if (await mutate({ action: "saveView", name: name.trim(), search, source, owner }))
+                  form.reset();
+              }}
+            >
+              <input name="name" placeholder="Name this filter…" maxLength={60} required />
+              <button disabled={busy}>Save view</button>
+            </form>
+          )}
+        </div>
+      )}
       <div className="crm-section-heading">
         <span className="crm-muted">
           {filtered.length} opportunities ·{" "}
