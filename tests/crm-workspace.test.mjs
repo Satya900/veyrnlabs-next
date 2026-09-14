@@ -1,0 +1,115 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { demoWorkspace } from "../src/lib/crm/model.ts";
+import {
+  attentionItems,
+  demoMutate,
+  dueFollowUps,
+  filterLeads,
+  overdueTasks,
+  sortedStages,
+  sourceOptions,
+  stageOf,
+} from "../src/lib/crm/workspace.ts";
+
+test("filterLeads matches search across fields and applies source/owner filters", () => {
+  const leads = [
+    { id: "1", name: "Aarav Shah", company: "Northstar", email: "a@x.com", phone: "", service: "AI", source: "Website", owner_id: "u1" },
+    { id: "2", name: "Priya Mehta", company: "Forma", email: "p@x.com", phone: "", service: "CRM", source: "Referral", owner_id: null },
+  ];
+  assert.deepEqual(filterLeads(leads, { search: "forma", source: "", owner: "" }).map((l) => l.id), ["2"]);
+  assert.deepEqual(filterLeads(leads, { search: "", source: "Website", owner: "" }).map((l) => l.id), ["1"]);
+  assert.deepEqual(filterLeads(leads, { search: "", source: "", owner: "unassigned" }).map((l) => l.id), ["2"]);
+  assert.deepEqual(filterLeads(leads, { search: "", source: "", owner: "u1" }).map((l) => l.id), ["1"]);
+  assert.deepEqual(sourceOptions(leads).sort(), ["Referral", "Website"]);
+});
+
+test("sortedStages orders by position then name, and stageOf resolves a lead's stage", () => {
+  const stages = [
+    { id: "b", name: "Zeta", position: 1, kind: "open" },
+    { id: "a", name: "Alpha", position: 1, kind: "open" },
+    { id: "c", name: "New", position: 0, kind: "open" },
+  ];
+  assert.deepEqual(sortedStages(stages).map((s) => s.id), ["c", "a", "b"]);
+  assert.equal(stageOf(stages, { stage_id: "a" })?.name, "Alpha");
+});
+
+test("overdueTasks and dueFollowUps only surface open, past-due items", () => {
+  const now = Date.parse("2026-09-14T12:00:00Z");
+  const stages = [{ id: "open", name: "New", position: 0, kind: "open" }, { id: "won", name: "Won", position: 1, kind: "won" }];
+  const tasks = [
+    { id: "t1", completed: false, due_at: "2026-09-14T00:00:00Z" },
+    { id: "t2", completed: true, due_at: "2026-09-14T00:00:00Z" },
+    { id: "t3", completed: false, due_at: "2026-09-15T00:00:00Z" },
+  ];
+  assert.deepEqual(overdueTasks(tasks, now).map((t) => t.id), ["t1"]);
+  const leads = [
+    { id: "l1", stage_id: "open", follow_up: "2026-09-14T00:00:00Z" },
+    { id: "l2", stage_id: "won", follow_up: "2026-09-14T00:00:00Z" },
+    { id: "l3", stage_id: "open", follow_up: null },
+  ];
+  assert.deepEqual(dueFollowUps(leads, stages, now).map((l) => l.id), ["l1"]);
+});
+
+test("attentionItems combines overdue tasks and due follow-ups, dropping items for unknown leads", () => {
+  const leads = [{ id: "l1", name: "Rohan" }];
+  const items = attentionItems(
+    [{ id: "t1", title: "Send proposal", lead_id: "l1", due_at: "2026-09-14T00:00:00Z" }],
+    [{ id: "gone", name: "Ghost", follow_up: "2026-09-14T00:00:00Z" }],
+    leads,
+  );
+  assert.deepEqual(items, [{ id: "t1", title: "Send proposal", lead: "l1", due: "2026-09-14T00:00:00Z" }]);
+});
+
+test("demoMutate: create, stage change, and blocking a converted lead from leaving Won", () => {
+  const data = demoWorkspace();
+  const stages = data.stages;
+  const openStage = stages.find((s) => s.kind === "open");
+  const wonStage = stages.find((s) => s.kind === "won");
+
+  const created = demoMutate(data, { action: "saveLead", lead: { name: "New Contact", email: "n@x.com" } });
+  assert.equal(created.leads[0].name, "New Contact");
+  assert.equal(created.leads.length, data.leads.length + 1);
+  assert.ok(created.activities.some((a) => a.kind === "created" && a.lead_id === created.leads[0].id));
+
+  const moved = demoMutate(created, {
+    action: "stage",
+    id: created.leads[0].id,
+    stage_id: wonStage.id,
+  });
+  assert.equal(moved.leads[0].stage_id, wonStage.id);
+  assert.ok(moved.leads[0].closed_at);
+
+  const converted = demoMutate(moved, { action: "convert", id: moved.leads[0].id });
+  assert.equal(converted.clients.length, 1);
+  assert.equal(converted.leads[0].client_id, converted.clients[0].id);
+
+  assert.throws(
+    () => demoMutate(converted, { action: "stage", id: converted.leads[0].id, stage_id: openStage.id }),
+    /must remain won/,
+  );
+});
+
+test("demoMutate: activity, task, completeTask, and duplicate stage-name rejection", () => {
+  const data = demoWorkspace();
+  const leadId = data.leads[0].id;
+  const withNote = demoMutate(data, { action: "activity", id: leadId, body: "Called back", kind: "call" });
+  assert.ok(withNote.activities.some((a) => a.body === "Called back" && a.kind === "call"));
+
+  const withTask = demoMutate(withNote, {
+    action: "task",
+    id: leadId,
+    title: "Send contract",
+    due_at: "2026-09-20T10:00:00Z",
+  });
+  const task = withTask.tasks.find((t) => t.title === "Send contract");
+  assert.ok(task && !task.completed);
+
+  const completed = demoMutate(withTask, { action: "completeTask", id: task.id, completed: true });
+  assert.equal(completed.tasks.find((t) => t.id === task.id).completed, true);
+
+  assert.throws(
+    () => demoMutate(data, { action: "saveStage", name: data.stages[0].name, position: 9 }),
+    /already exists/,
+  );
+});
