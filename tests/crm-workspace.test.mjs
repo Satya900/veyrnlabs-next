@@ -3,11 +3,14 @@ import assert from "node:assert/strict";
 import { demoWorkspace } from "../src/lib/crm/model.ts";
 import {
   attentionItems,
+  calendarItems,
   demoMutate,
   dueFollowUps,
   filterLeads,
   findDuplicateClient,
   findDuplicateLead,
+  groupByDate,
+  localDateKey,
   overdueTasks,
   sortedStages,
   sourceOptions,
@@ -104,6 +107,45 @@ test("demoMutate: create, stage change, and blocking a converted lead from leavi
     () => demoMutate(converted, { action: "stage", id: converted.leads[0].id, stage_id: openStage.id }),
     /must remain won/,
   );
+});
+
+test("localDateKey and groupByDate bucket items by local calendar day", () => {
+  assert.equal(localDateKey("2026-09-14T12:00:00Z"), "2026-09-14");
+  const items = [
+    { id: "a", title: "A", leadId: "l1", due: "2026-09-14T12:00:00Z", kind: "task" },
+    { id: "b", title: "B", leadId: "l2", due: "2026-09-14T18:00:00Z", kind: "follow_up" },
+    { id: "c", title: "C", leadId: "l3", due: "2026-09-15T12:00:00Z", kind: "task" },
+  ];
+  const grouped = groupByDate(items);
+  assert.equal(grouped["2026-09-14"].length, 2);
+  assert.equal(grouped["2026-09-15"].length, 1);
+});
+
+test("calendarItems includes incomplete tasks and open-lead follow-ups only", () => {
+  const stages = [
+    { id: "open", name: "New", position: 0, kind: "open" },
+    { id: "won", name: "Won", position: 1, kind: "won" },
+  ];
+  const data = {
+    leads: [
+      { id: "l1", name: "Aarav", stage_id: "open", follow_up: "2026-09-20T10:00:00Z" },
+      { id: "l2", name: "Priya", stage_id: "won", follow_up: "2026-09-20T10:00:00Z" },
+      { id: "l3", name: "Rohan", stage_id: "open", follow_up: null },
+    ],
+    tasks: [
+      { id: "t1", lead_id: "l1", title: "Send proposal", due_at: "2026-09-21T10:00:00Z", completed: false },
+      { id: "t2", lead_id: "l1", title: "Old task", due_at: "2026-09-01T10:00:00Z", completed: true },
+    ],
+    clients: [],
+    activities: [],
+    stages,
+    members: [],
+    user: { id: "u1", name: "You", role: "owner" },
+  };
+  const items = calendarItems(data, stages);
+  assert.equal(items.length, 2);
+  assert.ok(items.some((i) => i.kind === "task" && i.title === "Send proposal"));
+  assert.ok(items.some((i) => i.kind === "follow_up" && i.leadId === "l1"));
 });
 
 test("demoMutate: bulkStage moves multiple leads and blocks a converted lead in the same batch", () => {

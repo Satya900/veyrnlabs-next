@@ -95,6 +95,40 @@ export function attentionItems(
   ].filter((item) => leads.some((l) => l.id === item.lead));
 }
 
+export type CalendarItem = {
+  id: string;
+  title: string;
+  leadId: string;
+  due: string;
+  kind: "task" | "follow_up";
+};
+/** Every incomplete task and open-lead follow-up, as calendar-ready items. */
+export function calendarItems(data: Workspace, stages: Stage[]): CalendarItem[] {
+  const tasks: CalendarItem[] = data.tasks
+    .filter((t) => !t.completed)
+    .map((t) => ({ id: `task-${t.id}`, title: t.title, leadId: t.lead_id, due: t.due_at, kind: "task" }));
+  const followUps: CalendarItem[] = data.leads
+    .filter((l) => l.follow_up && stageOf(stages, l)?.kind === "open")
+    .map((l) => ({
+      id: `lead-${l.id}`,
+      title: `Follow up with ${l.name}`,
+      leadId: l.id,
+      due: l.follow_up!,
+      kind: "follow_up",
+    }));
+  return [...tasks, ...followUps];
+}
+/** The local (viewer's timezone) calendar date an ISO timestamp or Date falls on, as YYYY-MM-DD. */
+export function localDateKey(input: string | Date) {
+  const d = typeof input === "string" ? new Date(input) : input;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+export function groupByDate(items: CalendarItem[]) {
+  const map: Record<string, CalendarItem[]> = {};
+  for (const item of items) (map[localDateKey(item.due)] ??= []).push(item);
+  return map;
+}
+
 /**
  * Applies a workspace mutation locally, mirroring the server-side behavior in
  * `POST /api/crm` and the `crm_track_lead`/`crm_log_lead` database triggers.
