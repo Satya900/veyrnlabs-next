@@ -1,6 +1,8 @@
-# Veyrn Labs CRM — Phase 1
+# Veyrn Labs CRM
 
-The CRM is implemented in the existing Next.js repository. The public website stays at `/`; the workspace is at `/crm`. A second deployment of the same repository can serve the CRM subdomain. This keeps the current website intact while sharing the lead capture contract and database migration.
+The CRM is implemented in the existing Next.js repository. The public website stays at `/`; the workspace is at `/crm`. A second deployment of the same repository can serve the CRM subdomain. This keeps the current website intact while sharing the lead capture contract and database migrations.
+
+Phase 1 shipped the core workspace (auth, pipeline, clients, tasks, reports, public capture). Phase 2 added global search, a duplicate-lead warning, bulk stage moves, a calendar view, saved filters, and an optional new-lead email notification — see "Behavior and scope" below.
 
 ## Review locally
 
@@ -16,7 +18,7 @@ Open `http://localhost:3000/crm/demo`. This is an explicitly labeled, in-memory 
 ## Connect Supabase
 
 1. Create a dedicated Supabase project for Veyrn Labs CRM.
-2. Apply `supabase/migrations/202609140001_crm.sql`, then `supabase/migrations/202609150001_crm_saved_views.sql`, once each and in order, using the SQL editor or your normal migration workflow. Each migration is transactional and creates only `crm_*` objects.
+2. Apply the migrations under `supabase/migrations/` once each, in filename order, using the SQL editor or your normal migration workflow. Each migration is transactional and touches only `crm_*` objects.
 3. Copy `.env.crm.example` to `.env.local` and replace the placeholders with the project's URL, anon/publishable key, and server-only service-role key. Never put the service key in a `NEXT_PUBLIC_*` variable or commit it.
 4. Provision your initial account through Supabase Authentication and set its password there. Turn off public signup for this private workspace. Add the account to the workspace with the SQL below, replacing the UUID with the account's actual Auth user ID.
 5. Restart Next.js and sign in at `/crm/login`.
@@ -38,7 +40,9 @@ The existing email and discovery-call options remain. When `SUPABASE_URL` and `S
 
 The server validates and bounds the request, checks origin and a honeypot, and calls a service-only database function. The database atomically records an unassigned Website lead and creation activity, with a unique submission UUID to make retries idempotent. Repeated enquiries are limited to three per email per hour, with a workspace-wide ceiling of 100 website enquiries per hour. Owners/admins assign new website leads to team members. Review these limits for your traffic and add a challenge provider if abuse warrants it.
 
-The form only reports success after the database saves the enquiry. No emails or external notifications are sent in Phase 1. If database setup is absent, the endpoint reports 503 rather than claiming delivery.
+The form only reports success after the database saves the enquiry. If database setup is absent, the endpoint reports 503 rather than claiming delivery.
+
+If `RESEND_API_KEY` and `CRM_NOTIFY_EMAIL` are both set, a genuinely new capture (not a deduplicated retry) sends one email notification via the Resend API, scheduled with Next's `after()` so it never delays the visitor's response and a delivery failure never turns into a visitor-facing error. Leave either unset to skip notifications entirely; `CRM_NOTIFY_FROM` is optional and defaults to Resend's unverified sandbox sender, which only delivers to the Resend account's own address — set a verified-domain sender before relying on this for real enquiries. There is still no daily digest of overdue tasks/follow-ups; the in-app indicators are the only reminder for those.
 
 ## Behavior and scope
 
@@ -49,12 +53,12 @@ The form only reports success after the database saves the enquiry. No emails or
 - Follow-ups has a Calendar view (month grid) alongside the List view, combining incomplete tasks and open-lead follow-ups by local calendar day.
 - Saved views (Leads toolbar) store a named search/source/owner combination per member in `crm_saved_views`, private to that member.
 - Editable stage labels/order; extra open stages. Won/lost meanings are fixed. Stages are not deleted because leads/history reference them.
-- Notes, call/meeting summaries, server-generated lead activity, follow-up dates, dated tasks, completion checkboxes, and in-app overdue indicators. Indicators refresh once per minute while the app is open; no background push/email jobs are enabled.
+- Notes, call/meeting summaries, server-generated lead activity, follow-up dates, dated tasks, completion checkboxes, and in-app overdue indicators. Indicators refresh once per minute while the app is open; no background digest job runs (see the new-lead email notification above, which is the one notification that does exist).
 - Atomic lead-to-client conversion. Repeated conversion returns the same client. Matching nonempty client emails reuse the existing accessible client; inaccessible matches require an administrator. Converted leads remain won. Repeat business should be entered as another lead. Client records retain a snapshot of contact information at conversion.
 - CSV preview/import (up to 500 rows and 2 MB), filtered lead export, client export, and full accessible-workspace JSON export. Import is a single database insert so invalid rows fail the batch. CSV imports create new leads rather than silently merging contacts. Export neutralizes spreadsheet formulas; leading formula characters are prefixed with an apostrophe.
 - CSV headers: `name,company,email,phone,service,value,source,notes`. Only `name` is required. Imported leads enter the first open stage. Team imports are assigned to the current user; owner/admin imports are unassigned.
 - Reporting is INR only. The selected period uses UTC dates. New leads use creation date, won/lost use closing date, win rate is won / (won + lost), and open pipeline covers all currently open deals. An empty closed cohort displays a dash. Won value is not cash received. Reports include only records visible to the current member.
-- Database reads page through results to avoid Supabase's default row limit truncating totals/exports. The UI currently loads the accessible workspace; move filtering/report aggregation to the server for much larger datasets.
+- Database reads page through results to avoid Supabase's default row limit truncating totals/exports. Global search is server-side (RLS-scoped ILIKE against `crm_leads`/`crm_clients`); the board/list/report views still load the accessible workspace into the browser, which is fine at solo/small-team scale but would need further server-side pagination for much larger datasets.
 
 ## Deploy
 
@@ -67,6 +71,7 @@ Use two deployments pointing to this repository and the same Supabase project:
 | `SITE_NOINDEX`         | false/unset             | true                        |
 | `CRM_ENABLE_DEMO`      | false/unset             | false/unset                 |
 | Supabase URL and keys  | Configure               | Configure                   |
+| `RESEND_API_KEY`, `CRM_NOTIFY_EMAIL`, `CRM_NOTIFY_FROM` | Optional (`/api/contact` runs here) | unset |
 
 Add the custom CRM domain in your hosting provider and apply its requested DNS records. The Next.js proxy rewrites `/` to `/crm` only on the exact configured CRM host. `/crm/*` and `/api/crm/*` carry noindex headers on all hosts, and the CRM layout disables indexing. Authorization is enforced by the backend and database, not by host routing or robots directives. The client portal subdomain is reserved for a later phase.
 

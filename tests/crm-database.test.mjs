@@ -26,6 +26,15 @@ test("CRM migration: roles, RLS, conversion, activity history, and capture idemp
       "utf8",
     ),
   );
+  await db.exec(
+    await readFile(
+      new URL(
+        "../supabase/migrations/202609150002_crm_capture_returns_inserted.sql",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
+  );
   const ids = [
     "00000000-0000-0000-0000-000000000001",
     "00000000-0000-0000-0000-000000000002",
@@ -287,8 +296,8 @@ test("CRM migration: roles, RLS, conversion, activity history, and capture idemp
           "Website",
           "Hello",
         ]);
-      await capture(submission);
-      await capture(submission);
+      assert.equal((await capture(submission)).rows[0].crm_capture_lead, true);
+      assert.equal((await capture(submission)).rows[0].crm_capture_lead, false);
       assert.equal(
         (await db.query("select * from crm_leads where source='Website'")).rows
           .length,

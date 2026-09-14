@@ -1,5 +1,7 @@
+import { after } from "next/server";
 import { jsonBody, sameOrigin, supabase } from "@/lib/crm/server";
 import { validateLead } from "@/lib/crm/model";
+import { notifyNewLead } from "@/lib/crm/notify";
 
 export async function POST(request: Request) {
   if (!sameOrigin(request))
@@ -29,14 +31,17 @@ export async function POST(request: Request) {
     const lead = validateLead(body);
     if (!lead.email || !lead.notes)
       throw new Error("Please include your email and project details.");
-    const { error } = await supabase(undefined, true).rpc("crm_capture_lead", {
-      submission: body.submission_id,
-      contact_name: lead.name,
-      contact_email: lead.email,
-      contact_company: lead.company,
-      contact_service: lead.service,
-      contact_notes: lead.notes,
-    });
+    const { data: inserted, error } = await supabase(undefined, true).rpc(
+      "crm_capture_lead",
+      {
+        submission: body.submission_id,
+        contact_name: lead.name,
+        contact_email: lead.email,
+        contact_company: lead.company,
+        contact_service: lead.service,
+        contact_notes: lead.notes,
+      },
+    );
     if (error)
       return Response.json(
         {
@@ -44,6 +49,18 @@ export async function POST(request: Request) {
             "Your enquiry could not be saved. Please try again later or email satyabrata@veyrnlabs.com.",
         },
         { status: 503 },
+      );
+    // Only the first (non-retried) save of a given submission notifies.
+    // Runs after the response is sent, so a slow/failed email never delays it.
+    if (inserted)
+      after(() =>
+        notifyNewLead({
+          name: String(lead.name),
+          email: String(lead.email),
+          company: String(lead.company),
+          service: String(lead.service),
+          notes: String(lead.notes),
+        }),
       );
     return Response.json({ ok: true }, { status: 201 });
   } catch (error) {
