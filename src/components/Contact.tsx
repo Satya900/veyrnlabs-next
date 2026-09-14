@@ -2,6 +2,7 @@ import { Section } from "./Section";
 import { Eyebrow } from "./ui/Eyebrow";
 import { ButtonLink } from "./ui/Button";
 import { site } from "@/lib/site";
+import { EnquiryForm } from "./EnquiryForm";
 
 export function Contact() {
   return (
@@ -22,6 +23,7 @@ export function Contact() {
           </ButtonLink>
         </div>
         <p className="mt-5 text-sm text-mute">{site.email}</p>
+        {process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY && <EnquiryForm />}
       </div>
     </Section>
   );
