@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Member } from "@/lib/crm/model";
 import { initials } from "@/lib/crm/workspace";
+import { GlobalSearch } from "./GlobalSearch";
 import type { View } from "./types";
 
 export function Topbar({
@@ -18,6 +19,7 @@ export function Topbar({
         <span>
           Workspace <span className="crm-slash">/</span> <strong>{view}</strong>
         </span>
+        <GlobalSearch />
         <div>
           <span className="crm-status-dot" />
           {demo ? "Sample workspace" : "Connected workspace"}

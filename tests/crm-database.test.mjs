@@ -175,6 +175,19 @@ test("CRM migration: roles, RLS, conversion, activity history, and capture idemp
     },
   );
   await t.test(
+    "ILIKE search (used by /api/crm/search) stays bounded by RLS",
+    async () => {
+      await login(ids[1]);
+      const found = (
+        await db.query("select id from crm_leads where name ilike $1", [
+          "%Lead%",
+        ])
+      ).rows;
+      assert.equal(found.length, 1);
+      assert.equal(found[0].id, lead);
+    },
+  );
+  await t.test(
     "public visitors cannot read records or invoke capture directly",
     async () => {
       await login("", "anon");
