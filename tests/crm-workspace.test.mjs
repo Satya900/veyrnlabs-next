@@ -6,6 +6,8 @@ import {
   demoMutate,
   dueFollowUps,
   filterLeads,
+  findDuplicateClient,
+  findDuplicateLead,
   overdueTasks,
   sortedStages,
   sourceOptions,
@@ -59,6 +61,20 @@ test("attentionItems combines overdue tasks and due follow-ups, dropping items f
     leads,
   );
   assert.deepEqual(items, [{ id: "t1", title: "Send proposal", lead: "l1", due: "2026-09-14T00:00:00Z" }]);
+});
+
+test("findDuplicateLead and findDuplicateClient match case-insensitively and exclude the lead being edited", () => {
+  const leads = [
+    { id: "l1", email: "Contact@Example.com" },
+    { id: "l2", email: "" },
+  ];
+  const clients = [{ id: "c1", email: "client@example.com" }];
+  assert.equal(findDuplicateLead(leads, "contact@example.com")?.id, "l1");
+  assert.equal(findDuplicateLead(leads, "contact@example.com", "l1"), undefined);
+  assert.equal(findDuplicateLead(leads, ""), undefined);
+  assert.equal(findDuplicateLead(leads, "  "), undefined);
+  assert.equal(findDuplicateClient(clients, "CLIENT@example.com")?.id, "c1");
+  assert.equal(findDuplicateClient(clients, "nobody@example.com"), undefined);
 });
 
 test("demoMutate: create, stage change, and blocking a converted lead from leaving Won", () => {

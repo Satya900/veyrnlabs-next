@@ -1,4 +1,4 @@
-import type { Lead, Stage, Task, Workspace } from "./model.ts";
+import type { Client, Lead, Stage, Task, Workspace } from "./model.ts";
 import { validateLead } from "./model.ts";
 
 export const dateLabel = (s: string) =>
@@ -41,6 +41,18 @@ export function filterLeads(leads: Lead[], { search, source, owner }: LeadFilter
 }
 export function sourceOptions(leads: Lead[]) {
   return [...new Set(leads.map((l) => l.source).filter(Boolean))];
+}
+
+/** Finds an existing lead sharing an email, ignoring `excludeId` (the lead being edited, if any). */
+export function findDuplicateLead(leads: Lead[], email: string, excludeId?: string) {
+  const normalized = email.trim().toLowerCase();
+  if (!normalized) return undefined;
+  return leads.find((l) => l.id !== excludeId && l.email.toLowerCase() === normalized);
+}
+export function findDuplicateClient(clients: Client[], email: string) {
+  const normalized = email.trim().toLowerCase();
+  if (!normalized) return undefined;
+  return clients.find((c) => c.email.toLowerCase() === normalized);
 }
 
 export function overdueTasks(tasks: Task[], now: number) {

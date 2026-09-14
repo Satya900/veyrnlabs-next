@@ -975,6 +975,15 @@
   font-size: 13px;
   line-height: 1.8;
 }
+.crm-root .crm-notice button {
+  display: inline;
+  padding: 0;
+  border: 0;
+  color: var(--color-primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  font-size: inherit;
+}
 .crm-error {
   color: var(--color-accent-sunset-soft);
 }

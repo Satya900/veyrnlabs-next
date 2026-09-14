@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { Eyebrow } from "@/components/ui/Eyebrow";
 import type { Lead, Workspace as Data } from "@/lib/crm/model";
+import { findDuplicateClient, findDuplicateLead } from "@/lib/crm/workspace";
 
 export function LeadForm({
   lead,
@@ -7,12 +9,14 @@ export function LeadForm({
   data,
   busy,
   save,
+  onOpenExisting,
 }: {
   lead?: Lead;
   defaultStage?: string;
   data: Data;
   busy: boolean;
   save: (values: Record<string, unknown>) => Promise<void>;
+  onOpenExisting?: (leadId: string) => void;
 }) {
   const localTime = lead?.follow_up
     ? new Date(
@@ -21,6 +25,11 @@ export function LeadForm({
         .toISOString()
         .slice(0, 16)
     : "";
+  const [emailCheck, setEmailCheck] = useState(lead?.email ?? "");
+  const duplicateLead = findDuplicateLead(data.leads, emailCheck, lead?.id);
+  const duplicateClient = duplicateLead
+    ? undefined
+    : findDuplicateClient(data.clients, emailCheck);
   return (
     <>
       <Eyebrow>{lead ? "KEEP THE DETAILS CURRENT" : "A NEW POSSIBILITY"}</Eyebrow>
@@ -64,6 +73,7 @@ export function LeadForm({
                       ? "0"
                       : ""
                 }
+                onChange={f.name === "email" ? (e) => setEmailCheck(e.target.value) : undefined}
               />
             </label>
           ))}
@@ -131,6 +141,22 @@ export function LeadForm({
             placeholder="Context, requirements, or something to remember…"
           />
         </label>
+        {(duplicateLead || duplicateClient) && (
+          <div className="crm-notice" role="status">
+            {duplicateLead
+              ? `A lead with this email already exists: ${duplicateLead.name}${duplicateLead.company ? ` (${duplicateLead.company})` : ""}.`
+              : `A client with this email already exists: ${duplicateClient!.name}${duplicateClient!.company ? ` (${duplicateClient!.company})` : ""}.`}{" "}
+            You can save anyway, or open the existing record instead.
+            {duplicateLead && onOpenExisting && (
+              <>
+                {" "}
+                <button type="button" onClick={() => onOpenExisting(duplicateLead.id)}>
+                  Open existing lead ↗
+                </button>
+              </>
+            )}
+          </div>
+        )}
         <button className="crm-primary" disabled={busy}>
           {busy ? "Saving…" : lead ? "Save changes" : "Create lead →"}
         </button>

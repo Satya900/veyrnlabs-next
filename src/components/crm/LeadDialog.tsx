@@ -75,6 +75,11 @@ export function LeadDialog({
             defaultStage={newStage}
             data={data}
             busy={busy}
+            onOpenExisting={(leadId) => {
+              setEditing(null);
+              setNewStage(undefined);
+              setSelected(leadId);
+            }}
             save={async (values) => {
               if (
                 await mutate({
