@@ -106,6 +106,39 @@ test("demoMutate: create, stage change, and blocking a converted lead from leavi
   );
 });
 
+test("demoMutate: bulkStage moves multiple leads and blocks a converted lead in the same batch", () => {
+  const data = demoWorkspace();
+  const openStage = data.stages.find((s) => s.kind === "open");
+  const otherOpenStage = data.stages.filter((s) => s.kind === "open")[1];
+  const wonStage = data.stages.find((s) => s.kind === "won");
+  const [a, b] = data.leads;
+
+  const moved = demoMutate(data, {
+    action: "bulkStage",
+    ids: [a.id, b.id],
+    stage_id: otherOpenStage.id,
+  });
+  assert.equal(moved.leads.find((l) => l.id === a.id).stage_id, otherOpenStage.id);
+  assert.equal(moved.leads.find((l) => l.id === b.id).stage_id, otherOpenStage.id);
+
+  const converted = demoMutate(moved, {
+    action: "bulkStage",
+    ids: [a.id],
+    stage_id: wonStage.id,
+  });
+  const afterConvert = demoMutate(converted, { action: "convert", id: a.id });
+
+  assert.throws(
+    () =>
+      demoMutate(afterConvert, {
+        action: "bulkStage",
+        ids: [a.id, b.id],
+        stage_id: openStage.id,
+      }),
+    /must remain won/,
+  );
+});
+
 test("demoMutate: activity, task, completeTask, and duplicate stage-name rejection", () => {
   const data = demoWorkspace();
   const leadId = data.leads[0].id;

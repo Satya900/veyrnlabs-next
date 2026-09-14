@@ -104,6 +104,23 @@ export async function POST(request: Request) {
         .eq("id", id)
         .select("id")
         .single();
+    } else if (action === "bulkStage") {
+      if (
+        !Array.isArray(body.ids) ||
+        body.ids.length < 1 ||
+        body.ids.length > 200 ||
+        body.ids.some(
+          (leadId: unknown) =>
+            typeof leadId !== "string" || !/^[0-9a-f-]{36}$/i.test(leadId),
+        )
+      )
+        throw new Error("Select between 1 and 200 leads.");
+      if (typeof body.stage_id !== "string") throw new Error("Choose a stage.");
+      result = await auth.db
+        .from("crm_leads")
+        .update({ stage_id: body.stage_id })
+        .in("id", body.ids)
+        .select("id");
     } else if (action === "convert") {
       result = await auth.db.rpc("crm_convert_lead", { lead: id });
     } else if (action === "activity") {

@@ -2,24 +2,46 @@ import { money } from "@/lib/crm/model";
 import type { Lead, Member, Stage } from "@/lib/crm/model";
 import { datetime, initials, isOverdueFollowUp, stageOf } from "@/lib/crm/workspace";
 
+export type LeadSelection = {
+  selected: Set<string>;
+  onToggle: (id: string) => void;
+  onToggleAll: (ids: string[]) => void;
+};
+
 export function LeadTable({
   rows,
   stages,
   members,
   now,
   onSelect,
+  selection,
 }: {
   rows: Lead[];
   stages: Stage[];
   members: Member[];
   now: number;
   onSelect: (id: string) => void;
+  selection?: LeadSelection;
 }) {
+  const selectableIds = rows.filter((l) => !l.client_id).map((l) => l.id);
+  const allSelected =
+    selectableIds.length > 0 && selectableIds.every((id) => selection?.selected.has(id));
   return (
     <div className="crm-table-wrap">
       <table>
         <thead>
           <tr>
+            {selection && (
+              <th>
+                <input
+                  type="checkbox"
+                  aria-label="Select all leads"
+                  checked={allSelected}
+                  disabled={!selectableIds.length}
+                  onChange={() => selection.onToggleAll(selectableIds)}
+                />
+              </th>
+            )}
             <th>Contact / company</th>
             <th>Stage</th>
             <th>Deal value</th>
@@ -31,6 +53,17 @@ export function LeadTable({
         <tbody>
           {rows.map((l) => (
             <tr key={l.id}>
+              {selection && (
+                <td>
+                  <input
+                    type="checkbox"
+                    aria-label={`Select ${l.name}`}
+                    checked={selection.selected.has(l.id)}
+                    disabled={!!l.client_id}
+                    onChange={() => selection.onToggle(l.id)}
+                  />
+                </td>
+              )}
               <td>
                 <button className="crm-contact" onClick={() => onSelect(l.id)}>
                   <span className="crm-avatar">{initials(l.name)}</span>

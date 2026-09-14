@@ -163,6 +163,17 @@ export function demoMutate(
     lead.stage_id = stage.id;
     lead.closed_at = stage.kind === "open" ? null : timestamp;
     log(lead.id, `Moved to ${stage.name}`, "stage");
+  } else if (body.action === "bulkStage") {
+    const stage = next.stages.find((s) => s.id === body.stage_id)!;
+    for (const id of body.ids as string[]) {
+      const bulkLead = next.leads.find((l) => l.id === id);
+      if (!bulkLead) continue;
+      if (bulkLead.client_id && stage.kind !== "won")
+        throw new Error("Converted leads must remain won.");
+      bulkLead.stage_id = stage.id;
+      bulkLead.closed_at = stage.kind === "open" ? null : timestamp;
+      log(bulkLead.id, `Moved to ${stage.name}`, "stage");
+    }
   } else if (body.action === "convert" && lead && !lead.client_id) {
     const existing = next.clients.find(
       (c) => c.email && c.email.toLowerCase() === lead.email.toLowerCase(),

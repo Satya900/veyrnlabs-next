@@ -175,6 +175,37 @@ test("CRM migration: roles, RLS, conversion, activity history, and capture idemp
     },
   );
   await t.test(
+    "bulk stage update (used by the bulkStage action) only touches rows RLS allows",
+    async () => {
+      await login(ids[0]);
+      const bulkOwn = (
+        await db.query(
+          "insert into crm_leads(name,stage_id,owner_id) values($1,$2,$3) returning id",
+          ["Bulk Own", stages[0].id, ids[1]],
+        )
+      ).rows[0].id;
+      const bulkOther = (
+        await db.query(
+          "insert into crm_leads(name,stage_id,owner_id) values($1,$2,$3) returning id",
+          ["Bulk Other", stages[0].id, ids[0]],
+        )
+      ).rows[0].id;
+      await login(ids[1]);
+      const updated = (
+        await db.query(
+          "update crm_leads set stage_id=$1 where id = any($2) returning id",
+          [stages[1].id, [bulkOwn, bulkOther]],
+        )
+      ).rows;
+      assert.deepEqual(updated, [{ id: bulkOwn }]);
+      await login(ids[0]);
+      const otherStage = (
+        await db.query("select stage_id from crm_leads where id=$1", [bulkOther])
+      ).rows[0].stage_id;
+      assert.equal(otherStage, stages[0].id);
+    },
+  );
+  await t.test(
     "ILIKE search (used by /api/crm/search) stays bounded by RLS",
     async () => {
       await login(ids[1]);

@@ -1,5 +1,5 @@
 "use client";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { csvHeaders, exportCsv, money, parseCsv } from "@/lib/crm/model";
 import { dateLabel, filterLeads, initials, isOverdueFollowUp, sourceOptions } from "@/lib/crm/workspace";
 import { download } from "../download";
@@ -33,6 +33,20 @@ export function Leads({
     useWorkspaceContext();
   const file = useRef<HTMLInputElement>(null);
   const filtered = filterLeads(data.leads, { search, source, owner });
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkStage, setBulkStage] = useState("");
+  const toggleOne = (id: string) =>
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  const toggleAll = (ids: string[]) =>
+    setSelectedIds((prev) => {
+      const allSelected = ids.length > 0 && ids.every((id) => prev.has(id));
+      return allSelected ? new Set() : new Set(ids);
+    });
 
   return (
     <>
@@ -216,15 +230,54 @@ export function Leads({
           })}
         </div>
       ) : (
-        <section className="crm-panel">
-          <LeadTable
-            rows={filtered}
-            stages={stages}
-            members={data.members}
-            now={now}
-            onSelect={setSelected}
-          />
-        </section>
+        <>
+          {selectedIds.size > 0 && (
+            <div className="crm-toolbar">
+              <span className="crm-muted">{selectedIds.size} selected</span>
+              <select
+                aria-label="Bulk move to stage"
+                value={bulkStage}
+                onChange={(e) => setBulkStage(e.target.value)}
+              >
+                <option value="">Move to stage…</option>
+                {stages.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+              <button
+                className="crm-primary"
+                disabled={busy || !bulkStage}
+                onClick={async () => {
+                  if (
+                    await mutate({
+                      action: "bulkStage",
+                      ids: [...selectedIds],
+                      stage_id: bulkStage,
+                    })
+                  ) {
+                    setSelectedIds(new Set());
+                    setBulkStage("");
+                  }
+                }}
+              >
+                Move {selectedIds.size} lead{selectedIds.size === 1 ? "" : "s"}
+              </button>
+              <button onClick={() => setSelectedIds(new Set())}>Clear selection</button>
+            </div>
+          )}
+          <section className="crm-panel">
+            <LeadTable
+              rows={filtered}
+              stages={stages}
+              members={data.members}
+              now={now}
+              onSelect={setSelected}
+              selection={{ selected: selectedIds, onToggle: toggleOne, onToggleAll: toggleAll }}
+            />
+          </section>
+        </>
       )}
     </>
   );
