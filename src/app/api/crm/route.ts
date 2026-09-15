@@ -1,5 +1,6 @@
-import { jsonBody, sameOrigin, session } from "@/lib/crm/server";
+import { jsonBody, loadWorkspace, sameOrigin, session } from "@/lib/crm/server";
 import { validateLead } from "@/lib/crm/model";
+import type { WorkspaceChanges } from "@/lib/crm/workspace";
 
 export async function GET() {
   const auth = await session();
@@ -8,43 +9,20 @@ export async function GET() {
       { error: "Please sign in to continue." },
       { status: 401 },
     );
-  const names = [
-    "leads",
-    "clients",
-    "tasks",
-    "activities",
-    "stages",
-    "members",
-    "saved_views",
-  ] as const;
-  const data: Record<string, unknown> = { user: auth.member };
-  for (const name of names) {
-    // Page through PostgREST's default row limit so reports/exports do not silently truncate.
-    const rows: unknown[] = [];
-    let offset = 0;
-    while (true) {
-      const result = await auth.db
-        .from(`crm_${name}`)
-        .select("*")
-        .order("id")
-        .range(offset, offset + 499);
-      if (result.error)
-        return Response.json(
-          {
-            error:
-              "Unable to load the workspace. Check the database migration and connection.",
-          },
-          { status: 503 },
-        );
-      rows.push(...result.data);
-      if (result.data.length < 500) break;
-      offset += 500;
-    }
-    data[name] = rows;
+  try {
+    const data = await loadWorkspace(auth);
+    return Response.json(data, {
+      headers: { "Cache-Control": "private, no-store" },
+    });
+  } catch {
+    return Response.json(
+      {
+        error:
+          "Unable to load the workspace. Check the database migration and connection.",
+      },
+      { status: 503 },
+    );
   }
-  return Response.json(data, {
-    headers: { "Cache-Control": "private, no-store" },
-  });
 }
 export async function POST(request: Request) {
   if (!sameOrigin(request))
@@ -67,6 +45,7 @@ export async function POST(request: Request) {
     )
       throw new Error("Invalid record identifier.");
     let result;
+    let changes: WorkspaceChanges = {};
     if (action === "saveLead" || action === "import") {
       const inputs = action === "import" ? body.rows : [body.lead];
       if (!Array.isArray(inputs) || inputs.length < 1 || inputs.length > 500)
@@ -94,17 +73,44 @@ export async function POST(request: Request) {
             .from("crm_leads")
             .update(rows[0])
             .eq("id", id)
-            .select("id")
+            .select("*")
             .single()
-        : await auth.db.from("crm_leads").insert(rows).select("id");
+        : await auth.db.from("crm_leads").insert(rows).select("*");
+      if (!result.error) {
+        const leads = action === "import" ? result.data : [result.data];
+        changes = { leads };
+        // Import can insert up to 500 rows; fetching each one's "Lead
+        // created" activity individually isn't worth the round trips, so
+        // only fetch it for the common single-lead case.
+        if (action === "saveLead") {
+          const { data: activity } = await auth.db
+            .from("crm_activities")
+            .select("*")
+            .eq("lead_id", result.data.id)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .single();
+          if (activity) changes.activities = [activity];
+        }
+      }
     } else if (action === "stage") {
       if (typeof body.stage_id !== "string") throw new Error("Choose a stage.");
       result = await auth.db
         .from("crm_leads")
         .update({ stage_id: body.stage_id })
         .eq("id", id)
-        .select("id")
+        .select("*")
         .single();
+      if (!result.error) {
+        const { data: activity } = await auth.db
+          .from("crm_activities")
+          .select("*")
+          .eq("lead_id", id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .single();
+        changes = { leads: [result.data], activities: activity ? [activity] : [] };
+      }
     } else if (action === "bulkStage") {
       if (
         !Array.isArray(body.ids) ||
@@ -121,9 +127,33 @@ export async function POST(request: Request) {
         .from("crm_leads")
         .update({ stage_id: body.stage_id })
         .in("id", body.ids)
-        .select("id");
+        .select("*");
+      if (!result.error) {
+        const { data: activities } = await auth.db
+          .from("crm_activities")
+          .select("*")
+          .in("lead_id", body.ids);
+        changes = { leads: result.data, activities: activities ?? [] };
+      }
     } else if (action === "convert") {
       result = await auth.db.rpc("crm_convert_lead", { lead: id });
+      if (!result.error) {
+        const [{ data: client }, { data: lead }, { data: activities }] = await Promise.all([
+          auth.db.from("crm_clients").select("*").eq("id", result.data).single(),
+          auth.db.from("crm_leads").select("*").eq("id", id).single(),
+          auth.db
+            .from("crm_activities")
+            .select("*")
+            .eq("lead_id", id)
+            .order("created_at", { ascending: false })
+            .limit(1),
+        ]);
+        changes = {
+          clients: client ? [client] : [],
+          leads: lead ? [lead] : [],
+          activities: activities ?? [],
+        };
+      }
     } else if (action === "activity") {
       if (
         typeof body.body !== "string" ||
@@ -136,7 +166,10 @@ export async function POST(request: Request) {
         );
       result = await auth.db
         .from("crm_activities")
-        .insert({ lead_id: id, body: body.body.trim(), kind: body.kind });
+        .insert({ lead_id: id, body: body.body.trim(), kind: body.kind })
+        .select("*")
+        .single();
+      if (!result.error) changes = { activities: [result.data] };
     } else if (action === "task") {
       if (
         typeof body.title !== "string" ||
@@ -148,7 +181,10 @@ export async function POST(request: Request) {
         throw new Error("Enter a task title and valid due date.");
       result = await auth.db
         .from("crm_tasks")
-        .insert({ lead_id: id, title: body.title.trim(), due_at: body.due_at });
+        .insert({ lead_id: id, title: body.title.trim(), due_at: body.due_at })
+        .select("*")
+        .single();
+      if (!result.error) changes = { tasks: [result.data] };
     } else if (action === "completeTask") {
       if (typeof body.completed !== "boolean")
         throw new Error("Invalid task status.");
@@ -156,8 +192,9 @@ export async function POST(request: Request) {
         .from("crm_tasks")
         .update({ completed: body.completed })
         .eq("id", id)
-        .select("id")
+        .select("*")
         .single();
+      if (!result.error) changes = { tasks: [result.data] };
     } else if (action === "saveStage") {
       if (auth.member.role === "team")
         return Response.json(
@@ -178,7 +215,7 @@ export async function POST(request: Request) {
             .from("crm_stages")
             .update({ name: body.name.trim(), position: body.position })
             .eq("id", id)
-            .select("id")
+            .select("*")
             .single()
         : await auth.db
             .from("crm_stages")
@@ -186,7 +223,10 @@ export async function POST(request: Request) {
               name: body.name.trim(),
               position: body.position,
               kind: "open",
-            });
+            })
+            .select("*")
+            .single();
+      if (!result.error) changes = { stages: [result.data] };
     } else if (action === "saveView") {
       if (
         typeof body.name !== "string" ||
@@ -197,15 +237,22 @@ export async function POST(request: Request) {
         typeof body.owner !== "string"
       )
         throw new Error("Enter a name for this view.");
-      result = await auth.db.from("crm_saved_views").insert({
-        member_id: auth.member.id,
-        name: body.name.trim(),
-        search: body.search.slice(0, 200),
-        source: body.source.slice(0, 200),
-        owner: body.owner.slice(0, 200),
-      });
+      result = await auth.db
+        .from("crm_saved_views")
+        .insert({
+          member_id: auth.member.id,
+          name: body.name.trim(),
+          search: body.search.slice(0, 200),
+          source: body.source.slice(0, 200),
+          owner: body.owner.slice(0, 200),
+        })
+        .select("*")
+        .single();
+      if (!result.error) changes = { saved_views: [result.data] };
     } else if (action === "deleteView") {
+      if (typeof id !== "string") throw new Error("Missing saved view id.");
       result = await auth.db.from("crm_saved_views").delete().eq("id", id);
+      if (!result.error) changes = { deleted_saved_views: [id] };
     } else throw new Error("Unknown action.");
     if (result.error)
       return Response.json(
@@ -215,7 +262,7 @@ export async function POST(request: Request) {
         },
         { status: 400 },
       );
-    return Response.json({ ok: true });
+    return Response.json({ ok: true, changes });
   } catch (error) {
     return Response.json(
       { error: error instanceof Error ? error.message : "Unable to save." },

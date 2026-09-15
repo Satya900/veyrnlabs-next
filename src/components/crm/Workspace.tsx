@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Logo } from "@/components/Logo";
 import { Eyebrow } from "@/components/ui/Eyebrow";
 import { dueFollowUps, overdueTasks, sortedStages } from "@/lib/crm/workspace";
+import type { Workspace as Data } from "@/lib/crm/model";
 import type { Editing, View } from "./types";
 import { useWorkspaceData } from "./useWorkspaceData";
 import { WorkspaceProvider } from "./context";
@@ -51,9 +52,15 @@ const pageCopy: Record<View, { eyebrow: string; heading: string; body: string }>
   },
 };
 
-export default function Workspace({ demo }: { demo: boolean }) {
+export default function Workspace({
+  demo,
+  initialData = null,
+}: {
+  demo: boolean;
+  initialData?: Data | null;
+}) {
   const { data, error, message, busy, now, setError, setMessage, reload, mutate } =
-    useWorkspaceData(demo);
+    useWorkspaceData(demo, initialData);
   const [view, setView] = useState<View>("Overview");
   const [search, setSearch] = useState("");
   const [source, setSource] = useState("");

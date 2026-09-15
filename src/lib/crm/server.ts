@@ -1,7 +1,7 @@
 import "server-only";
 import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
-import type { Member } from "./model";
+import type { Member, Workspace } from "./model";
 export { sameOrigin } from "./origin";
 
 export const configured = () =>
@@ -42,6 +42,46 @@ export async function session() {
   if (!member) return null;
   return { db, member: member as Member };
 }
+
+type Auth = { db: ReturnType<typeof supabase>; member: Member };
+const WORKSPACE_TABLES = [
+  "leads",
+  "clients",
+  "tasks",
+  "activities",
+  "stages",
+  "members",
+  "saved_views",
+] as const;
+async function fetchAllRows(db: Auth["db"], table: string) {
+  // Page through PostgREST's default row limit so reports/exports do not silently truncate.
+  const rows: unknown[] = [];
+  let offset = 0;
+  while (true) {
+    const result = await db
+      .from(table)
+      .select("*")
+      .order("id")
+      .range(offset, offset + 499);
+    if (result.error) throw new Error("workspace-load-failed");
+    rows.push(...result.data);
+    if (result.data.length < 500) break;
+    offset += 500;
+  }
+  return rows;
+}
+/** Loads every workspace table the current member can see, in parallel rather than one at a time. */
+export async function loadWorkspace(auth: Auth): Promise<Workspace> {
+  const results = await Promise.all(
+    WORKSPACE_TABLES.map((name) => fetchAllRows(auth.db, `crm_${name}`)),
+  );
+  const data: Record<string, unknown> = { user: auth.member };
+  WORKSPACE_TABLES.forEach((name, i) => {
+    data[name] = results[i];
+  });
+  return data as unknown as Workspace;
+}
+
 export async function jsonBody(
   request: Request,
   max = 100_000,

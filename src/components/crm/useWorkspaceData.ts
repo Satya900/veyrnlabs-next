@@ -2,10 +2,11 @@
 import { useEffect, useState } from "react";
 import { demoWorkspace } from "@/lib/crm/model";
 import type { Workspace as Data } from "@/lib/crm/model";
-import { demoMutate } from "@/lib/crm/workspace";
+import { applyChanges, demoMutate } from "@/lib/crm/workspace";
+import type { WorkspaceChanges } from "@/lib/crm/workspace";
 
-export function useWorkspaceData(demo: boolean) {
-  const [data, setData] = useState<Data | null>(null);
+export function useWorkspaceData(demo: boolean, initialData: Data | null = null) {
+  const [data, setData] = useState<Data | null>(initialData);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
@@ -21,11 +22,13 @@ export function useWorkspaceData(demo: boolean) {
   useEffect(() => {
     let active = true;
     const controller = new AbortController();
-    if (demo)
+    if (demo) {
       Promise.resolve().then(() => {
         if (active) setData(demoWorkspace());
       });
-    else
+    } else if (!initialData) {
+      // No server-rendered data (e.g. the initial fetch failed): fall back
+      // to fetching client-side instead of leaving the page stuck loading.
       fetch("/api/crm", { cache: "no-store", signal: controller.signal })
         .then(async (response) => {
           const result = await response.json();
@@ -35,12 +38,15 @@ export function useWorkspaceData(demo: boolean) {
         .catch((error) => {
           if (active) setError(error.message);
         });
+    }
     const timer = setInterval(() => setNow(Date.now()), 60000);
     return () => {
       active = false;
       controller.abort();
       clearInterval(timer);
     };
+    // initialData only seeds the first render; it must not re-trigger this effect.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [demo]);
 
   async function mutate(body: Record<string, unknown>) {
@@ -57,13 +63,13 @@ export function useWorkspaceData(demo: boolean) {
         });
         const result = await res.json();
         if (!res.ok) throw new Error(result.error);
-        try {
-          await reload();
-        } catch {
-          setError(
-            "Your change was saved, but refreshing the workspace failed. Reload to see it; do not resubmit.",
-          );
-        }
+        // The mutation response carries exactly what changed, so the
+        // workspace can be patched in place instead of re-fetched whole.
+        setData((current) =>
+          current
+            ? applyChanges(current, (result.changes ?? {}) as WorkspaceChanges)
+            : current,
+        );
       } else {
         setData(demoMutate(data, body));
       }

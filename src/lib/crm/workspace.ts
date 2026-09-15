@@ -1,4 +1,4 @@
-import type { Client, Lead, Stage, Task, Workspace } from "./model.ts";
+import type { Activity, Client, Lead, SavedView, Stage, Task, Workspace } from "./model.ts";
 import { validateLead } from "./model.ts";
 
 export const dateLabel = (s: string) =>
@@ -127,6 +127,44 @@ export function groupByDate(items: CalendarItem[]) {
   const map: Record<string, CalendarItem[]> = {};
   for (const item of items) (map[localDateKey(item.due)] ??= []).push(item);
   return map;
+}
+
+export type WorkspaceChanges = Partial<{
+  leads: Lead[];
+  clients: Client[];
+  tasks: Task[];
+  activities: Activity[];
+  stages: Stage[];
+  saved_views: SavedView[];
+  deleted_saved_views: string[];
+}>;
+function upsertById<T extends { id: string }>(list: T[], updates?: T[]): T[] {
+  if (!updates?.length) return list;
+  const byId = new Map(list.map((item) => [item.id, item] as const));
+  for (const item of updates) byId.set(item.id, item);
+  return [...byId.values()];
+}
+/**
+ * Patches a workspace with the changes a `POST /api/crm` mutation reports,
+ * instead of re-fetching the whole workspace after every action. Display
+ * order doesn't matter here: every view that cares about order (recency,
+ * stage position, activity history) already re-sorts before rendering.
+ */
+export function applyChanges(data: Workspace, changes: WorkspaceChanges): Workspace {
+  const saved_views = changes.deleted_saved_views?.length
+    ? upsertById(data.saved_views, changes.saved_views).filter(
+        (v) => !changes.deleted_saved_views!.includes(v.id),
+      )
+    : upsertById(data.saved_views, changes.saved_views);
+  return {
+    ...data,
+    leads: upsertById(data.leads, changes.leads),
+    clients: upsertById(data.clients, changes.clients),
+    tasks: upsertById(data.tasks, changes.tasks),
+    activities: upsertById(data.activities, changes.activities),
+    stages: upsertById(data.stages, changes.stages),
+    saved_views,
+  };
 }
 
 /**

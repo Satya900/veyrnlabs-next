@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { demoWorkspace } from "../src/lib/crm/model.ts";
 import {
+  applyChanges,
   attentionItems,
   calendarItems,
   demoMutate,
@@ -78,6 +79,31 @@ test("findDuplicateLead and findDuplicateClient match case-insensitively and exc
   assert.equal(findDuplicateLead(leads, "  "), undefined);
   assert.equal(findDuplicateClient(clients, "CLIENT@example.com")?.id, "c1");
   assert.equal(findDuplicateClient(clients, "nobody@example.com"), undefined);
+});
+
+test("applyChanges upserts by id, appends new records, and deletes saved views without a reload", () => {
+  const data = demoWorkspace();
+  const [firstLead, secondLead] = data.leads;
+
+  const patchedName = applyChanges(data, { leads: [{ ...firstLead, name: "Renamed Lead" }] });
+  assert.equal(patchedName.leads.find((l) => l.id === firstLead.id).name, "Renamed Lead");
+  assert.equal(patchedName.leads.length, data.leads.length);
+  assert.equal(patchedName.leads.find((l) => l.id === secondLead.id).name, secondLead.name);
+
+  const newLead = { ...firstLead, id: "brand-new-lead", name: "New Lead" };
+  const withNewLead = applyChanges(data, { leads: [newLead] });
+  assert.equal(withNewLead.leads.length, data.leads.length + 1);
+  assert.ok(withNewLead.leads.some((l) => l.id === "brand-new-lead"));
+
+  const withView = applyChanges(data, {
+    saved_views: [{ id: "v1", member_id: "u1", name: "My view", search: "", source: "", owner: "", created_at: "2026-01-01" }],
+  });
+  assert.equal(withView.saved_views.length, 1);
+  const withoutView = applyChanges(withView, { deleted_saved_views: ["v1"] });
+  assert.equal(withoutView.saved_views.length, 0);
+
+  const unchanged = applyChanges(data, {});
+  assert.deepEqual(unchanged.leads, data.leads);
 });
 
 test("demoMutate: create, stage change, and blocking a converted lead from leaving Won", () => {
