@@ -1,6 +1,7 @@
 "use client";
 import { createContext, useContext } from "react";
 import type { Stage, Workspace as Data } from "@/lib/crm/model";
+import type { WorkspaceChanges } from "@/lib/crm/workspace";
 import type { Editing, View } from "./types";
 
 export type WorkspaceContextValue = {
@@ -10,6 +11,10 @@ export type WorkspaceContextValue = {
   busy: boolean;
   now: number;
   mutate: (body: Record<string, unknown>) => Promise<boolean>;
+  optimisticMutate: (
+    body: Record<string, unknown>,
+    optimisticChanges: WorkspaceChanges,
+  ) => Promise<boolean>;
   setSelected: (id: string | null) => void;
   setEditing: (value: Editing) => void;
   setNewStage: (id: string | undefined) => void;

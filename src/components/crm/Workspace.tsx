@@ -8,6 +8,7 @@ import type { Workspace as Data } from "@/lib/crm/model";
 import type { Editing, View } from "./types";
 import { useWorkspaceData } from "./useWorkspaceData";
 import { WorkspaceProvider } from "./context";
+import { WorkspaceSkeleton } from "./WorkspaceSkeleton";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 import { ReportingSummary } from "./ReportingSummary";
@@ -59,8 +60,18 @@ export default function Workspace({
   demo: boolean;
   initialData?: Data | null;
 }) {
-  const { data, error, message, busy, now, setError, setMessage, reload, mutate } =
-    useWorkspaceData(demo, initialData);
+  const {
+    data,
+    error,
+    message,
+    busy,
+    now,
+    setError,
+    setMessage,
+    reload,
+    mutate,
+    optimisticMutate,
+  } = useWorkspaceData(demo, initialData);
   const [view, setView] = useState<View>("Overview");
   const [search, setSearch] = useState("");
   const [source, setSource] = useState("");
@@ -85,25 +96,22 @@ export default function Workspace({
     setOwner("");
   };
 
+  if (!data && !error) return <WorkspaceSkeleton />;
   if (!data)
     return (
       <main className="crm-loading">
         <Logo href="/" eager />
-        <h1>{error ? "Workspace unavailable" : "Opening your workspace…"}</h1>
-        {error && (
-          <>
-            <p role="alert">{error}</p>
-            <Link href="/crm/login">Go to sign in</Link>
-            <button
-              onClick={() => {
-                setError("");
-                reload().catch((e) => setError(e.message));
-              }}
-            >
-              Try again
-            </button>
-          </>
-        )}
+        <h1>Workspace unavailable</h1>
+        <p role="alert">{error}</p>
+        <Link href="/crm/login">Go to sign in</Link>
+        <button
+          onClick={() => {
+            setError("");
+            reload().catch((e) => setError(e.message));
+          }}
+        >
+          Try again
+        </button>
       </main>
     );
 
@@ -114,7 +122,19 @@ export default function Workspace({
 
   return (
     <WorkspaceProvider
-      value={{ data, stages, demo, busy, now, mutate, setSelected, setEditing, setNewStage, changeView }}
+      value={{
+        data,
+        stages,
+        demo,
+        busy,
+        now,
+        mutate,
+        optimisticMutate,
+        setSelected,
+        setEditing,
+        setNewStage,
+        changeView,
+      }}
     >
       <div className="crm-shell">
         <Sidebar
@@ -193,6 +213,7 @@ export default function Workspace({
           busy={busy}
           error={error}
           mutate={mutate}
+          optimisticMutate={optimisticMutate}
           editing={editing}
           setEditing={setEditing}
           selected={selected}

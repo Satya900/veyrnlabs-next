@@ -5,12 +5,14 @@ import { LeadDetail } from "./LeadDetail";
 import { LeadForm } from "./LeadForm";
 import type { Editing } from "./types";
 import type { Lead, Workspace as Data } from "@/lib/crm/model";
+import type { WorkspaceChanges } from "@/lib/crm/workspace";
 
 export function LeadDialog({
   data,
   busy,
   error,
   mutate,
+  optimisticMutate,
   editing,
   setEditing,
   selected,
@@ -24,6 +26,10 @@ export function LeadDialog({
   busy: boolean;
   error: string;
   mutate: (body: Record<string, unknown>) => Promise<boolean>;
+  optimisticMutate: (
+    body: Record<string, unknown>,
+    optimisticChanges: WorkspaceChanges,
+  ) => Promise<boolean>;
   editing: Editing;
   setEditing: (value: Editing) => void;
   selected: string | null;
@@ -107,6 +113,7 @@ export function LeadDialog({
             data={data}
             busy={busy}
             mutate={mutate}
+            optimisticMutate={optimisticMutate}
             onEdit={() => setEditing(current)}
           />
         ) : null}

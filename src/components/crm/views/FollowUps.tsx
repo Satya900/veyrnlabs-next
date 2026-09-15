@@ -5,7 +5,7 @@ import { Calendar } from "../Calendar";
 import { useWorkspaceContext } from "../context";
 
 export function FollowUps() {
-  const { data, stages, now, busy, mutate, setSelected } = useWorkspaceContext();
+  const { data, stages, now, optimisticMutate, setSelected } = useWorkspaceContext();
   const [calendar, setCalendar] = useState(false);
   const openFollowUps = data.leads
     .filter((l) => l.follow_up && stageOf(stages, l)?.kind === "open")
@@ -65,10 +65,13 @@ export function FollowUps() {
                   type="checkbox"
                   aria-label={`Complete ${t.title}`}
                   checked={t.completed}
-                  disabled={busy}
-                  onChange={(e) =>
-                    void mutate({ action: "completeTask", id: t.id, completed: e.target.checked })
-                  }
+                  onChange={(e) => {
+                    const completed = e.target.checked;
+                    void optimisticMutate(
+                      { action: "completeTask", id: t.id, completed },
+                      { tasks: [{ ...t, completed }] },
+                    );
+                  }}
                 />
                 <button onClick={() => setSelected(t.lead_id)}>
                   <strong style={{ textDecoration: t.completed ? "line-through" : "none" }}>

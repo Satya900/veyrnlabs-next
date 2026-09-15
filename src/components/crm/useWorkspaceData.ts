@@ -89,6 +89,48 @@ export function useWorkspaceData(demo: boolean, initialData: Data | null = null)
     }
   }
 
+  /**
+   * For interactions where waiting on a round trip would feel broken
+   * (checkbox toggles, drag-and-drop): apply the expected result to local
+   * state immediately, then reconcile with the server's actual response.
+   * On failure, resync from the server rather than guessing a rollback —
+   * safe even if another mutation is in flight at the same time.
+   */
+  async function optimisticMutate(
+    body: Record<string, unknown>,
+    optimisticChanges: WorkspaceChanges,
+  ) {
+    if (!data) return false;
+    setError("");
+    setData((current) => (current ? applyChanges(current, optimisticChanges) : current));
+    if (demo) {
+      setData((current) => (current ? demoMutate(current, body) : current));
+      return true;
+    }
+    try {
+      const res = await fetch("/api/crm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error);
+      setData((current) =>
+        current
+          ? applyChanges(current, (result.changes ?? {}) as WorkspaceChanges)
+          : current,
+      );
+      return true;
+    } catch (e) {
+      setError(
+        (e instanceof Error ? e.message : "Unable to save.") +
+          " Refreshing to show the current state.",
+      );
+      reload().catch(() => {});
+      return false;
+    }
+  }
+
   return {
     data,
     error,
@@ -99,5 +141,6 @@ export function useWorkspaceData(demo: boolean, initialData: Data | null = null)
     setMessage,
     reload,
     mutate,
+    optimisticMutate,
   };
 }

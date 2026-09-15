@@ -29,8 +29,17 @@ export function Leads({
   setImportRows: (rows: Record<string, unknown>[] | null) => void;
   setError: (message: string) => void;
 }) {
-  const { data, stages, now, busy, mutate, setSelected, setEditing, setNewStage } =
-    useWorkspaceContext();
+  const {
+    data,
+    stages,
+    now,
+    busy,
+    mutate,
+    optimisticMutate,
+    setSelected,
+    setEditing,
+    setNewStage,
+  } = useWorkspaceContext();
   const file = useRef<HTMLInputElement>(null);
   const filtered = filterLeads(data.leads, { search, source, owner });
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -209,12 +218,21 @@ export function Leads({
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) => {
                   e.preventDefault();
-                  if (!busy)
-                    void mutate({
-                      action: "stage",
-                      id: e.dataTransfer.getData("text/plain"),
-                      stage_id: s.id,
-                    });
+                  const draggedId = e.dataTransfer.getData("text/plain");
+                  const draggedLead = data.leads.find((l) => l.id === draggedId);
+                  if (draggedLead && !busy)
+                    void optimisticMutate(
+                      { action: "stage", id: draggedId, stage_id: s.id },
+                      {
+                        leads: [
+                          {
+                            ...draggedLead,
+                            stage_id: s.id,
+                            closed_at: s.kind === "open" ? null : new Date().toISOString(),
+                          },
+                        ],
+                      },
+                    );
                 }}
               >
                 <div className="column-heading">

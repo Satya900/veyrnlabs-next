@@ -1323,6 +1323,59 @@
   font-size: 28px;
 }
 
+@keyframes crm-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+.crm-skeleton-line,
+.crm-skeleton-card,
+.crm-skeleton-logo {
+  background: linear-gradient(
+    90deg,
+    var(--color-canvas-card) 25%,
+    var(--color-canvas-soft) 50%,
+    var(--color-canvas-card) 75%
+  );
+  background-size: 200% 100%;
+  animation: crm-shimmer 1.6s ease-in-out infinite;
+  border-radius: 6px;
+}
+.crm-skeleton-line {
+  height: 12px;
+  width: 100%;
+  margin-bottom: 10px;
+}
+.crm-skeleton-logo {
+  width: 120px;
+  height: 28px;
+  margin-bottom: 36px;
+  border-radius: 4px;
+}
+.crm-skeleton-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.crm-skeleton-nav .crm-skeleton-line {
+  height: 36px;
+  border-radius: 8px;
+  margin-bottom: 0;
+}
+.crm-skeleton-card {
+  border: 1px solid var(--color-hairline);
+}
+@media (prefers-reduced-motion: reduce) {
+  .crm-skeleton-line,
+  .crm-skeleton-card,
+  .crm-skeleton-logo {
+    animation: none;
+  }
+}
+
 /* Login mirrors the homepage's 1280px frame, 40px gutters and hero grid. */
 .crm-login {
   max-width: 1280px;

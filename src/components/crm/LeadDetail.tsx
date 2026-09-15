@@ -2,18 +2,24 @@ import { Eyebrow } from "@/components/ui/Eyebrow";
 import { money } from "@/lib/crm/model";
 import type { Lead, Workspace as Data } from "@/lib/crm/model";
 import { datetime } from "@/lib/crm/workspace";
+import type { WorkspaceChanges } from "@/lib/crm/workspace";
 
 export function LeadDetail({
   current,
   data,
   busy,
   mutate,
+  optimisticMutate,
   onEdit,
 }: {
   current: Lead;
   data: Data;
   busy: boolean;
   mutate: (body: Record<string, unknown>) => Promise<boolean>;
+  optimisticMutate: (
+    body: Record<string, unknown>,
+    optimisticChanges: WorkspaceChanges,
+  ) => Promise<boolean>;
   onEdit: () => void;
 }) {
   const sortedActivity = [...data.activities]
@@ -45,10 +51,23 @@ export function LeadDetail({
           Pipeline stage
           <select
             value={current.stage_id}
-            disabled={busy || !!current.client_id}
-            onChange={(e) =>
-              void mutate({ action: "stage", id: current.id, stage_id: e.target.value })
-            }
+            disabled={!!current.client_id}
+            onChange={(e) => {
+              const stage_id = e.target.value;
+              const stage = data.stages.find((s) => s.id === stage_id);
+              void optimisticMutate(
+                { action: "stage", id: current.id, stage_id },
+                {
+                  leads: [
+                    {
+                      ...current,
+                      stage_id,
+                      closed_at: stage?.kind === "open" ? null : new Date().toISOString(),
+                    },
+                  ],
+                },
+              );
+            }}
           >
             {data.stages.map((s) => (
               <option key={s.id} value={s.id}>
@@ -141,10 +160,13 @@ export function LeadDetail({
             <input
               type="checkbox"
               checked={t.completed}
-              disabled={busy}
-              onChange={(e) =>
-                void mutate({ action: "completeTask", id: t.id, completed: e.target.checked })
-              }
+              onChange={(e) => {
+                const completed = e.target.checked;
+                void optimisticMutate(
+                  { action: "completeTask", id: t.id, completed },
+                  { tasks: [{ ...t, completed }] },
+                );
+              }}
             />
             {t.title}
             <small>{datetime(t.due_at)}</small>
