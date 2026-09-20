@@ -346,4 +346,12 @@ summary:focus-visible { outline: 2px solid var(--color-primary); outline-offset:
 .contact-options { max-width: 780px; margin: 0 auto; text-align: center; }
 .contact-options .prose-measure { margin-inline: auto; }
 
+.legal-hero-intro { max-width: 720px; padding-bottom: 56px; }
+.legal-hero-intro h1 { font-size: clamp(38px, 4.4vw, 56px); line-height: 1.12; letter-spacing: -.045em; margin-top: 18px; font-weight: 400; }
+.legal-hero-intro p { font-size: 16px; line-height: 1.8; color: var(--color-body); margin-top: 20px; }
+.legal-meta { font: 10px var(--font-mono), monospace; letter-spacing: .1em; text-transform: uppercase; color: var(--color-mute); }
+@media (max-width: 700px) {
+  .legal-hero-intro { padding-bottom: 36px; }
+}
+
 
