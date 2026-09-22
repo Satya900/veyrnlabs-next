@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   applicationName: site.name,
   alternates: { canonical: siteUrl() },
   openGraph: {
-    title: "Veyrn Labs — AI that works. Software that moves business.",
+    title: "Veyrn Labs: AI that works. Software that moves business.",
     description: "AI engineering, custom platforms, and connected workflows. Engineered end to end. Verified before it ships.",
     siteName: site.name,
     type: "website",
@@ -33,7 +33,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: site.title,
     description: site.description,
-    images: [{ url: siteUrl("/opengraph-image"), alt: "Veyrn Labs — AI that works. Software that moves business." }],
+    images: [{ url: siteUrl("/opengraph-image"), alt: "Veyrn Labs: AI that works. Software that moves business." }],
   },
   robots: {
     index: isIndexable,

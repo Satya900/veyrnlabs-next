@@ -115,7 +115,7 @@ const faqs = [
   ],
 ];
 const emailLink = (plan?: string) =>
-  `mailto:${site.email}?subject=${encodeURIComponent(plan ? `Custom real estate CRM — ${plan}` : "Custom real estate CRM requirements")}&body=${encodeURIComponent("Hi Veyrn Labs,\n\nI would like to discuss a custom real estate CRM.\n\nBusiness name:\nTeam size:\nCurrent lead sources:\nCurrent CRM or tools:\nMain challenges:\n")}`;
+  `mailto:${site.email}?subject=${encodeURIComponent(plan ? `Custom real estate CRM: ${plan}` : "Custom real estate CRM requirements")}&body=${encodeURIComponent("Hi Veyrn Labs,\n\nI would like to discuss a custom real estate CRM.\n\nBusiness name:\nTeam size:\nCurrent lead sources:\nCurrent CRM or tools:\nMain challenges:\n")}`;
 
 export default function RealEstateCRM() {
   return (

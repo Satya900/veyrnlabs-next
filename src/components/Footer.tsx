@@ -14,7 +14,10 @@ export function Footer() {
         </p>
         <nav aria-label="Footer navigation">
           <Link href="/#services">Capabilities</Link>
-          <Link href="/product/real-estate-crm">Real estate CRM</Link>
+          <Link href="/product/real-estate-crm-software">
+            CRM software &amp; pricing
+          </Link>
+          <Link href="/product/real-estate-crm">Custom real estate CRM</Link>
           <Link href="/#work">Selected work</Link>
           <Link href="/#studio">The studio</Link>
           <Link href="/#faq">FAQ</Link>

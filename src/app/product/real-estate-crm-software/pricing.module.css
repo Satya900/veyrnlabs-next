@@ -1,0 +1,291 @@
+.hero {
+  max-width: 1200px;
+  margin: auto;
+  padding: 160px 32px 0;
+}
+.hero h1 {
+  margin: 28px 0;
+  font-size: clamp(48px, 6vw, 82px);
+  line-height: 1.06;
+  letter-spacing: -0.055em;
+  font-weight: 400;
+}
+.hero h1 span {
+  color: var(--color-primary);
+}
+.intro {
+  max-width: 670px;
+  color: var(--color-body);
+  font-size: 18px;
+  line-height: 1.8;
+}
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 26px;
+  flex-wrap: wrap;
+  margin-top: 30px;
+}
+.actions > a:last-child {
+  font-size: 14px;
+}
+.strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px 40px;
+  border-top: 1px solid var(--color-hairline);
+  margin-top: 60px;
+  padding: 26px 0;
+  font-size: 13px;
+  color: var(--color-body);
+}
+.strip span::before {
+  content: "↗";
+  color: var(--color-primary);
+  margin-right: 12px;
+}
+.heading {
+  text-align: center;
+}
+.heading h2 {
+  margin: 24px auto;
+}
+.heading > p:last-child {
+  max-width: 590px;
+  margin: auto;
+  color: var(--color-body);
+  line-height: 1.8;
+}
+.billing {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px;
+  margin: 36px auto 0;
+  width: fit-content;
+  border: 1px solid var(--color-hairline);
+  border-radius: 12px;
+  background: var(--color-canvas-soft);
+}
+.billing button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 9px;
+  padding: 13px 18px;
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--color-body);
+}
+.billing button span {
+  font-size: 10px;
+  padding: 4px 6px;
+  background: #d5f68815;
+  border-radius: 4px;
+  color: var(--color-primary);
+}
+.billing button[aria-pressed="true"] {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+.billing button[aria-pressed="true"] span {
+  background: #17200d14;
+  color: var(--color-on-primary);
+}
+.billingNote {
+  text-align: center;
+  min-height: 40px;
+  font-size: 12px;
+  color: var(--color-mute);
+  margin: 15px 0 25px;
+  line-height: 1.7;
+}
+.cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  max-width: 1000px;
+  margin: auto;
+}
+.card {
+  padding: 36px;
+  border: 1px solid #3c4532;
+  border-radius: 16px;
+  background: #171b14;
+}
+.plus {
+  background: linear-gradient(145deg, #29351d, #171b14 65%);
+  border-color: #8eaa66;
+}
+.kicker {
+  color: var(--color-primary);
+  font:
+    10px var(--font-mono),
+    monospace;
+  letter-spacing: 0.08em;
+}
+.card h3 {
+  margin-top: 24px;
+  font-size: 36px;
+  letter-spacing: -0.04em;
+}
+.description {
+  margin-top: 12px;
+  min-height: 50px;
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--color-body);
+}
+.price {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: 32px;
+}
+.price strong {
+  font-size: 56px;
+  font-weight: 400;
+  letter-spacing: -0.05em;
+}
+.price span {
+  color: var(--color-mute);
+  font-size: 14px;
+}
+.total {
+  font-size: 14px;
+  margin-top: 6px;
+}
+.savings {
+  font-size: 12px;
+  color: var(--color-primary);
+  margin: 12px 0 26px;
+}
+.card > a {
+  width: 100%;
+}
+.card ul {
+  margin-top: 30px;
+  padding-top: 24px;
+  border-top: 1px solid var(--color-hairline);
+  list-style: none;
+}
+.card li {
+  position: relative;
+  padding-left: 24px;
+  margin: 14px 0;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--color-body);
+}
+.card li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  color: var(--color-primary);
+}
+.terms {
+  max-width: 890px;
+  margin: 24px auto 0;
+  text-align: center;
+  font-size: 12px;
+  line-height: 1.8;
+  color: var(--color-mute);
+}
+.workflow {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 40px;
+  margin-top: 40px;
+}
+.workflow article {
+  border-top: 1px solid #465338;
+  padding-top: 24px;
+}
+.workflow article > span {
+  color: var(--color-primary);
+  font:
+    12px var(--font-mono),
+    monospace;
+}
+.workflow h3 {
+  font-size: 22px;
+  margin-top: 26px;
+  letter-spacing: -0.025em;
+}
+.workflow p,
+.custom p:last-child {
+  color: var(--color-body);
+  font-size: 15px;
+  line-height: 1.8;
+  margin-top: 16px;
+}
+.faq {
+  max-width: 850px;
+  margin-top: 32px;
+}
+.faq details {
+  padding: 23px 0;
+  border-bottom: 1px solid var(--color-hairline);
+}
+.faq summary {
+  font-size: 17px;
+  line-height: 1.6;
+  cursor: pointer;
+}
+.faq summary:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 6px;
+}
+.faq p {
+  color: var(--color-body);
+  font-size: 14px;
+  line-height: 1.9;
+  margin-top: 16px;
+}
+.custom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 30px;
+}
+.custom h2 {
+  margin-top: 24px;
+}
+@media (max-width: 760px) {
+  .hero {
+    padding: 128px 24px 0;
+  }
+  .intro {
+    font-size: 16px;
+  }
+  .cards,
+  .workflow {
+    grid-template-columns: 1fr;
+  }
+  .card {
+    padding: 26px;
+  }
+  .custom {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .billing {
+    width: 100%;
+    flex-wrap: nowrap;
+  }
+  .billing button {
+    flex: 1;
+    padding: 10px 5px;
+    font-size: 12px;
+  }
+  .price strong {
+    font-size: 48px;
+  }
+  .strip {
+    margin-top: 40px;
+  }
+}

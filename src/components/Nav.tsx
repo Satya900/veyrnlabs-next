@@ -14,7 +14,10 @@ export function Nav() {
           <Link href="/#work" className="nav-link">
             Work
           </Link>
-          <Link href="/product/real-estate-crm" className="nav-secondary">
+          <Link
+            href="/product/real-estate-crm-software"
+            className="nav-secondary"
+          >
             Real estate CRM
           </Link>
           <Link href="/#process" className="nav-secondary">

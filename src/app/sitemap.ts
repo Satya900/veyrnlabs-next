@@ -7,6 +7,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     ? [
         { url: siteUrl() },
         { url: siteUrl("/product/real-estate-crm") },
+        { url: siteUrl("/product/real-estate-crm-software") },
         { url: siteUrl("/privacy") },
         { url: siteUrl("/terms") },
       ]
