@@ -2,7 +2,7 @@
 
 The CRM is implemented in the existing Next.js repository. The public website stays at `/`; the workspace is at `/crm`. A second deployment of the same repository can serve the CRM subdomain. This keeps the current website intact while sharing the lead capture contract and database migrations.
 
-Phase 1 shipped the core workspace (auth, pipeline, clients, tasks, reports, public capture). Phase 2 added global search, a duplicate-lead warning, bulk stage moves, a calendar view, saved filters, and an optional new-lead email notification — see "Behavior and scope" below.
+Phase 1 shipped the core workspace (auth, pipeline, clients, tasks, reports, public capture). Phase 2 added global search, a duplicate-lead warning, bulk stage moves, a calendar view, saved filters, and an optional new-lead email notification; see "Behavior and scope" below.
 
 ## Review locally
 
@@ -28,7 +28,7 @@ insert into public.crm_members (id, name, role)
 values ('ACTUAL-AUTH-USER-UUID', 'Your name', 'owner');
 ```
 
-Provision additional Auth accounts and add corresponding `crm_members` records with `admin` or `team`. Account creation, password resets, membership removal, and role changes use the Supabase dashboard in this release; there is no self-service invitation UI yet.
+Provision additional Auth accounts and add corresponding `crm_members` records with `admin` or `team`. This section describes the original single-workspace setup; see `docs/crm-account-rollout.md` for the newer self-service signup, invitation, password reset, ownership transfer, and member removal flows once the organisations migration is applied.
 
 Owners and admins can read/update all workspace leads and configure stages. Team members can access their assigned leads, related activities/tasks, and linked clients. The member directory is visible to members. Authenticated users without a `crm_members` record have no workspace access. Roles are stored in a protected table, never user-editable Auth metadata.
 
@@ -42,7 +42,7 @@ The server validates and bounds the request, checks origin and a honeypot, and c
 
 The form only reports success after the database saves the enquiry. If database setup is absent, the endpoint reports 503 rather than claiming delivery.
 
-If `RESEND_API_KEY` and `CRM_NOTIFY_EMAIL` are both set, a genuinely new capture (not a deduplicated retry) sends one email notification via the Resend API, scheduled with Next's `after()` so it never delays the visitor's response and a delivery failure never turns into a visitor-facing error. Leave either unset to skip notifications entirely; `CRM_NOTIFY_FROM` is optional and defaults to Resend's unverified sandbox sender, which only delivers to the Resend account's own address — set a verified-domain sender before relying on this for real enquiries. There is still no daily digest of overdue tasks/follow-ups; the in-app indicators are the only reminder for those.
+If `RESEND_API_KEY` and `CRM_NOTIFY_EMAIL` are both set, a genuinely new capture (not a deduplicated retry) sends one email notification via the Resend API, scheduled with Next's `after()` so it never delays the visitor's response and a delivery failure never turns into a visitor-facing error. Leave either unset to skip notifications entirely; `CRM_NOTIFY_FROM` is optional and defaults to Resend's unverified sandbox sender, which only delivers to the Resend account's own address. Set a verified-domain sender before relying on this for real enquiries. There is still no daily digest of overdue tasks/follow-ups; the in-app indicators are the only reminder for those.
 
 ## Behavior and scope
 

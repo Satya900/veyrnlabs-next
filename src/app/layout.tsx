@@ -22,8 +22,8 @@ export const metadata: Metadata = {
   applicationName: site.name,
   alternates: { canonical: siteUrl() },
   openGraph: {
-    title: "Veyrn Labs: AI that works. Software that moves business.",
-    description: "AI engineering, custom platforms, and connected workflows. Engineered end to end. Verified before it ships.",
+    title: site.title,
+    description: site.description,
     siteName: site.name,
     type: "website",
     locale: "en_IN",
@@ -33,12 +33,23 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: site.title,
     description: site.description,
-    images: [{ url: siteUrl("/opengraph-image"), alt: "Veyrn Labs: AI that works. Software that moves business." }],
+    images: [
+      {
+        url: siteUrl("/opengraph-image"),
+        alt: "Veyrn CRM. Every property lead. A clearer next step.",
+      },
+    ],
   },
   robots: {
     index: isIndexable,
     follow: true,
-    googleBot: { index: isIndexable, follow: true, "max-image-preview": "large", "max-snippet": -1, "max-video-preview": -1 },
+    googleBot: {
+      index: isIndexable,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
   },
   verification: {
     google: process.env.GOOGLE_SITE_VERIFICATION || undefined,

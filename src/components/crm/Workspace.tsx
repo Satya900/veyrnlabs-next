@@ -19,8 +19,14 @@ import { Clients } from "./views/Clients";
 import { FollowUps } from "./views/FollowUps";
 import { Reports } from "./views/Reports";
 import { Settings } from "./views/Settings";
+import { WhatsApp } from "./views/WhatsApp";
 
 const pageCopy: Record<View, { eyebrow: string; heading: string; body: string }> = {
+  WhatsApp: {
+    eyebrow: "CUSTOMER CONVERSATIONS",
+    heading: "WhatsApp inbox",
+    body: "Keep incoming enquiries connected to your leads.",
+  },
   Overview: {
     eyebrow: "THE BIG PICTURE",
     heading: "A clearer view of what’s next.",
@@ -56,9 +62,11 @@ const pageCopy: Record<View, { eyebrow: string; heading: string; body: string }>
 export default function Workspace({
   demo,
   initialData = null,
+  initialView = "Overview",
 }: {
   demo: boolean;
   initialData?: Data | null;
+  initialView?: View;
 }) {
   const {
     data,
@@ -72,7 +80,12 @@ export default function Workspace({
     mutate,
     optimisticMutate,
   } = useWorkspaceData(demo, initialData);
-  const [view, setView] = useState<View>("Overview");
+  // initialView comes from the server-read ?view= param, so the client's first
+  // render matches SSR exactly (reading window.location here instead would give
+  // the server and the client different answers and trigger a hydration mismatch).
+  // Lands on Settings after the Google Calendar OAuth redirect; CalendarSettings
+  // reads the calendar/calendar_error params itself and cleans up the URL.
+  const [view, setView] = useState<View>(initialView);
   const [search, setSearch] = useState("");
   const [source, setSource] = useState("");
   const [owner, setOwner] = useState("");
@@ -128,6 +141,7 @@ export default function Workspace({
         demo,
         busy,
         now,
+        reload,
         mutate,
         optimisticMutate,
         setSelected,
@@ -202,6 +216,11 @@ export default function Workspace({
             {view === "Follow-ups" && <FollowUps />}
             {view === "Reports" && <Reports from={from} to={to} />}
             {view === "Settings" && <Settings />}
+            {view === "WhatsApp" && <WhatsApp openLead={async (id) => {
+              const latest = await reload();
+              if (!latest.leads.some((lead) => lead.id === id)) throw new Error("This lead is no longer available to your account.");
+              setSelected(id);
+            }} />}
             <footer className="crm-content-footer">
               <span>Veyrn Labs Workspace</span>
               <span>A little structure. A lot of possibility.</span>

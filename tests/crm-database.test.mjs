@@ -49,6 +49,15 @@ test("CRM migration: roles, RLS, conversion, activity history, and capture idemp
       ["Owner", "Member", "Admin"][i],
       ["owner", "team", "admin"][i],
     ]);
+  await db.exec(
+    await readFile(
+      new URL(
+        "../supabase/migrations/202609220001_crm_organizations.sql",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
+  );
   const stages = (await db.query("select * from crm_stages order by position"))
     .rows;
   const login = async (id, role = "authenticated") => {
@@ -218,7 +227,9 @@ test("CRM migration: roles, RLS, conversion, activity history, and capture idemp
       assert.deepEqual(updated, [{ id: bulkOwn }]);
       await login(ids[0]);
       const otherStage = (
-        await db.query("select stage_id from crm_leads where id=$1", [bulkOther])
+        await db.query("select stage_id from crm_leads where id=$1", [
+          bulkOther,
+        ])
       ).rows[0].stage_id;
       assert.equal(otherStage, stages[0].id);
     },
@@ -234,10 +245,10 @@ test("CRM migration: roles, RLS, conversion, activity history, and capture idemp
         )
       ).rows[0].id;
       await assert.rejects(
-        db.query(
-          "insert into crm_saved_views(member_id,name) values($1,$2)",
-          [ids[0], "Forged for owner"],
-        ),
+        db.query("insert into crm_saved_views(member_id,name) values($1,$2)", [
+          ids[0],
+          "Forged for owner",
+        ]),
       );
       await login(ids[0]);
       assert.equal(

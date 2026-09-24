@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { accountsEnabled, ensureMembership } from "@/lib/crm/accounts";
 import {
   configured,
   cookieName,
@@ -41,7 +42,19 @@ export async function POST(request: Request) {
       .select("id")
       .eq("id", data.user.id)
       .single();
-    if (!member)
+    if (!member && accountsEnabled()) {
+      try {
+        await ensureMembership(data.user);
+      } catch {
+        return Response.json(
+          {
+            error:
+              "Workspace setup could not finish. Verify your email, or use your team's invitation link.",
+          },
+          { status: 403 },
+        );
+      }
+    } else if (!member)
       return Response.json(
         { error: "Your account has not been added to this workspace." },
         { status: 403 },
@@ -49,7 +62,11 @@ export async function POST(request: Request) {
     (await cookies()).set(cookieName, data.session.access_token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      // Lax, not strict: this cookie must survive the top-level redirect a third-party
+      // OAuth provider (Google) sends the browser back with, which is a cross-site
+      // navigation. CSRF protection on mutating requests comes from sameOrigin(), not
+      // from Strict here.
+      sameSite: "lax",
       path: "/",
       maxAge: data.session.expires_in,
     });

@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test:crm": "node --test tests/crm-*.test.mjs"
+    "test:crm": "node --test tests/crm-*.test.mjs",
+    "crm:worker": "node scripts/crm-auto-worker.mjs --watch"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",

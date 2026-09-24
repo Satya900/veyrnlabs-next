@@ -17,6 +17,7 @@ export function useWorkspaceData(demo: boolean, initialData: Data | null = null)
     const result = await res.json();
     if (!res.ok) throw new Error(result.error);
     setData(result);
+    return result as Data;
   }
 
   useEffect(() => {
@@ -93,8 +94,8 @@ export function useWorkspaceData(demo: boolean, initialData: Data | null = null)
    * For interactions where waiting on a round trip would feel broken
    * (checkbox toggles, drag-and-drop): apply the expected result to local
    * state immediately, then reconcile with the server's actual response.
-   * On failure, resync from the server rather than guessing a rollback —
-   * safe even if another mutation is in flight at the same time.
+   * On failure, resync from the server rather than guessing a rollback.
+   * Safe even if another mutation is in flight at the same time.
    */
   async function optimisticMutate(
     body: Record<string, unknown>,

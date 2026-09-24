@@ -1,0 +1,14 @@
+services:
+  - type: worker
+    name: veyrn-crm-worker
+    runtime: node
+    plan: starter
+    buildCommand: npm ci
+    startCommand: npm run crm:worker
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: CRM_WORKER_BASE_URL
+        sync: false
+      - key: CRM_WORKER_SECRET
+        sync: false

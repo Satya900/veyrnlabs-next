@@ -22,12 +22,17 @@ test("filterLeads matches search across fields and applies source/owner filters"
   const leads = [
     { id: "1", name: "Aarav Shah", company: "Northstar", email: "a@x.com", phone: "", service: "AI", source: "Website", owner_id: "u1" },
     { id: "2", name: "Priya Mehta", company: "Forma", email: "p@x.com", phone: "", service: "CRM", source: "Referral", owner_id: null },
+    // A manually created lead with every optional field left blank stores them as undefined,
+    // not "": search must not crash on that (src/lib/crm/workspace.ts:36 once did, via .toLowerCase()
+    // on an undefined field).
+    { id: "3", name: "Blank Fields", source: "Manual", owner_id: null },
   ];
   assert.deepEqual(filterLeads(leads, { search: "forma", source: "", owner: "" }).map((l) => l.id), ["2"]);
   assert.deepEqual(filterLeads(leads, { search: "", source: "Website", owner: "" }).map((l) => l.id), ["1"]);
-  assert.deepEqual(filterLeads(leads, { search: "", source: "", owner: "unassigned" }).map((l) => l.id), ["2"]);
+  assert.deepEqual(filterLeads(leads, { search: "", source: "", owner: "unassigned" }).map((l) => l.id), ["2", "3"]);
   assert.deepEqual(filterLeads(leads, { search: "", source: "", owner: "u1" }).map((l) => l.id), ["1"]);
-  assert.deepEqual(sourceOptions(leads).sort(), ["Referral", "Website"]);
+  assert.deepEqual(filterLeads(leads, { search: "blank", source: "", owner: "" }).map((l) => l.id), ["3"]);
+  assert.deepEqual(sourceOptions(leads).sort(), ["Manual", "Referral", "Website"]);
 });
 
 test("sortedStages orders by position then name, and stageOf resolves a lead's stage", () => {

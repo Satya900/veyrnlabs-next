@@ -3,6 +3,7 @@ import { money } from "@/lib/crm/model";
 import type { Lead, Workspace as Data } from "@/lib/crm/model";
 import { datetime } from "@/lib/crm/workspace";
 import type { WorkspaceChanges } from "@/lib/crm/workspace";
+import { ScheduleVisit } from "./ScheduleVisit";
 
 export function LeadDetail({
   current,
@@ -125,6 +126,7 @@ export function LeadDetail({
         />
         <button disabled={busy}>Save activity</button>
       </form>
+      <ScheduleVisit leadId={current.id} />
       <h3>Schedule a task</h3>
       <form
         className="crm-task-form"

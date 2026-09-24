@@ -31,6 +31,21 @@ test("origin checks support Next localhost normalization and reject cross-origin
     sameOrigin(new Request("https://crm.veyrnlabs.com/api/crm")),
     false,
   );
+  // A TLS-terminating reverse proxy or tunnel (ngrok, most production setups) forwards
+  // plain HTTP to this process even though the browser's own connection was HTTPS;
+  // request.url's protocol reflects that inner hop, not what the browser used, and must
+  // not cause a same-site request to be rejected.
+  assert.equal(
+    sameOrigin(
+      new Request("http://localhost:3000/api/crm", {
+        headers: {
+          host: "damion-unperpetuated-inaccurately.ngrok-free.dev",
+          origin: "https://damion-unperpetuated-inaccurately.ngrok-free.dev",
+        },
+      }),
+    ),
+    true,
+  );
 });
 
 test("lead validation rejects invalid values and strips protected fields", () => {

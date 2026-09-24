@@ -10,6 +10,7 @@ export type WorkspaceContextValue = {
   demo: boolean;
   busy: boolean;
   now: number;
+  reload: () => Promise<Data>;
   mutate: (body: Record<string, unknown>) => Promise<boolean>;
   optimisticMutate: (
     body: Record<string, unknown>,

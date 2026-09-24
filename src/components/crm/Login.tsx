@@ -40,7 +40,7 @@ export default function Login({
             step in view. From the first conversation to a won deal.
           </p>
           <p className="hero-note">
-            One connected workspace for the Veyrn Labs team.
+            Your real estate leads, clients, and follow-ups in one workspace.
           </p>
         </section>
         <div className="login-form">
@@ -54,6 +54,7 @@ export default function Login({
             </div>
           )}
           <form
+            method="post"
             onSubmit={async (e) => {
               e.preventDefault();
               setBusy(true);
@@ -96,6 +97,9 @@ export default function Login({
                 autoComplete="current-password"
                 required
               />
+              <Link href="/crm/reset" className="crm-account-text-button">
+                Forgot password?
+              </Link>
             </label>
             {error && (
               <p role="alert" className="crm-error">
@@ -107,8 +111,8 @@ export default function Login({
             </Button>
           </form>
           <p className="crm-muted">
-            Accounts are provisioned by your workspace owner. Contact them if
-            you need access or a password reset.
+            New business? <Link href="/crm/signup">Create an account</Link>.
+            Joining a team? Open the invitation link from your workspace owner.
           </p>
           {showDemo && (
             <Link className="crm-demo-link" href="/crm/demo">

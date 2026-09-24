@@ -33,7 +33,7 @@ export function filterLeads(leads: Lead[], { search, source, owner }: LeadFilter
     (l) =>
       (!search ||
         [l.name, l.company, l.email, l.phone, l.service].some((s) =>
-          s.toLowerCase().includes(q),
+          s?.toLowerCase().includes(q),
         )) &&
       (!source || l.source === source) &&
       (!owner || (owner === "unassigned" ? !l.owner_id : l.owner_id === owner)),

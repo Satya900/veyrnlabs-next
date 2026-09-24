@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ButtonLink } from "@/components/ui/Button";
 import { site } from "@/lib/site";
+import { CRM_PLANS, planPrice } from "@/lib/crm/plans";
 import styles from "./pricing.module.css";
 
 const periods = [
@@ -12,30 +13,35 @@ const periods = [
 ] as const;
 const plans = [
   {
+    id: "pro",
     name: "Pro",
-    price: 4000,
+    price: CRM_PLANS.pro.monthlyPaise / 100,
     description: "Bring your leads, conversations, and follow-ups together.",
     features: [
+      "1 included user: your company admin",
       "Lead records and sales pipeline",
       "Standard lead-source integrations",
       "AI chatbot for initial replies and qualification",
-      "Basic follow-up sequences and reminders",
+      "Manually scheduled follow-ups and reminders",
       "Manual lead assignment and human handover",
-      "Site-visit scheduling and reminders",
+      "Manual site-visit scheduling",
+      "Defined AI and messaging allowances; no unlimited usage",
       "Lead and pipeline overview",
       "Standard onboarding and support",
     ],
   },
   {
+    id: "pro_plus",
     name: "Pro Plus",
-    price: 6000,
+    price: CRM_PLANS.pro_plus.monthlyPaise / 100,
     description: "Coordinate your agents with more advanced automation.",
     features: [
       "Everything in Pro",
+      "3 included users: admin plus 2 teammates",
       "Advanced AI qualification workflows",
       "Multi-step, reply-based follow-ups",
       "Automatic lead routing to agents",
-      "Automated site-visit follow-ups",
+      "Automatic scheduling and site-visit follow-ups",
       "Lead-source performance reporting",
       "Agent activity reporting",
       "Standard onboarding and priority support",
@@ -73,8 +79,9 @@ export function Pricing() {
       </p>
       <div className={styles.cards}>
         {plans.map((plan, index) => {
-          const monthly = (plan.price * (100 - period.discount)) / 100;
-          const total = monthly * period.months;
+          const quote = planPrice(plan.id, period.months);
+          const monthly = quote.monthlyPaise / 100;
+          const total = quote.totalPaise / 100;
           const savings = plan.price * period.months - total;
           const subject = `${plan.name} CRM: ${period.name} subscription`;
           const body = `Hi Veyrn Labs,\n\nI’m interested in ${plan.name}, billed ${rupees(total)} per ${period.interval}, before applicable taxes.\n\nBusiness name:\nTeam size:\nLead sources:\nPlease share the onboarding steps and confirm included usage and any additional charges.\n`;
@@ -120,10 +127,13 @@ export function Pricing() {
         })}
       </div>
       <p className={styles.terms}>
-        Prices in INR, before applicable taxes. Team seats, AI usage, storage
-        allowances, and any additional messaging or integration charges are
-        confirmed before subscription. Contact us to arrange onboarding;
-        selecting a plan does not take payment.
+        These plans describe our product offering; AI automation and
+        integrations are being prepared for onboarding. We confirm available
+        capabilities before payment. Prices in INR, before applicable taxes.
+        Additional users cost ₹500 each; the billing terms are confirmed before purchase.
+        AI and messaging usage are limited. Allowances, storage, and any additional messaging
+        or integration charges are confirmed before subscription. No automatic overage charges. Contact us to
+        arrange onboarding; selecting a plan does not take payment.
       </p>
     </>
   );

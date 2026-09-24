@@ -6,5 +6,6 @@ export type View =
   | "Clients"
   | "Follow-ups"
   | "Reports"
+  | "WhatsApp"
   | "Settings";
 export type Editing = Lead | "new" | null;

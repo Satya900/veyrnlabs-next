@@ -9,6 +9,7 @@ const navigation: { name: View; icon: string }[] = [
   { name: "Overview", icon: "◫" },
   { name: "Leads", icon: "▤" },
   { name: "Clients", icon: "♧" },
+  { name: "WhatsApp", icon: "◉" },
   { name: "Follow-ups", icon: "◷" },
   { name: "Reports", icon: "▥" },
   { name: "Settings", icon: "⚙" },

@@ -8,18 +8,18 @@ export function Footer() {
       <div className="footer-top">
         <Logo href="/#top" />
         <p>
-          AI engineering. Business software.
+          Veyrn CRM. For real estate teams.
           <br />
-          Verified before it ships.
+          Every lead. A clearer next step.
         </p>
         <nav aria-label="Footer navigation">
-          <Link href="/#services">Capabilities</Link>
+          <Link href="/#features">Features</Link>
           <Link href="/product/real-estate-crm-software">
             CRM software &amp; pricing
           </Link>
           <Link href="/product/real-estate-crm">Custom real estate CRM</Link>
-          <Link href="/#work">Selected work</Link>
-          <Link href="/#studio">The studio</Link>
+          <Link href="/#onboarding">Onboarding</Link>
+          <Link href="/crm/login">Sign in</Link>
           <Link href="/#faq">FAQ</Link>
           <Link href="/privacy">Privacy policy</Link>
           <Link href="/terms">Terms &amp; conditions</Link>

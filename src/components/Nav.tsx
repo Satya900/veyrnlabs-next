@@ -8,24 +8,23 @@ export function Nav() {
       <div className="nav-inner">
         <Logo eager href="/#top" />
         <nav aria-label="Main navigation" className="flex items-center gap-7">
-          <Link href="/#services" className="nav-secondary">
-            Capabilities
+          <Link href="/#features" className="nav-secondary">
+            Features
           </Link>
-          <Link href="/#work" className="nav-link">
-            Work
+          <Link href="/#pricing" className="nav-link">
+            Pricing
           </Link>
-          <Link
-            href="/product/real-estate-crm-software"
-            className="nav-secondary"
-          >
-            Real estate CRM
+          <Link href="/#onboarding" className="nav-secondary">
+            Onboarding
           </Link>
-          <Link href="/#process" className="nav-secondary">
-            Our approach
+          <Link href="/crm/login" className="nav-link">
+            Sign in
           </Link>
-          <ButtonLink href="/#contact" variant="outline-sm">
-            Let&apos;s talk <span aria-hidden="true">↗</span>
-          </ButtonLink>
+          <div className="hidden sm:block">
+            <ButtonLink href="/#contact" variant="outline-sm">
+              Get started <span aria-hidden="true">↗</span>
+            </ButtonLink>
+          </div>
         </nav>
       </div>
     </header>
