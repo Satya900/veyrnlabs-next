@@ -43,9 +43,9 @@ export default function CRMSoftwarePage() {
             <br />A clearer <span>next step.</span>
           </h1>
           <p className={styles.intro}>
-            One workspace for your property leads, AI conversations, and
-            follow-ups. Give your team the context to move each opportunity
-            forward, even when the first enquiry arrives after hours.
+            One workspace for your property leads, AI-drafted follow-ups, and
+            your team’s next action. Give your team the context to move each
+            opportunity forward, even when a lead goes quiet after hours.
           </p>
           <div className={styles.actions}>
             <ButtonLink href="#pricing" variant="primary">
@@ -54,8 +54,8 @@ export default function CRMSoftwarePage() {
             <Link href="/product/real-estate-crm">Need a custom CRM? ↗</Link>
           </div>
           <div className={styles.strip}>
-            <span>AI-assisted conversations</span>
-            <span>Organised follow-ups</span>
+            <span>AI-drafted follow-ups</span>
+            <span>Organised pipeline</span>
             <span>Standard onboarding included</span>
           </div>
         </section>
@@ -75,24 +75,24 @@ export default function CRMSoftwarePage() {
           <Pricing />
         </Section>
         <Section id="crm-workflow">
-          <p className="section-eyebrow">From first message to follow-up</p>
-          <h2 className="mt-6">Keep the conversation moving.</h2>
+          <p className="section-eyebrow">From first enquiry to follow-up</p>
+          <h2 className="mt-6">Nothing sits untouched.</h2>
           <div className={styles.workflow}>
             {[
               [
                 "01",
                 "Bring leads together",
-                "Keep enquiries from your connected sources in one pipeline, with contact details and conversation history.",
+                "Add enquiries manually or import them by CSV, and keep contact details and conversation history with each one.",
               ],
               [
                 "02",
-                "Let AI start the conversation",
-                "Handle initial questions and collect property requirements using your approved information, with human handover when needed.",
+                "Let AI draft the follow-up",
+                "When a lead goes quiet, an AI-drafted email goes out automatically, written from your own company and property information.",
               ],
               [
                 "03",
                 "Give every lead a next action",
-                "Use follow-up sequences, reminders, and site-visit scheduling to help your agents stay organised.",
+                "Use reminders and site-visit scheduling to help your agents stay organised.",
               ],
             ].map(([n, h, p]) => (
               <article key={n}>
@@ -114,19 +114,19 @@ export default function CRMSoftwarePage() {
               ],
               [
                 "What is included in onboarding?",
-                "Standard onboarding helps you get started with the product and its existing workflows. We confirm your setup requirements and supported integrations before you subscribe. Bespoke development and custom integrations are scoped separately.",
+                "Standard onboarding helps you get started with the product: setting up your pipeline, adding your team, and importing your existing leads by CSV. Bespoke development and custom integrations are scoped separately, as their own project.",
               ],
               [
                 "Are AI and messaging usage unlimited?",
-                "No unlimited usage is promised. We confirm included AI usage, team seats, and storage before subscription. Third-party WhatsApp, SMS, or other provider charges may be additional; applicable costs are explained before you proceed.",
+                "No. Pro and Pro Plus each include a defined AI and messaging allowance per billing period, shown in your workspace before you subscribe. Allowances reset each period and never trigger automatic overage charges.",
               ],
               [
-                "Can I connect my current lead sources?",
-                "Tell us which forms, advertising accounts, messaging tools, and property portals you use. We confirm supported integrations and any required provider permissions during onboarding.",
+                "How do leads get into Veyrn CRM?",
+                "Add them manually or import a CSV of your existing leads. WhatsApp enquiries can create leads automatically once your number is connected and approved. A direct connection to a specific ad platform or portal isn't available yet; tell us what you use and we'll confirm what's possible.",
               ],
               [
                 "How do I subscribe?",
-                "Choose your billing duration and select a plan to send us an onboarding enquiry with that selection. We confirm the plan scope, usage allowances, billing terms, and setup steps before arranging payment.",
+                "Create a free account, then choose Pro or Pro Plus and a billing duration from Settings. That opens secure checkout with Razorpay, and billing starts immediately once payment goes through.",
               ],
               [
                 "What if I need a CRM built around a unique process?",
@@ -134,7 +134,7 @@ export default function CRMSoftwarePage() {
               ],
               [
                 "What are the renewal and cancellation terms?",
-                "We provide the renewal, cancellation, and refund terms before you subscribe. Review those terms with the selected billing duration before making payment.",
+                "Paid plans renew automatically at the end of each billing period. Cancel any time from Settings and keep access until the period ends. Full renewal, cancellation, and refund terms are in our Terms & Conditions.",
               ],
             ].map(([q, a]) => (
               <details key={q}>

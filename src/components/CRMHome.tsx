@@ -126,24 +126,25 @@ export function CRMHome() {
           <div>
             <p className="section-eyebrow">The AI direction</p>
             <h2 className="mt-6">
-              An enquiry at 1 AM.
-              <br />A clear next step at 9.
+              A lead goes quiet at midnight.
+              <br />A follow-up is waiting by morning.
             </h2>
           </div>
           <div className="space-y-5 text-body leading-8">
             <p>
-              AI-assisted WhatsApp replies, requirement collection, and
-              follow-up drafting for real estate enquiries, using your own
-              company and property information.
+              When a lead’s follow-up date passes with no logged contact,
+              Veyrn CRM drafts and sends a follow-up email automatically,
+              using your own company and property information.
             </p>
             <p>
-              Your agents stay in control of the relationship. Responses use
-              only the knowledge you provide, with human handover whenever a
-              conversation needs a person.
+              Your team stays in control. Automatic follow-ups stop the
+              moment someone logs contact or takes the conversation over, and
+              you turn the whole thing off any time from Settings.
             </p>
             <p className="border-l-2 border-primary pl-5 text-sm">
-              Pro and Pro Plus include defined AI and messaging allowances per
-              billing period, shown in your workspace before you subscribe.
+              Pro and Pro Plus include a defined AI and messaging allowance
+              per billing period, shown in your workspace before you
+              subscribe.
             </p>
           </div>
         </div>
@@ -182,7 +183,7 @@ export function CRMHome() {
             [
               "03",
               "Subscribe when you're ready",
-              "Move to Pro or Pro Plus any time from Settings to unlock AI replies, WhatsApp, and automation.",
+              "Move to Pro or Pro Plus any time from Settings for AI-drafted follow-ups and site-visit scheduling.",
             ],
           ].map(([n, h, p]) => (
             <article className="border-t border-hairline pt-6" key={n}>
@@ -208,7 +209,7 @@ export function CRMHome() {
             ],
             [
               "What is the difference between Pro and Pro Plus?",
-              "Pro covers everyday lead management and basic follow-up workflows with one included user. Pro Plus adds advanced AI automation, automatic scheduling, and lead-source performance reporting for up to three included users.",
+              "Pro covers everyday lead management, AI-drafted follow-up emails, and manual site-visit scheduling with one included user. Pro Plus adds automatic scheduling, lead-source performance reporting, and two extra team seats.",
             ],
             [
               "Will this replace my messaging tools?",

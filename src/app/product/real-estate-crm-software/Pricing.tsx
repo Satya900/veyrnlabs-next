@@ -27,8 +27,8 @@ const plans = [
     features: [
       "1 included user: your company admin",
       "Lead records and sales pipeline",
-      "Standard lead-source integrations",
-      "AI chatbot for initial replies and qualification",
+      "Manual lead capture and CSV import",
+      "AI-drafted follow-up emails for leads that go quiet",
       "Manually scheduled follow-ups and reminders",
       "Manual lead assignment and human handover",
       "Manual site-visit scheduling",
@@ -45,8 +45,6 @@ const plans = [
     features: [
       "Everything in Pro",
       "3 included users: admin plus 2 teammates",
-      "Advanced AI qualification workflows",
-      "Multi-step, reply-based follow-ups",
       "Automatic scheduling and site-visit follow-ups",
       "Lead-source performance reporting",
       "Standard onboarding and priority support",
