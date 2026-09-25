@@ -1,0 +1,21 @@
+name: CRM auto-reply worker
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Poll the CRM worker endpoint
+        env:
+          CRM_WORKER_SECRET: ${{ secrets.CRM_WORKER_SECRET }}
+          CRM_WORKER_BASE_URL: ${{ secrets.CRM_WORKER_BASE_URL }}
+        run: |
+          curl -sS -X POST "$CRM_WORKER_BASE_URL/api/internal/crm/auto-replies" \
+            -H "Authorization: Bearer $CRM_WORKER_SECRET" \
+            --max-time 130 \
+            --fail-with-body
