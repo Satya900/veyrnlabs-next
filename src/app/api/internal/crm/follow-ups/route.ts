@@ -1,3 +1,4 @@
+import { workerHealthWindow } from "@/lib/crm/worker-health";
 import { supabase } from "@/lib/crm/server";
 import { processFollowUp } from "@/lib/crm/followup-worker";
 import { workerAuthorized } from "@/lib/crm/worker-auth";
@@ -35,7 +36,7 @@ export async function GET(request: Request) {
     );
   const healthy =
     health.data &&
-    Date.parse(health.data.last_seen) > Date.now() - 120000 &&
+    Date.parse(health.data.last_seen) > Date.now() - workerHealthWindow(process.env) &&
     !health.data.last_error;
   return Response.json(
     {

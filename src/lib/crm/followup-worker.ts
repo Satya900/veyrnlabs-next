@@ -82,7 +82,7 @@ export async function processFollowUp(
   const job = (await call("crm_prepare_followup_send", {
     job: claim.id,
     token: claim.token,
-    channel: "email",
+    requested_channel: "email",
     cost_paise: email.cost,
   })) as SendJob;
   if (!job.run || !job.id || !job.recipient || !job.body) {

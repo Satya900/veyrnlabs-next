@@ -11,7 +11,10 @@ if (
   !["localhost", "127.0.0.1"].includes(base.hostname)
 )
   throw new Error("Remote worker requests require HTTPS.");
-const url = new URL("/api/internal/crm/auto-replies", base);
+const queues = [
+  { name: "auto-replies", url: new URL("/api/internal/crm/auto-replies", base) },
+  { name: "follow-ups", url: new URL("/api/internal/crm/follow-ups", base) },
+];
 let stopping = false,
   failures = 0;
 process.on("SIGINT", () => {
@@ -20,27 +23,33 @@ process.on("SIGINT", () => {
 process.on("SIGTERM", () => {
   stopping = true;
 });
+async function poll(queue) {
+  const response = await fetch(queue.url, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${key}` },
+    signal: AbortSignal.timeout(130000),
+    redirect: "error",
+  });
+  const result = await response.json();
+  if (!response.ok) throw new Error(`${queue.name} worker request failed`);
+  if (result.status !== "idle")
+    console.log(new Date().toISOString(), queue.name, result.status || "processed");
+}
 do {
-  try {
-    const response = await fetch(url, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${key}` },
-      signal: AbortSignal.timeout(130000),
-      redirect: "error",
-    });
-    const result = await response.json();
-    if (!response.ok) throw new Error("Worker request failed");
-    failures = 0;
-    if (result.status !== "idle")
-      console.log(new Date().toISOString(), result.status || "processed");
-  } catch {
+  const outcomes = await Promise.allSettled(queues.map(poll));
+  const failed = outcomes.filter((o) => o.status === "rejected");
+  if (failed.length) {
     failures++;
-    console.error(
-      new Date().toISOString(),
-      "Worker unavailable; attempt outcomes remain saved for review.",
-    );
+    for (const f of failed)
+      console.error(
+        new Date().toISOString(),
+        f.reason?.message ??
+          "Worker unavailable; attempt outcomes remain saved for review.",
+      );
     // A managed host restarts and alerts on failure. Never silently run an unhealthy loop forever.
     if (failures >= 5) process.exitCode = 1;
+  } else {
+    failures = 0;
   }
   if (!process.argv.includes("--watch") || failures >= 5) break;
   if (!stopping)

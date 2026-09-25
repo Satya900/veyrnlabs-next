@@ -1,3 +1,4 @@
+import { workerHealthWindow } from "@/lib/crm/worker-health";
 import { jsonBody, sameOrigin, session, supabase } from "@/lib/crm/server";
 import { aiConfig } from "@/lib/crm/ai-provider";
 import { emailConfig } from "@/lib/crm/email-send";
@@ -13,7 +14,7 @@ async function workerHealthy() {
     .eq("id", "followups")
     .maybeSingle();
   return Boolean(
-    data && !data.last_error && Date.parse(data.last_seen) > Date.now() - 120000,
+    data && !data.last_error && Date.parse(data.last_seen) > Date.now() - workerHealthWindow(process.env),
   );
 }
 
@@ -68,7 +69,7 @@ export async function POST(request: Request) {
   try {
     const body = await jsonBody(request, 1000);
     if (typeof body.enabled !== "boolean") throw new Error("Invalid setting.");
-    if (body.enabled && process.env.CRM_FOLLOWUPS_ENABLED !== "true")
+    if (body.enabled && (process.env.CRM_FOLLOWUPS_ENABLED !== "true" || !aiConfig(process.env) || !emailConfig(process.env) || (process.env.CRM_WORKER_SECRET?.length ?? 0) < 32))
       throw new Error("The follow-up worker has not been enabled yet.");
     const { error } = await auth.db.rpc("crm_set_followups", {
       enabled: body.enabled,

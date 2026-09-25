@@ -8,7 +8,9 @@ on:
 jobs:
   poll:
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    # Two sequential 130s-capped calls can take up to ~4.3 minutes combined; give real headroom
+    # rather than the single-call budget, so a slow first call can't truncate the second.
+    timeout-minutes: 6
     steps:
       - name: Poll the CRM auto-reply worker endpoint
         env:
@@ -19,7 +21,10 @@ jobs:
             -H "Authorization: Bearer $CRM_WORKER_SECRET" \
             --max-time 130 \
             --fail-with-body
+      # Runs even if the auto-reply step above failed or timed out, so one queue's outage
+      # never silently stops the other queue from being polled.
       - name: Poll the CRM follow-up worker endpoint
+        if: always()
         env:
           CRM_WORKER_SECRET: ${{ secrets.CRM_WORKER_SECRET }}
           CRM_WORKER_BASE_URL: ${{ secrets.CRM_WORKER_BASE_URL }}

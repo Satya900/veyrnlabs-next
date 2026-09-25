@@ -1,3 +1,4 @@
+import { workerHealthWindow } from "@/lib/crm/worker-health";
 import { jsonBody, sameOrigin, session, supabase } from "@/lib/crm/server";
 import { tenantSendConfig } from "@/lib/crm/whatsapp-tenant";
 import {
@@ -119,7 +120,7 @@ export async function GET(request: Request) {
 
 async function workerHealthy() {
   const { data } = await supabase(undefined, true).from("crm_worker_health").select("last_seen,last_error").eq("id", "replies").maybeSingle();
-  return Boolean(data && !data.last_error && Date.parse(data.last_seen) > Date.now() - 120000);
+  return Boolean(data && !data.last_error && Date.parse(data.last_seen) > Date.now() - workerHealthWindow(process.env));
 }
 
 export async function POST(request: Request) {

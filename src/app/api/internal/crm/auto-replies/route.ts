@@ -1,3 +1,4 @@
+import { workerHealthWindow } from "@/lib/crm/worker-health";
 import { supabase } from "@/lib/crm/server";
 import { processAutoReply } from "@/lib/crm/auto-worker";
 import { tenantSendConfig } from "@/lib/crm/whatsapp-tenant";
@@ -35,7 +36,7 @@ export async function GET(request: Request) {
     );
   const healthy =
     health.data &&
-    Date.parse(health.data.last_seen) > Date.now() - 120000 &&
+    Date.parse(health.data.last_seen) > Date.now() - workerHealthWindow(process.env) &&
     !health.data.last_error;
   return Response.json(
     {

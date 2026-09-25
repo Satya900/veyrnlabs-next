@@ -54,15 +54,15 @@ export function PlanUsage({ demo, role }: { demo: boolean; role: string }) {
         {!demo && !summary && !error && (
           <p>View your subscription, included users and available usage.</p>
         )}
-        {summary?.status === "unconfigured" && (
+        {(summary?.status === "unconfigured" || summary?.status === "inactive") && (
           <>
             <p>
-              Your subscription has not been activated. AI and WhatsApp
+              No paid allowance is currently active. AI and WhatsApp
               automation remain unavailable until your plan and allowances are
               configured.
             </p>
             {!summary.billing_status ||
-            ["cancelled", "completed"].includes(summary.billing_status) ? (
+            ["cancelled", "completed", "expired"].includes(summary.billing_status) ? (
               role === "owner" ? (
                 <Billing onStarted={() => void load()} />
               ) : (

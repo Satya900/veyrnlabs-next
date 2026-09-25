@@ -299,7 +299,7 @@ test("maintenance function fails abandoned jobs and touches worker health", asyn
   ]);
   await db.query("select crm_set_followups(true)");
   await db.query(
-    "insert into crm_leads(organization_id,name,phone,stage_id,follow_up) values($1,'Stale lead','9111111111',$2,now()-interval '1 hour')",
+    "insert into crm_leads(organization_id,name,phone,email,stage_id,follow_up) values($1,'Stale lead','9111111111','stale@example.test',$2,now()-interval '1 hour')",
     [org, stage],
   );
   const claim = (

@@ -50,7 +50,7 @@ export function FollowUpSettings({ role, demo }: { role: string; demo: boolean }
           <h2>Automatic follow-ups</h2>
           <p>
             Nudge leads by email when their follow-up date passes
-            with no reply.
+            with no logged contact or newer WhatsApp message.
           </p>
         </div>
         <button disabled={busy || demo} onClick={() => void load()}>
@@ -65,7 +65,7 @@ export function FollowUpSettings({ role, demo }: { role: string; demo: boolean }
           <div className="crm-ai-settings">
             <p>
               {enabled
-                ? "Enabled. A lead with a passed follow-up date and no logged activity since gets an AI-drafted email, using its knowledge from the AI assistant above."
+                ? "Enabled. A lead with a passed follow-up date and no logged contact or newer WhatsApp message gets an AI-drafted email, using its knowledge from the AI assistant above."
                 : "Off. Leads with an overdue follow-up only show in your Follow-ups list."}
             </p>
             <p>
