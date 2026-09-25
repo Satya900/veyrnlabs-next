@@ -105,9 +105,9 @@
 }
 .cards {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 24px;
-  max-width: 1000px;
+  max-width: 1300px;
   margin: auto;
 }
 .card {
@@ -167,6 +167,18 @@
 .card > a {
   width: 100%;
 }
+.currentPlan {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 13px 18px;
+  border: 1px solid var(--color-hairline);
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--color-mute);
+  text-align: center;
+}
 .card ul {
   margin-top: 30px;
   padding-top: 24px;
@@ -186,6 +198,13 @@
   position: absolute;
   left: 0;
   color: var(--color-primary);
+}
+.limit {
+  color: var(--color-mute) !important;
+}
+.limit::before {
+  content: "–" !important;
+  color: var(--color-mute) !important;
 }
 .terms {
   max-width: 890px;
@@ -254,6 +273,11 @@
 }
 .custom h2 {
   margin-top: 24px;
+}
+@media (max-width: 1100px) {
+  .cards {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 @media (max-width: 760px) {
   .hero {

@@ -1,9 +1,10 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/Button";
+import { safeNextUrl } from "@/lib/crm/next-url";
 
 export function AccountForm({
   enabled,
@@ -13,6 +14,7 @@ export function AccountForm({
   join?: boolean;
 }) {
   const router = useRouter();
+  const next = safeNextUrl(useSearchParams().get("next"));
   const [step, setStep] = useState<"signup" | "verify" | "login">(
     join ? "login" : "signup",
   );
@@ -42,7 +44,7 @@ export function AccountForm({
         setMessage(result.message);
       } else if (action === "resend") setMessage(result.message);
       else {
-        router.push("/crm");
+        router.push(next);
         router.refresh();
       }
     } catch (err) {
@@ -59,7 +61,9 @@ export function AccountForm({
     <main className="crm-login">
       <header className="crm-login-header">
         <Logo eager href="/" />
-        <Link href="/crm/login">Sign in ↗</Link>
+        <Link href={`/crm/login?next=${encodeURIComponent(next)}`}>
+          Sign in ↗
+        </Link>
       </header>
       <div className="crm-login-grid hero-grid">
         <section className="login-story">
@@ -77,8 +81,8 @@ export function AccountForm({
               : "Create your account, verify your work email, and start organising your real estate pipeline."}
           </p>
           <p className="hero-note">
-            Account creation does not start a paid subscription. Billing and AI
-            activation are arranged separately.
+            Account creation is free and does not start a paid subscription.
+            Subscribe any time from Settings for AI, WhatsApp, and automation.
           </p>
         </section>
         <section className="login-form crm-account-form">

@@ -7,13 +7,15 @@ export default async function CrmPage({
 }: {
   searchParams: Promise<{ view?: string }>;
 }) {
-  if (!configured()) redirect("/crm/login");
+  const { view } = await searchParams;
+  const next = `/crm${view ? `?view=${encodeURIComponent(view)}` : ""}`;
+  if (!configured())
+    redirect(`/crm/login?next=${encodeURIComponent(next)}`);
   const auth = await session();
-  if (!auth) redirect("/crm/login");
+  if (!auth) redirect(`/crm/login?next=${encodeURIComponent(next)}`);
   // Best-effort: if this fails, Workspace falls back to its own client-side
   // fetch (and error/retry UI) rather than failing the whole page.
   const initialData = await loadWorkspace(auth).catch(() => null);
-  const { view } = await searchParams;
   return (
     <Workspace
       demo={false}

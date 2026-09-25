@@ -25,13 +25,14 @@ export function CRMHome() {
               in one place. A focused CRM for the way real estate teams work.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <ButtonLink href="#pricing" variant="primary">
-                Explore plans ↓
+              <ButtonLink href="/crm/signup" variant="primary">
+                Get started free ↗
               </ButtonLink>
-              <ButtonLink href="#contact">Request onboarding ↗</ButtonLink>
+              <ButtonLink href="#pricing">Explore plans ↓</ButtonLink>
             </div>
             <p className="hero-note">
-              Pro and Pro Plus · Monthly, quarterly, or annual billing
+              Free lead management, or Pro / Pro Plus · Monthly, quarterly, or
+              annual billing
             </p>
           </div>
           <div
@@ -131,18 +132,18 @@ export function CRMHome() {
           </div>
           <div className="space-y-5 text-body leading-8">
             <p>
-              We’re building toward AI-assisted initial replies, requirement
-              collection, and follow-up workflows for real estate enquiries.
+              AI-assisted WhatsApp replies, requirement collection, and
+              follow-up drafting for real estate enquiries, using your own
+              company and property information.
             </p>
             <p>
-              Your agents stay in control of the relationship. Responses should
-              use approved property information, with human handover when
-              needed.
+              Your agents stay in control of the relationship. Responses use
+              only the knowledge you provide, with human handover whenever a
+              conversation needs a person.
             </p>
             <p className="border-l-2 border-primary pl-5 text-sm">
-              AI automation and source integrations are being prepared for
-              product onboarding. We confirm availability for your account
-              before you subscribe.
+              Pro and Pro Plus include defined AI and messaging allowances per
+              billing period, shown in your workspace before you subscribe.
             </p>
           </div>
         </div>
@@ -151,36 +152,37 @@ export function CRMHome() {
         <div className="text-center">
           <p className="section-eyebrow">Choose your plan</p>
           <h2 className="mx-auto my-6">
-            Start with Pro.
+            Start free.
             <br />
-            Go further with Pro Plus.
+            Grow into Pro or Pro Plus.
           </h2>
           <p className="mx-auto max-w-xl text-body leading-8">
-            Compare the proposed plans and request onboarding. Save 10% with
-            quarterly billing or 20% with annual billing.
+            Manage leads for free, no card required. Subscribe any time for AI
+            replies, automation, and team features. Save 10% with quarterly
+            billing or 20% with annual billing.
           </p>
         </div>
         <Pricing />
       </Section>
       <Section id="onboarding">
-        <p className="section-eyebrow">Get started with guidance</p>
-        <h2 className="mt-6">A considered start for your team.</h2>
+        <p className="section-eyebrow">Get started in minutes</p>
+        <h2 className="mt-6">A straightforward start for your team.</h2>
         <div className="mt-10 grid gap-8 md:grid-cols-3">
           {[
             [
               "01",
-              "Tell us about your team",
-              "Share your team size, lead sources, and current tools so we can check the product fits your needs.",
+              "Create your free account",
+              "Sign up with your work email and business name. No card required, no waiting for setup.",
             ],
             [
               "02",
-              "Confirm the plan",
-              "We confirm available features, usage allowances, integrations, and billing terms before payment.",
+              "Start managing leads",
+              "Add your leads and clients, set your pipeline stages, and invite your team right away.",
             ],
             [
               "03",
-              "Prepare your workspace",
-              "We coordinate setup and onboarding once a customer workspace is ready. Access is arranged with you directly.",
+              "Subscribe when you're ready",
+              "Move to Pro or Pro Plus any time from Settings to unlock AI replies, WhatsApp, and automation.",
             ],
           ].map(([n, h, p]) => (
             <article className="border-t border-hairline pt-6" key={n}>
@@ -202,11 +204,11 @@ export function CRMHome() {
             ],
             [
               "Can I sign up and pay online today?",
-              "Onboarding is currently arranged with our team. Self-service customer signup and subscription checkout are not yet available. Request onboarding to discuss availability and the setup process.",
+              "Yes. Create a free account any time, no card required, and manage your leads immediately. Subscribing to Pro or Pro Plus opens secure checkout with Razorpay directly from your workspace.",
             ],
             [
               "What is the difference between Pro and Pro Plus?",
-              "Pro covers the proposed everyday lead-management and basic follow-up workflows. Pro Plus adds advanced automation, lead routing, and team reporting. We confirm current availability and usage allowances before subscription.",
+              "Pro covers everyday lead management and basic follow-up workflows with one included user. Pro Plus adds advanced AI automation, lead routing, automatic scheduling, and team reporting for up to three included users.",
             ],
             [
               "Will this replace my messaging tools?",
@@ -228,25 +230,24 @@ export function CRMHome() {
       </Section>
       <Section id="contact">
         <div className="text-center">
-          <p className="section-eyebrow">Your next step</p>
+          <p className="section-eyebrow">Prefer to talk first?</p>
           <h2 className="mx-auto my-6">
             Bring your real estate
             <br />
             workflow into focus.
           </h2>
           <p className="mx-auto max-w-xl text-body leading-8">
-            Tell us about your agency, lead sources, and team. We’ll confirm the
-            right starting point for onboarding.
+            Most teams just sign up and start. If you’d rather talk through
+            your agency, lead sources, and team size first, we’re glad to help.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
+            <ButtonLink href="/crm/signup" variant="primary">
+              Get started free ↗
+            </ButtonLink>
             <ButtonLink
               href={`mailto:${site.email}?subject=${encodeURIComponent("Veyrn CRM onboarding")}`}
-              variant="primary"
             >
-              Request onboarding ↗
-            </ButtonLink>
-            <ButtonLink href="/product/real-estate-crm">
-              Discuss a custom build
+              Talk to us first
             </ButtonLink>
           </div>
         </div>

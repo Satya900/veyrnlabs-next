@@ -21,7 +21,7 @@ export function Nav() {
             Sign in
           </Link>
           <div className="hidden sm:block">
-            <ButtonLink href="/#contact" variant="outline-sm">
+            <ButtonLink href="/crm/signup" variant="outline-sm">
               Get started <span aria-hidden="true">↗</span>
             </ButtonLink>
           </div>

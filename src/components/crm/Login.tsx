@@ -1,10 +1,11 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Logo } from "@/components/Logo";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { Eyebrow } from "@/components/ui/Eyebrow";
+import { safeNextUrl } from "@/lib/crm/next-url";
 export default function Login({
   configured,
   showDemo,
@@ -13,6 +14,7 @@ export default function Login({
   showDemo: boolean;
 }) {
   const router = useRouter();
+  const next = safeNextUrl(useSearchParams().get("next"));
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   return (
@@ -68,7 +70,7 @@ export default function Login({
                 });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error);
-                router.push("/crm");
+                router.push(next);
                 router.refresh();
               } catch (err) {
                 setError(
@@ -111,8 +113,12 @@ export default function Login({
             </Button>
           </form>
           <p className="crm-muted">
-            New business? <Link href="/crm/signup">Create an account</Link>.
-            Joining a team? Open the invitation link from your workspace owner.
+            New business?{" "}
+            <Link href={`/crm/signup?next=${encodeURIComponent(next)}`}>
+              Create an account
+            </Link>
+            . Joining a team? Open the invitation link from your workspace
+            owner.
           </p>
           {showDemo && (
             <Link className="crm-demo-link" href="/crm/demo">
