@@ -1,7 +1,7 @@
 "use client";
 import { download } from "../download";
 import { exportCsv } from "@/lib/crm/model";
-import { dateLabel, initials } from "@/lib/crm/workspace";
+import { dateLabel, initials, whatsappLink } from "@/lib/crm/workspace";
 import { useWorkspaceContext } from "../context";
 
 export function Clients() {
@@ -30,13 +30,20 @@ export function Clients() {
         </div>
       ) : (
         <div className="crm-client-grid">
-          {data.clients.map((c) => (
+          {data.clients.map((c) => {
+            const whatsapp = whatsappLink(c.phone, `Hi ${c.name},`);
+            return (
             <article key={c.id}>
               <span className="crm-avatar">{initials(c.name)}</span>
               <h3>{c.company || c.name}</h3>
               <p>{c.name}</p>
               <p>{c.email || "No email added"}</p>
               <small>Client since {dateLabel(c.created_at)}</small>
+              {whatsapp && (
+                <a className="crm-whatsapp-link compact" href={whatsapp} target="_blank" rel="noopener noreferrer">
+                  WhatsApp ↗
+                </a>
+              )}
               {data.leads
                 .filter((l) => l.client_id === c.id)
                 .map((l) => (
@@ -45,7 +52,8 @@ export function Clients() {
                   </button>
                 ))}
             </article>
-          ))}
+            );
+          })}
         </div>
       )}
     </section>

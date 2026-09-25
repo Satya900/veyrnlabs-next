@@ -1,6 +1,6 @@
 import { money } from "@/lib/crm/model";
 import type { Lead, Member, Stage } from "@/lib/crm/model";
-import { datetime, initials, isOverdueFollowUp, stageOf } from "@/lib/crm/workspace";
+import { datetime, initials, isOverdueFollowUp, stageOf, whatsappLink } from "@/lib/crm/workspace";
 
 export type LeadSelection = {
   selected: Set<string>;
@@ -51,7 +51,9 @@ export function LeadTable({
           </tr>
         </thead>
         <tbody>
-          {rows.map((l) => (
+          {rows.map((l) => {
+            const whatsapp = whatsappLink(l.phone, `Hi ${l.name},`);
+            return (
             <tr key={l.id}>
               {selection && (
                 <td>
@@ -65,13 +67,27 @@ export function LeadTable({
                 </td>
               )}
               <td>
-                <button className="crm-contact" onClick={() => onSelect(l.id)}>
-                  <span className="crm-avatar">{initials(l.name)}</span>
-                  <span>
-                    <strong>{l.name}</strong>
-                    <small>{l.company || l.email || "Individual"}</small>
-                  </span>
-                </button>
+                <div className="crm-contact-row">
+                  <button className="crm-contact" onClick={() => onSelect(l.id)}>
+                    <span className="crm-avatar">{initials(l.name)}</span>
+                    <span>
+                      <strong>{l.name}</strong>
+                      <small>{l.company || l.email || "Individual"}</small>
+                    </span>
+                  </button>
+                  {whatsapp && (
+                    <a
+                      className="crm-whatsapp-link compact"
+                      href={whatsapp}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`Message ${l.name} on WhatsApp`}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      WhatsApp ↗
+                    </a>
+                  )}
+                </div>
               </td>
               <td>
                 <span className={`crm-badge ${stageOf(stages, l)?.kind}`}>
@@ -87,7 +103,8 @@ export function LeadTable({
                 {members.find((m) => m.id === l.owner_id)?.name || "Unassigned"}
               </td>
             </tr>
-          ))}
+            );
+          })}
         </tbody>
       </table>
       {!rows.length && (
