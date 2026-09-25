@@ -5,12 +5,6 @@ export function AISettings({ role, demo }: { role: string; demo: boolean }) {
   const [knowledge, setKnowledge] = useState("");
   const [enabled, setEnabled] = useState(false);
   const [ready, setReady] = useState(false);
-  const [automatic, setAutomatic] = useState(false);
-  const [autoReady, setAutoReady] = useState(false);
-  const [workerHealthy, setWorkerHealthy] = useState(false);
-  const [jobs, setJobs] = useState<
-    { id: string; status: string; reason: string }[]
-  >([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -38,10 +32,6 @@ export function AISettings({ role, demo }: { role: string; demo: boolean }) {
       setKnowledge(result.settings.knowledge);
       setEnabled(result.settings.drafts_enabled);
       setReady(result.provider_ready);
-      setAutomatic(Boolean(result.settings.auto_enabled));
-      setAutoReady(Boolean(result.automation_ready));
-      setWorkerHealthy(Boolean(result.worker_healthy));
-      setJobs(result.jobs ?? []);
       setLoaded(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to load settings.");
@@ -119,8 +109,8 @@ export function AISettings({ role, demo }: { role: string; demo: boolean }) {
               Allow team members to generate reply drafts
             </label>
             <p>
-              Drafts consume your shared AI allowance. Replies require review
-              unless you separately enable automatic replies below.
+              Drafts consume your shared AI allowance. This knowledge is also
+              used to draft automatic follow-up emails, below.
             </p>
             {!ready && (
               <p>
@@ -131,77 +121,6 @@ export function AISettings({ role, demo }: { role: string; demo: boolean }) {
               {busy ? "Saving…" : "Save assistant settings"}
             </button>
           </form>
-        )}
-        {loaded && (
-          <div className="crm-ai-settings">
-            <h3>Automatic WhatsApp replies</h3>
-            <p>
-              {automatic
-                ? "Enabled for new incoming messages. Uses your shared AI and messaging allowances."
-                : "Off. Replies require your review and approval."}
-            </p>
-            <p>
-              Enabling this authorizes the assistant to send replies without
-              reviewing each one. Human takeover pauses a conversation.
-              Uncertain responses and failures are handed to your team.
-              With Pro Plus and a connected agent calendar, a clear request for an available site-visit time can also be booked automatically.
-            </p>
-            {!autoReady && (
-              <p>The automatic reply worker is not enabled yet.</p>
-            )}
-            {autoReady && !workerHealthy && <p role="alert">The reply worker is not reporting healthy activity. Automatic replies may be delayed; contact your administrator.</p>}
-            <button
-              disabled={busy || (!automatic && (!autoReady || !ready))}
-              onClick={async () => {
-                setBusy(true);
-                setError("");
-                try {
-                  const r = await fetch("/api/crm/ai", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      action: "automation",
-                      enabled: !automatic,
-                    }),
-                  });
-                  const result = await r.json();
-                  if (!r.ok) throw new Error(result.error);
-                  setAutomatic(!automatic);
-                  setMessage(
-                    automatic
-                      ? "Automatic replies disabled."
-                      : "Automatic replies enabled for new messages.",
-                  );
-                } catch (e) {
-                  setError(
-                    e instanceof Error
-                      ? e.message
-                      : "Unable to change automation.",
-                  );
-                } finally {
-                  setBusy(false);
-                }
-              }}
-            >
-              {automatic
-                ? "Disable automatic replies"
-                : "Enable automatic replies without review"}
-            </button>
-            {jobs.length > 0 && (
-              <>
-                <h4>Recent automatic reply activity</h4>
-                <ul>
-                  {jobs.map((job) => (
-                    <li key={job.id}>
-                      <strong>{job.status.replaceAll("_", " ")}</strong>
-                      {job.reason ? `: ${job.reason}` : ""}
-                    </li>
-                  ))}
-                </ul>
-                <small>Reload settings to refresh activity.</small>
-              </>
-            )}
-          </div>
         )}
       </div>
     </section>

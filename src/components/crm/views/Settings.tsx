@@ -7,14 +7,14 @@ import { TeamMembers } from "../TeamMembers";
 import { PlanUsage } from "../PlanUsage";
 import { AISettings } from "../AISettings";
 import { CalendarSettings } from "../CalendarSettings";
-import { WhatsAppSettings } from "../WhatsAppSettings";
+import { FollowUpSettings } from "../FollowUpSettings";
 
 export function Settings() {
   const { data, stages, busy, mutate, demo, now, reload } = useWorkspaceContext();
   return (
     <div>
       <AISettings demo={demo} role={data.user.role} />
-      <WhatsAppSettings demo={demo} role={data.user.role} />
+      <FollowUpSettings demo={demo} role={data.user.role} />
       <div className="crm-overview-grid">
         <section className="crm-panel">
           <div className="crm-panel-heading">

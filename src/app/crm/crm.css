@@ -648,11 +648,6 @@
 .crm-root tr:last-child td {
   border-bottom: 0;
 }
-.crm-contact-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
 .crm-root .crm-contact {
   display: flex;
   align-items: center;
@@ -671,29 +666,6 @@
   font-size: 11px;
   color: var(--color-mute);
   margin-top: 4px;
-}
-.crm-whatsapp-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  border: 1px solid var(--color-hairline-strong);
-  border-radius: 6px;
-  font-size: 13px;
-  line-height: 20px;
-  color: var(--color-ink);
-  transition:
-    border-color 0.2s,
-    background-color 0.2s;
-}
-.crm-whatsapp-link:hover {
-  border-color: var(--color-mute);
-  background: var(--color-canvas-soft);
-}
-.crm-whatsapp-link.compact {
-  padding: 4px 8px;
-  font-size: 11px;
-  flex-shrink: 0;
 }
 .crm-badge {
   display: inline-block;

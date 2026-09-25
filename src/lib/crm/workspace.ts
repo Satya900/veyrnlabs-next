@@ -17,15 +17,6 @@ export const initials = (s: string) =>
     .slice(0, 2)
     .join("");
 
-/** Builds a wa.me click-to-chat link. Assumes a bare 10-digit number is Indian. Returns null if the number looks invalid. */
-export function whatsappLink(phone: string, prefillText?: string) {
-  const digits = phone.replace(/\D/g, "").replace(/^0+/, "");
-  if (digits.length < 8 || digits.length > 15) return null;
-  const withCountry = digits.length === 10 ? `91${digits}` : digits;
-  const text = prefillText ? `?text=${encodeURIComponent(prefillText)}` : "";
-  return `https://wa.me/${withCountry}${text}`;
-}
-
 export function sortedStages(stages: Stage[]) {
   return [...stages].sort(
     (a, b) => a.position - b.position || a.name.localeCompare(b.name),

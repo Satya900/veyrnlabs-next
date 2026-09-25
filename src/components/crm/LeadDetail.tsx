@@ -1,7 +1,7 @@
 import { Eyebrow } from "@/components/ui/Eyebrow";
 import { money } from "@/lib/crm/model";
 import type { Lead, Workspace as Data } from "@/lib/crm/model";
-import { datetime, whatsappLink } from "@/lib/crm/workspace";
+import { datetime } from "@/lib/crm/workspace";
 import type { WorkspaceChanges } from "@/lib/crm/workspace";
 import { ScheduleVisit } from "./ScheduleVisit";
 
@@ -26,7 +26,6 @@ export function LeadDetail({
   const sortedActivity = [...data.activities]
     .sort((a, b) => b.created_at.localeCompare(a.created_at))
     .filter((a) => a.lead_id === current.id);
-  const whatsapp = whatsappLink(current.phone, `Hi ${current.name},`);
   return (
     <>
       <Eyebrow>LEAD DETAILS</Eyebrow>
@@ -43,11 +42,6 @@ export function LeadDetail({
         >
           {current.client_id ? "✓ Converted to client" : "Convert to client ↗"}
         </button>
-        {whatsapp && (
-          <a className="crm-whatsapp-link" href={whatsapp} target="_blank" rel="noopener noreferrer">
-            Message on WhatsApp ↗
-          </a>
-        )}
       </div>
       <div className="crm-detail-summary">
         <div>
