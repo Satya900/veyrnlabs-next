@@ -56,6 +56,7 @@ export type SavedView = {
   owner: string;
   created_at: string;
 };
+export type PlanTier = { plan: "pro" | "pro_plus" | null; active: boolean };
 export type Workspace = {
   leads: Lead[];
   clients: Client[];
@@ -65,6 +66,7 @@ export type Workspace = {
   members: Member[];
   saved_views: SavedView[];
   user: Member;
+  plan: PlanTier;
 };
 export const defaultStages: Stage[] = [
   "New",
@@ -283,6 +285,7 @@ export function demoWorkspace(): Workspace {
     members: [user],
     saved_views: [],
     user,
+    plan: { plan: "pro_plus", active: true },
     tasks: [
       {
         id: "demo-task",

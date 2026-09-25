@@ -305,6 +305,10 @@ test("crm_prepare_auto_booking and crm_finish_auto_booking enforce entitlement, 
     )
   ).rows[0].id;
   await db.query(
+    "select crm_open_usage_period($1,'pro_plus',1,now(),now()+interval '1 month',50000,100,50,0)",
+    [org],
+  );
+  await db.query(
     "insert into crm_members(id,name,role,organization_id) values($1,'Agent','team',$2)",
     [agent, org],
   );
@@ -336,12 +340,6 @@ test("crm_prepare_auto_booking and crm_finish_auto_booking enforce entitlement, 
   await db.query(
     "select crm_save_ai_settings('Facts about the company for AI testing purposes.',true)",
   );
-  await login("", "service_role");
-  await db.query(
-    "select crm_open_usage_period($1,'pro_plus',1,now(),now()+interval '1 month',50000,100,50,0)",
-    [org],
-  );
-  await login(owner);
   await db.query("select crm_set_auto_replies(true)");
   await login("", "service_role");
   const claim = async () =>

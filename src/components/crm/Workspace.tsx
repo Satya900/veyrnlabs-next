@@ -131,7 +131,9 @@ export default function Workspace({
   const stages = sortedStages(data.stages);
   const overdueCount =
     overdueTasks(data.tasks, now).length + dueFollowUps(data.leads, stages, now).length;
-  const copy = pageCopy[view];
+  const showReports = data.plan.plan === "pro_plus" && data.plan.active;
+  const effectiveView = view === "Reports" && !showReports ? "Overview" : view;
+  const copy = pageCopy[effectiveView];
 
   return (
     <WorkspaceProvider
@@ -152,16 +154,17 @@ export default function Workspace({
     >
       <div className="crm-shell">
         <Sidebar
-          view={view}
+          view={effectiveView}
           changeView={changeView}
           overdueCount={overdueCount}
           user={data.user}
           demo={demo}
+          showReports={showReports}
           onAddLead={() => setEditing("new")}
           onSignOutError={setError}
         />
         <div className="crm-main">
-          <Topbar view={view} demo={demo} user={data.user} />
+          <Topbar view={effectiveView} demo={demo} user={data.user} />
           <main className="crm-content">
             <div className="crm-page-heading">
               <div>
@@ -169,7 +172,7 @@ export default function Workspace({
                 <h1>{copy.heading}</h1>
                 <p>{copy.body}</p>
               </div>
-              {view !== "Settings" && (
+              {effectiveView !== "Settings" && (
                 <button className="crm-primary" onClick={() => setEditing("new")}>
                   <span>＋</span> Add lead
                 </button>
@@ -194,11 +197,11 @@ export default function Workspace({
                 </button>
               </div>
             )}
-            {(view === "Overview" || view === "Reports") && (
+            {(effectiveView === "Overview" || effectiveView === "Reports") && (
               <ReportingSummary from={from} to={to} setFrom={setFrom} setTo={setTo} />
             )}
-            {view === "Overview" && <Overview />}
-            {view === "Leads" && (
+            {effectiveView === "Overview" && <Overview />}
+            {effectiveView === "Leads" && (
               <Leads
                 search={search}
                 setSearch={setSearch}
@@ -212,11 +215,11 @@ export default function Workspace({
                 setError={setError}
               />
             )}
-            {view === "Clients" && <Clients />}
-            {view === "Follow-ups" && <FollowUps />}
-            {view === "Reports" && <Reports from={from} to={to} />}
-            {view === "Settings" && <Settings />}
-            {view === "WhatsApp" && <WhatsApp openLead={async (id) => {
+            {effectiveView === "Clients" && <Clients />}
+            {effectiveView === "Follow-ups" && <FollowUps />}
+            {effectiveView === "Reports" && showReports && <Reports from={from} to={to} />}
+            {effectiveView === "Settings" && <Settings />}
+            {effectiveView === "WhatsApp" && <WhatsApp openLead={async (id) => {
               const latest = await reload();
               if (!latest.leads.some((lead) => lead.id === id)) throw new Error("This lead is no longer available to your account.");
               setSelected(id);

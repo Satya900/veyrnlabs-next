@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import { PGlite } from "@electric-sql/pglite";
 import {
   decryptCalendarToken,
@@ -141,7 +141,7 @@ test("getFreeBusy and createCalendarEvent call the right endpoints and surface e
   );
 });
 
-test("calendar connection and lead-scoped access enforce ownership, tenancy, and the Pro Plus entitlement", async (t) => {
+test("calendar connection and lead-scoped access enforce ownership, tenancy, and an active subscription", async (t) => {
   const db = new PGlite();
   t.after(() => db.close());
   await db.exec(`create role anon; create role authenticated; create role service_role bypassrls;
@@ -149,28 +149,20 @@ test("calendar connection and lead-scoped access enforce ownership, tenancy, and
     create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
     grant usage on schema public,auth to anon,authenticated,service_role;
     grant execute on function auth.uid() to anon,authenticated,service_role;`);
-  const migrate = async (name) =>
-    db.exec(
+  for (const file of (
+    await readdir(new URL("../supabase/migrations/", import.meta.url))
+  )
+    .filter((f) => f.endsWith(".sql"))
+    .sort())
+    await db.exec(
       await readFile(
-        new URL(`../supabase/migrations/${name}.sql`, import.meta.url),
+        new URL("../supabase/migrations/" + file, import.meta.url),
         "utf8",
       ),
     );
-  for (const file of [
-    "202609140001_crm",
-    "202609150001_crm_saved_views",
-    "202609150002_crm_capture_returns_inserted",
-    "202609220001_crm_organizations",
-    "202609230002_crm_usage_budgets",
-    "202609240001_crm_ai_trial",
-    "202609240003_crm_trial_replies",
-    "202609240008_crm_calendar",
-    "202609240009_crm_calendar_unassigned_lead",
-  ])
-    await migrate(file);
 
   const ids = Object.fromEntries(
-    ["ownerA", "agentA", "ownerB", "agentB"].map((k) => [k, crypto.randomUUID()]),
+    ["ownerA", "agentA", "ownerB"].map((k) => [k, crypto.randomUUID()]),
   );
   for (const id of Object.values(ids))
     await db.query("insert into auth.users values($1)", [id]);
@@ -186,30 +178,36 @@ test("calendar connection and lead-scoped access enforce ownership, tenancy, and
   await login("", "service_role");
   const orgA = await provision(ids.ownerA, "A");
   const orgB = await provision(ids.ownerB, "B");
-  await db.query(
-    "insert into crm_members(id,organization_id,name,role) values($1,$2,'Agent','team')",
-    [ids.agentA, orgA],
-  );
-  await db.query(
-    "insert into crm_members(id,organization_id,name,role) values($1,$2,'Agent B','team')",
-    [ids.agentB, orgB],
-  );
   const openProPlus = (org) =>
     db.query(
       "select crm_open_usage_period($1,'pro_plus',1,now(),now()+interval '1 month',50000,100,50,0)",
       [org],
     );
+  const openPro = (org) =>
+    db.query(
+      "select crm_open_usage_period($1,'pro',1,now(),now()+interval '1 month',30000,60,30,0)",
+      [org],
+    );
+  const addMember = (id, org, name) =>
+    db.query(
+      "insert into crm_members(id,organization_id,name,role) values($1,$2,$3,'team')",
+      [id, org, name],
+    );
 
   await t.test(
-    "connecting requires an active Pro Plus subscription and rejects invalid input",
+    "connecting requires an active subscription (any plan) and rejects invalid input",
     async () => {
-      await login(ids.agentA);
+      // A solo Free-tier owner (no teammates, no subscription yet) cannot connect a
+      // calendar: the seat-allowance trigger means orgA has no second member to test
+      // this with until it subscribes, so the owner proves the entitlement gate here.
+      await login(ids.ownerA);
       await assert.rejects(
         db.query("select crm_save_calendar_connection('primary','enc')"),
-        /Pro Plus/,
+        /active subscription/,
       );
       await login("", "service_role");
       await openProPlus(orgA);
+      await addMember(ids.agentA, orgA, "Agent");
       await login(ids.agentA);
       await assert.rejects(
         db.query("select crm_save_calendar_connection('','enc')"),
@@ -238,17 +236,6 @@ test("calendar connection and lead-scoped access enforce ownership, tenancy, and
     assert.equal(rows.rows[0].refresh_token_encrypted, "enc-token-2");
   });
 
-  await t.test("crm_calendar_status never exposes the token and reflects only the caller's own row", async () => {
-    await login(ids.agentA);
-    const connected = (await db.query("select crm_calendar_status() as s")).rows[0].s;
-    assert.equal(connected.connected, true);
-    assert.ok(connected.connected_at);
-    assert.equal(Object.hasOwn(connected, "refresh_token_encrypted"), false);
-    await login(ids.agentB);
-    const notConnected = (await db.query("select crm_calendar_status() as s")).rows[0].s;
-    assert.equal(notConnected.connected, false);
-  });
-
   await t.test("a lead's calendar connection is scoped to tenant, access, and entitlement", async () => {
     await login(ids.ownerA);
     const stage = (
@@ -269,23 +256,36 @@ test("calendar connection and lead-scoped access enforce ownership, tenancy, and
     assert.equal(conn.member_id, ids.agentA);
     assert.equal(conn.refresh_token_encrypted, "enc-token-2");
 
-    // Org B has no Pro Plus subscription at all yet: the entitlement gate fires
-    // before lead access is even considered, regardless of whose lead is named.
+    // Org B has no subscription at all yet: the entitlement gate fires before lead
+    // access is even considered, regardless of whose lead is named.
     await login(ids.ownerB);
     await assert.rejects(
       db.query("select crm_calendar_connection_for_lead($1)", [lead]),
-      /Pro Plus/,
+      /active subscription/,
     );
 
-    // Once org B is also entitled, the same call must fail on lead access instead,
-    // proving the two checks are independent and tenancy is still enforced.
+    // A plain Pro subscription (not Pro Plus) is enough for manual scheduling, matching
+    // the pricing page's promise of manual site-visit scheduling on Pro. Pro's seat
+    // allowance is 1, already used by ownerB, so this proves tenancy without a second
+    // member of orgB.
     await login("", "service_role");
-    await openProPlus(orgB);
+    await openPro(orgB);
     await login(ids.ownerB);
     await assert.rejects(
       db.query("select crm_calendar_connection_for_lead($1)", [lead]),
       /Lead unavailable/,
     );
+  });
+
+  await t.test("crm_calendar_status never exposes the token and reflects only the caller's own row", async () => {
+    await login(ids.agentA);
+    const connected = (await db.query("select crm_calendar_status() as s")).rows[0].s;
+    assert.equal(connected.connected, true);
+    assert.ok(connected.connected_at);
+    assert.equal(Object.hasOwn(connected, "refresh_token_encrypted"), false);
+    await login(ids.ownerB);
+    const notConnected = (await db.query("select crm_calendar_status() as s")).rows[0].s;
+    assert.equal(notConnected.connected, false);
   });
 
   await t.test("an unassigned lead fails with a distinct, actionable message", async () => {
@@ -329,7 +329,7 @@ test("calendar connection and lead-scoped access enforce ownership, tenancy, and
   });
 
   await t.test("disconnect only ever removes the caller's own connection", async () => {
-    await login(ids.agentB);
+    await login(ids.ownerB);
     await db.query("select crm_disconnect_calendar()"); // no-op, nothing connected
     await login(ids.agentA);
     await db.query("select crm_disconnect_calendar()");

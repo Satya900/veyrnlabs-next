@@ -20,6 +20,7 @@ export function Sidebar({
   overdueCount,
   user,
   demo,
+  showReports,
   onAddLead,
   onSignOutError,
 }: {
@@ -28,6 +29,7 @@ export function Sidebar({
   overdueCount: number;
   user: Member;
   demo: boolean;
+  showReports: boolean;
   onAddLead: () => void;
   onSignOutError: (message: string) => void;
 }) {
@@ -44,7 +46,9 @@ export function Sidebar({
       </div>
       <span className="crm-nav-label">WORKSPACE</span>
       <nav aria-label="CRM navigation">
-        {navigation.map((n) => (
+        {navigation
+          .filter((n) => n.name !== "Reports" || showReports)
+          .map((n) => (
           <button
             key={n.name}
             aria-current={view === n.name ? "page" : undefined}

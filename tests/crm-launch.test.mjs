@@ -271,7 +271,7 @@ test("launch migrations enforce prepaid continuity, paid seats, booking serializ
   assert.equal((await reserve(leads[0])).rows[0].j.run, false);
   await assert.rejects(reserve(leads[1]), /already reserved/);
   await login(other);
-  await assert.rejects(reserve(leads[0]), /unavailable|Pro Plus/i);
+  await assert.rejects(reserve(leads[0]), /unavailable|active subscription/i);
   await login("", "service_role");
   await db.query("select crm_complete_visit($1,'booked')", [
     reservation.booking_id,

@@ -208,7 +208,7 @@ export function CRMHome() {
             ],
             [
               "What is the difference between Pro and Pro Plus?",
-              "Pro covers everyday lead management and basic follow-up workflows with one included user. Pro Plus adds advanced AI automation, lead routing, automatic scheduling, and team reporting for up to three included users.",
+              "Pro covers everyday lead management and basic follow-up workflows with one included user. Pro Plus adds advanced AI automation, automatic scheduling, and lead-source performance reporting for up to three included users.",
             ],
             [
               "Will this replace my messaging tools?",

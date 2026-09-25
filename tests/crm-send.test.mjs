@@ -134,10 +134,6 @@ test("reviewed sending enforces access, window, budget, scope and replay boundar
     other,
   ]);
   await db.query(
-    "insert into crm_members(id,name,role,organization_id)values($1,'Agent','team',$2)",
-    [team, org],
-  );
-  await db.query(
     "insert into crm_whatsapp_connections(organization_id,waba_id,phone_number_id,display_phone,active)values($1,'111','222','Test',true)",
     [org],
   );
@@ -197,6 +193,10 @@ test("reviewed sending enforces access, window, budget, scope and replay boundar
   await db.query(
     "select crm_open_usage_period($1,'pro_plus',1,now(),now()+interval '28 days',100,25,3)",
     [org],
+  );
+  await db.query(
+    "insert into crm_members(id,name,role,organization_id)values($1,'Agent','team',$2)",
+    [team, org],
   );
   await assert.rejects(prepare(other), /unavailable/);
   await assert.rejects(prepare(team), /unavailable/);

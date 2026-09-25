@@ -72,10 +72,14 @@ async function fetchAllRows(db: Auth["db"], table: string) {
 }
 /** Loads every workspace table the current member can see, in parallel rather than one at a time. */
 export async function loadWorkspace(auth: Auth): Promise<Workspace> {
-  const results = await Promise.all(
-    WORKSPACE_TABLES.map((name) => fetchAllRows(auth.db, `crm_${name}`)),
-  );
-  const data: Record<string, unknown> = { user: auth.member };
+  const [results, planResult] = await Promise.all([
+    Promise.all(WORKSPACE_TABLES.map((name) => fetchAllRows(auth.db, `crm_${name}`))),
+    auth.db.rpc("crm_plan_tier"),
+  ]);
+  const data: Record<string, unknown> = {
+    user: auth.member,
+    plan: planResult.data ?? { plan: null, active: false },
+  };
   WORKSPACE_TABLES.forEach((name, i) => {
     data[name] = results[i];
   });

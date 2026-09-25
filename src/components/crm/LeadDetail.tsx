@@ -126,7 +126,7 @@ export function LeadDetail({
         />
         <button disabled={busy}>Save activity</button>
       </form>
-      <ScheduleVisit leadId={current.id} />
+      {data.plan.active && <ScheduleVisit leadId={current.id} />}
       <h3>Schedule a task</h3>
       <form
         className="crm-task-form"
