@@ -3,6 +3,7 @@ import { useRouter } from "next/navigation";
 import { Logo } from "@/components/Logo";
 import type { Member } from "@/lib/crm/model";
 import { initials } from "@/lib/crm/workspace";
+import { site } from "@/lib/site";
 import type { View } from "./types";
 
 const navigation: { name: View; icon: string }[] = [
@@ -66,6 +67,9 @@ export function Sidebar({
           <p>Every great project starts with a conversation.</p>
           <button onClick={onAddLead}>Add your next lead ↗</button>
         </div>
+        <a className="crm-sidebar-support" href={`mailto:${site.email}`}>
+          Need help? {site.email}
+        </a>
         <div className="crm-profile">
           <span className="crm-avatar">{initials(user.name)}</span>
           <div>

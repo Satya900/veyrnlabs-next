@@ -328,6 +328,73 @@ test("calendar connection and lead-scoped access enforce ownership, tenancy, and
     );
   });
 
+  await t.test("a lapsed subscription loses scheduling access even though crm_subscriptions.active stays true", async () => {
+    await login("", "service_role");
+    const period = (
+      await db.query(
+        "select id,ends_at from crm_usage_periods where organization_id=$1 and starts_at<=now() and ends_at>now()",
+        [orgA],
+      )
+    ).rows[0];
+    // starts_at was itself set to now() when this fixture org subscribed, and this whole
+    // suite runs in well under a second, so "now() - 1 minute" would be earlier than
+    // starts_at and violate the ends_at>starts_at check. Expire it relative to starts_at
+    // instead: the smallest valid ends_at is already in the past by the time this runs.
+    await db.query("update crm_usage_periods set ends_at=starts_at+interval '1 millisecond' where id=$1", [period.id]);
+    await login(ids.agentA);
+    await assert.rejects(
+      db.query("select crm_save_calendar_connection('primary','enc-token-3')"),
+      /active subscription/,
+    );
+    const stage = (
+      await db.query(
+        "select id from crm_stages where organization_id=$1 and kind='open' order by position limit 1",
+        [orgA],
+      )
+    ).rows[0].id;
+    const lead = (
+      await db.query(
+        "insert into crm_leads(name,stage_id,owner_id) values('Lapsed sub lead',$1,$2) returning id",
+        [stage, ids.agentA],
+      )
+    ).rows[0].id;
+    await assert.rejects(
+      db.query("select crm_calendar_connection_for_lead($1)", [lead]),
+      /active subscription/,
+    );
+    await login("", "service_role");
+    await db.query("update crm_usage_periods set ends_at=$2 where id=$1", [period.id, period.ends_at]);
+  });
+
+  await t.test("crm_plan_tier reflects a live usage period, not the stale crm_subscriptions.active flag", async () => {
+    await login("", "service_role");
+    const period = (
+      await db.query(
+        "select id,ends_at from crm_usage_periods where organization_id=$1 and starts_at<=now() and ends_at>now()",
+        [orgA],
+      )
+    ).rows[0];
+    await login(ids.ownerA);
+    assert.deepEqual((await db.query("select crm_plan_tier() t")).rows[0].t, {
+      plan: "pro_plus",
+      active: true,
+    });
+    await login("", "service_role");
+    await db.query("update crm_usage_periods set ends_at=starts_at+interval '1 millisecond' where id=$1", [period.id]);
+    await login(ids.ownerA);
+    assert.deepEqual((await db.query("select crm_plan_tier() t")).rows[0].t, {
+      plan: "pro_plus",
+      active: false,
+    });
+    await login("", "service_role");
+    await db.query("update crm_usage_periods set ends_at=$2 where id=$1", [period.id, period.ends_at]);
+    await login(ids.ownerB);
+    assert.deepEqual((await db.query("select crm_plan_tier() t")).rows[0].t, {
+      plan: "pro",
+      active: true,
+    });
+  });
+
   await t.test("disconnect only ever removes the caller's own connection", async () => {
     await login(ids.ownerB);
     await db.query("select crm_disconnect_calendar()"); // no-op, nothing connected

@@ -81,6 +81,18 @@ export async function POST(request: Request) {
 export async function DELETE(request: Request) {
   if (!sameOrigin(request))
     return Response.json({ error: "Invalid request origin." }, { status: 403 });
-  (await cookies()).delete(cookieName);
+  const jar = await cookies();
+  const token = jar.get(cookieName)?.value;
+  jar.delete(cookieName);
+  // Revoking server-side, not just dropping the cookie, means a token captured
+  // before logout (shared machine, browser history) can't keep working after.
+  // An already-expired or already-revoked token is not a logout failure.
+  if (token) {
+    try {
+      await supabase(undefined, true).auth.admin.signOut(token);
+    } catch {
+      /* token already invalid; the browser is signed out either way */
+    }
+  }
   return Response.json({ ok: true });
 }

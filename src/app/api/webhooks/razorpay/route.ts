@@ -16,7 +16,8 @@ export async function POST(request: Request) {
   let raw: Uint8Array;
   try {
     raw = await readRazorpayWebhookBody(request);
-  } catch {
+  } catch (err) {
+    console.error("razorpay webhook: invalid payload", err);
     return new Response("Invalid payload", { status: 400 });
   }
   if (
@@ -30,7 +31,8 @@ export async function POST(request: Request) {
   let parsed;
   try {
     parsed = parsePaidRazorpayEvent(JSON.parse(Buffer.from(raw).toString("utf8")));
-  } catch {
+  } catch (err) {
+    console.error("razorpay webhook: invalid event", err);
     return new Response("Invalid event", { status: 400 });
   }
   const db = supabase(undefined, true);
@@ -57,7 +59,8 @@ export async function POST(request: Request) {
         process.env,
         sub.plan,
       ));
-    } catch {
+    } catch (err) {
+      console.error("razorpay webhook: billing allowances not configured", err);
       return new Response(
         "Billing allowances not configured; please retry",
         { status: 503 },
@@ -80,6 +83,13 @@ export async function POST(request: Request) {
     ai_allowance: aiAllowance,
     whatsapp_allowance: whatsappAllowance,
   });
-  if (error) return new Response("Please retry", { status: 503 });
+  if (error) {
+    console.error("razorpay webhook: crm_apply_paid_event failed", {
+      subscriptionId: parsed.subscriptionId,
+      status: parsed.status,
+      message: error.message,
+    });
+    return new Response("Please retry", { status: 503 });
+  }
   return Response.json({ received: true });
 }

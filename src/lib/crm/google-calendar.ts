@@ -162,6 +162,27 @@ export async function createCalendarEvent(
   };
 }
 
+export async function deleteCalendarEvent(
+  accessToken: string,
+  calendarId: string,
+  eventId: string,
+  fetchImpl: typeof fetch = fetch,
+) {
+  const res = await fetchImpl(
+    `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}`,
+    {
+      method: "DELETE",
+      signal: AbortSignal.timeout(15000),
+      headers: { Authorization: `Bearer ${accessToken}` },
+    },
+  );
+  // 404/410: the event is already gone from Google's side, which is the end state a
+  // cancellation wants anyway, so a retry after a prior partial success is a no-op.
+  if (res.ok || res.status === 404 || res.status === 410) return;
+  const data = await res.json().catch(() => ({}));
+  throw new Error(data?.error?.message || "Could not cancel the calendar event.");
+}
+
 export async function findCalendarEvent(
   accessToken: string,
   calendarId: string,

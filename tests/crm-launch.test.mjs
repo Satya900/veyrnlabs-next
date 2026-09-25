@@ -370,3 +370,192 @@ test("launch migrations enforce prepaid continuity, paid seats, booking serializ
     ).rows[0].revoked_at,
   );
 });
+
+test("cancelling does not unlock a new checkout while paid access is still running", async (t) => {
+  const db = new PGlite();
+  t.after(() => db.close());
+  await db.exec(
+    "create role anon;create role authenticated;create role service_role bypassrls;create schema auth;create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz);create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;grant usage on schema public,auth to anon,authenticated,service_role;",
+  );
+  for (const file of (
+    await readdir(new URL("../supabase/migrations/", import.meta.url))
+  )
+    .filter((f) => f.endsWith(".sql"))
+    .sort())
+    await db.exec(
+      await readFile(
+        new URL("../supabase/migrations/" + file, import.meta.url),
+        "utf8",
+      ),
+    );
+  const owner = crypto.randomUUID();
+  await db.query("insert into auth.users values($1,$2,now())", [
+    owner,
+    owner + "@test.invalid",
+  ]);
+  const login = async (id = "", role = "authenticated") => {
+    await db.exec("reset role");
+    await db.query("select set_config('request.jwt.claim.sub',$1,false)", [id]);
+    await db.exec(`set role ${role}`);
+  };
+  await login("", "service_role");
+  await db.query("select crm_provision_organization($1,'Agency','Owner') id", [owner]);
+  await login(owner);
+  const start = (
+    await db.query("select crm_begin_checkout('base','pro',1,1) j")
+  ).rows[0].j;
+  await login("", "service_role");
+  await db.query("select crm_finish_checkout($1,'sub_pro','plan_pro')", [start.id]);
+  await db.query(
+    "select crm_apply_paid_event($1,'sub_pro','plan_pro','active',now(),'pay_pro',now()-interval '1 day',now()-interval '1 day'+interval '1 month',400000,'INR',50000,100,50)",
+    [createHash("sha256").update("evt1").digest("hex")],
+  );
+  // Cancel: crm_billing_subscriptions.status flips to 'cancelled' immediately, the same
+  // way the real cancel action does, while the paid usage period it already bought keeps
+  // running untouched.
+  await db.query("update crm_billing_subscriptions set status='cancelled' where organization_id=(select organization_id from crm_members where id=$1)", [owner]);
+  await login(owner);
+  await assert.rejects(
+    db.query("select crm_begin_checkout('base','pro_plus',1,1) j"),
+    /already have paid access/,
+  );
+  // Once the paid period genuinely ends, checkout unlocks again.
+  await login("", "service_role");
+  await db.query(
+    "update crm_usage_periods set ends_at=starts_at+interval '1 millisecond' where organization_id=(select organization_id from crm_members where id=$1)",
+    [owner],
+  );
+  await login(owner);
+  const retry = (
+    await db.query("select crm_begin_checkout('base','pro_plus',1,1) j")
+  ).rows[0].j;
+  assert.equal(retry.run, true);
+});
+
+test("a booked site visit can be cancelled, freeing the slot and clearing the follow-up it set", async (t) => {
+  const db = new PGlite();
+  t.after(() => db.close());
+  await db.exec(
+    "create role anon;create role authenticated;create role service_role bypassrls;create schema auth;create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz);create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;grant usage on schema public,auth to anon,authenticated,service_role;",
+  );
+  for (const file of (
+    await readdir(new URL("../supabase/migrations/", import.meta.url))
+  )
+    .filter((f) => f.endsWith(".sql"))
+    .sort())
+    await db.exec(
+      await readFile(
+        new URL("../supabase/migrations/" + file, import.meta.url),
+        "utf8",
+      ),
+    );
+  const owner = crypto.randomUUID(),
+    other = crypto.randomUUID();
+  for (const id of [owner, other])
+    await db.query("insert into auth.users values($1,$2,now())", [
+      id,
+      id + "@test.invalid",
+    ]);
+  const login = async (id = "", role = "authenticated") => {
+    await db.exec("reset role");
+    await db.query("select set_config('request.jwt.claim.sub',$1,false)", [id]);
+    await db.exec(`set role ${role}`);
+  };
+  await login("", "service_role");
+  const org = (
+    await db.query("select crm_provision_organization($1,'Agency','Owner') id", [owner])
+  ).rows[0].id;
+  await db.query("select crm_provision_organization($1,'Other','Owner')", [other]);
+  await db.query(
+    "select crm_open_usage_period($1,'pro',1,now(),now()+interval '1 month',30000,60,30,0)",
+    [org],
+  );
+  await login(owner);
+  await db.query("select crm_save_calendar_connection('primary','enc')");
+  const stage = (
+    await db.query(
+      "select id from crm_stages where organization_id=$1 and kind='open' order by position limit 1",
+      [org],
+    )
+  ).rows[0].id;
+  const lead = (
+    await db.query(
+      "insert into crm_leads(name,stage_id,owner_id) values('Buyer',$1,$2) returning id",
+      [stage, owner],
+    )
+  ).rows[0].id;
+  const start = new Date(Date.now() + 2 * 86_400_000).toISOString();
+  const end = new Date(Date.now() + 2 * 86_400_000 + 1_800_000).toISOString();
+  const reservation = (
+    await db.query("select crm_prepare_visit($1,$2,$3) j", [lead, start, end])
+  ).rows[0].j;
+  await login("", "service_role");
+  await db.query("select crm_complete_visit($1,'booked')", [reservation.booking_id]);
+  await login(owner);
+  assert.equal(
+    (await db.query("select crm_lead_visit($1) v", [lead])).rows[0].v.status,
+    "booked",
+  );
+  assert.equal(
+    (
+      await db.query("select follow_up from crm_leads where id=$1", [lead])
+    ).rows[0].follow_up.toISOString(),
+    start,
+  );
+  // Another org can never even find this booking to cancel it.
+  await login(other);
+  await assert.rejects(
+    db.query("select crm_prepare_visit_cancellation($1)", [reservation.booking_id]),
+    /unavailable/,
+  );
+  await login(owner);
+  const prep = (
+    await db.query("select crm_prepare_visit_cancellation($1) j", [
+      reservation.booking_id,
+    ])
+  ).rows[0].j;
+  assert.equal(prep.event_id, reservation.event_id);
+  assert.ok(prep.refresh_token_encrypted);
+  await db.query("select crm_finish_visit_cancellation($1)", [reservation.booking_id]);
+  // Idempotent: finishing an already-cancelled booking is a silent no-op, not an error,
+  // matching a retried request after a client-side timeout.
+  await db.query("select crm_finish_visit_cancellation($1)", [reservation.booking_id]);
+  await login("", "service_role");
+  assert.equal(
+    (
+      await db.query("select status from crm_calendar_bookings where id=$1", [
+        reservation.booking_id,
+      ])
+    ).rows[0].status,
+    "cancelled",
+  );
+  await login(owner);
+  assert.equal(
+    (await db.query("select crm_lead_visit($1) v", [lead])).rows[0].v,
+    null,
+  );
+  assert.equal(
+    (await db.query("select follow_up from crm_leads where id=$1", [lead])).rows[0]
+      .follow_up,
+    null,
+  );
+  assert.equal(
+    (
+      await db.query(
+        "select count(*)::int n from crm_activities where lead_id=$1 and body like '%cancelled%'",
+        [lead],
+      )
+    ).rows[0].n,
+    1,
+  );
+  // Cancelling a visit that is not currently booked is rejected outright.
+  await assert.rejects(
+    db.query("select crm_prepare_visit_cancellation($1)", [reservation.booking_id]),
+    /not currently booked/,
+  );
+  // The freed slot can be booked again.
+  const rebooked = (
+    await db.query("select crm_prepare_visit($1,$2,$3) j", [lead, start, end])
+  ).rows[0].j;
+  assert.equal(rebooked.run, true);
+});
