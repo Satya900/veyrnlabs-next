@@ -20,14 +20,25 @@ export async function POST(request: Request) {
     console.error("razorpay webhook: invalid payload", err);
     return new Response("Invalid payload", { status: 400 });
   }
-  if (
-    !(await verifyRazorpayWebhook(
-      process.env,
-      raw,
-      request.headers.get("x-razorpay-signature"),
-    ))
-  )
+  const signatureHeader = request.headers.get("x-razorpay-signature");
+  if (!(await verifyRazorpayWebhook(process.env, raw, signatureHeader))) {
+    if (process.env.VERCEL_ENV === "preview") {
+      const secret = process.env.RAZORPAY_WEBHOOK_SECRET ?? "";
+      console.error("razorpay webhook debug: signature mismatch", {
+        secretLen: secret.length,
+        secretPrefix: secret.slice(0, 6),
+        secretSuffix: secret.slice(-6),
+        signatureHeaderPresent: Boolean(signatureHeader),
+        signatureHeaderLen: signatureHeader?.length ?? 0,
+        signatureHeaderValid: signatureHeader
+          ? /^[a-f0-9]{64}$/.test(signatureHeader)
+          : false,
+        rawBodyLen: raw.length,
+        allHeaderNames: [...request.headers.keys()],
+      });
+    }
     return new Response("Invalid signature", { status: 401 });
+  }
   let parsed;
   try {
     parsed = parsePaidRazorpayEvent(JSON.parse(Buffer.from(raw).toString("utf8")));
