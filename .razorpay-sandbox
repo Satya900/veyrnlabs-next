@@ -1,0 +1,3 @@
+Empty marker file so this branch has a diff from main and Vercel can build a Preview
+deployment for Razorpay test-mode checkout testing. Safe to delete; not referenced by
+any code.
