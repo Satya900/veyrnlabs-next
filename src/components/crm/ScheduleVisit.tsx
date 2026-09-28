@@ -26,11 +26,11 @@ export function ScheduleVisit({ leadId }: { leadId: string }) {
   useEffect(() => {
     let cancelled = false;
     fetch(`/api/crm/calendar/visit?leadId=${leadId}`, { cache: "no-store" })
-      .then((r) => r.json())
+      .then(async (r) => { const result = await r.json(); if (!r.ok) throw new Error(result.error || "Could not load this visit"); return result; })
       .then((result) => {
         if (!cancelled) setVisit(result.visit ?? null);
       })
-      .catch(() => {})
+      .catch((err) => { if (!cancelled) setError(err.message); })
       .finally(() => {
         if (!cancelled) setVisitLoaded(true);
       });
@@ -102,11 +102,12 @@ export function ScheduleVisit({ leadId }: { leadId: string }) {
       });
       const result = await res.json();
       if (!res.ok) throw new Error(result.error);
+      if (typeof result.bookingId !== "string" || !result.bookingId) throw new Error("Visit saved, but its reference could not be loaded. Reopen this lead before changing it.");
       setBooked(result);
       setBusy(null);
       setRescheduling(false);
       setVisit({
-        booking_id: "",
+        booking_id: result.bookingId,
         starts_at: slotStart.toISOString(),
         ends_at: slotEnd.toISOString(),
         status: "booked",
@@ -134,7 +135,7 @@ export function ScheduleVisit({ leadId }: { leadId: string }) {
       <div className="crm-schedule-visit">
         <h3>Schedule a site visit</h3>
         <p role="status" className="crm-muted">
-          Booked for {formatVisit(visit.starts_at)}.
+          {visit.status === "booked" ? "Booked for" : "Pending review for"} {formatVisit(visit.starts_at)}.
         </p>
         {error && (
           <p role="alert" className="crm-error">
@@ -144,12 +145,12 @@ export function ScheduleVisit({ leadId }: { leadId: string }) {
         <div className="crm-schedule-controls">
           <button
             type="button"
-            disabled={cancelling}
+            disabled={cancelling || visit.status !== "booked"}
             onClick={() => setRescheduling(true)}
           >
             Change time
           </button>
-          <button type="button" disabled={cancelling} onClick={() => void cancelVisit()}>
+          <button type="button" disabled={cancelling || !["booked", "cancelling"].includes(visit.status)} onClick={() => void cancelVisit()}>
             {cancelling ? "Cancelling…" : "Cancel visit"}
           </button>
         </div>

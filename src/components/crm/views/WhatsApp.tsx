@@ -317,7 +317,7 @@ function Conversation({
       />
       <ReplyHistory key={`replies-${conversation.id}`} conversation={conversation.id} />
       <p className="crm-settings-body crm-muted">
-        Manual replies require approval. Automatic replies run only when enabled by your workspace admin.
+        Every AI reply is a draft. A person reviews and sends it before the customer sees it.
       </p>
     </section>
   );

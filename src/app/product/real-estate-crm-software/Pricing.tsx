@@ -45,8 +45,8 @@ const plans = [
     features: [
       "Everything in Pro",
       "3 included users: admin plus 2 teammates",
-      "Automatic scheduling and site-visit follow-ups",
-      "Lead-source performance reporting",
+      "AI books eligible site visits straight from WhatsApp, no back-and-forth",
+      "Lead-source performance reporting to see what's converting",
       "Standard onboarding and priority support",
     ],
   },

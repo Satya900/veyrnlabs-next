@@ -49,7 +49,7 @@ export async function POST(request: Request) {
     bookingId = prep.booking_id;
     reservedHere = prep.run;
     if (prep.status === "booked")
-      return Response.json({ ok: true, eventId: prep.event_id });
+      return Response.json({ ok: true, bookingId, eventId: prep.event_id });
     const { access_token } = await refreshAccessToken(
       process.env,
       decryptCalendarToken(process.env, prep.refresh_token_encrypted),
@@ -65,7 +65,7 @@ export async function POST(request: Request) {
           "This attempt needs review. No duplicate booking has been sent.",
         );
       await finish("booked");
-      return Response.json({ ok: true, ...existing });
+      return Response.json({ ok: true, bookingId, ...existing });
     }
     const busy = await getFreeBusy(
       access_token,
@@ -94,7 +94,7 @@ export async function POST(request: Request) {
           : undefined,
     });
     await finish("booked");
-    return Response.json({ ok: true, ...result });
+    return Response.json({ ok: true, bookingId, ...result });
   } catch (error) {
     if (bookingId && reservedHere)
       await db.rpc("crm_complete_visit", {

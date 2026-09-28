@@ -1,4 +1,4 @@
-import { jsonBody, sameOrigin, session } from "@/lib/crm/server";
+import { jsonBody, sameOrigin, session, supabase } from "@/lib/crm/server";
 import { decryptCalendarToken } from "@/lib/crm/calendar-crypto";
 import { deleteCalendarEvent, refreshAccessToken } from "@/lib/crm/google-calendar";
 
@@ -8,6 +8,7 @@ export async function POST(request: Request) {
   const auth = await session();
   if (!auth)
     return Response.json({ error: "Sign in to continue." }, { status: 401 });
+  const db = supabase(undefined, true);
   try {
     const body = await jsonBody(request, 4000);
     if (
@@ -15,20 +16,21 @@ export async function POST(request: Request) {
       !/^[a-f0-9-]{36}$/i.test(body.bookingId)
     )
       throw new Error("Invalid booking.");
-    const { data: prep, error } = await auth.db.rpc(
+    const { data: prep, error } = await db.rpc(
       "crm_prepare_visit_cancellation",
-      { booking: body.bookingId },
+      { booking: body.bookingId, actor: auth.member.id },
     );
     if (error || !prep)
       throw new Error(error?.message || "Could not cancel this visit.");
+    if (prep.already_cancelled) return Response.json({ ok: true });
     const { access_token } = await refreshAccessToken(
       process.env,
       decryptCalendarToken(process.env, prep.refresh_token_encrypted),
     );
     await deleteCalendarEvent(access_token, prep.calendar_id, prep.event_id);
-    const { error: finishError } = await auth.db.rpc(
+    const { error: finishError } = await db.rpc(
       "crm_finish_visit_cancellation",
-      { booking: body.bookingId },
+      { booking: body.bookingId, actor: auth.member.id, attempt: prep.cancellation_token },
     );
     if (finishError)
       throw new Error(

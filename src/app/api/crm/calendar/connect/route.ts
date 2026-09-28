@@ -27,11 +27,11 @@ export async function GET(request: Request) {
     return Response.redirect(siteUrl(request, "/crm/login"), 302);
   const { data } = await auth.db.rpc("crm_calendar_entitlement");
   const summary = data as { status?: string; plan?: string } | null;
-  if (!(summary?.status === "active" && summary?.plan === "pro_plus"))
+  if (!(summary?.status === "active" && ["pro", "pro_plus"].includes(summary?.plan ?? "")))
     return Response.redirect(
       settingsUrl(request, {
         calendar_error:
-          "Automatic scheduling requires an active Pro Plus subscription.",
+          "Site-visit scheduling requires an active Pro or Pro Plus subscription.",
       }),
       302,
     );

@@ -467,7 +467,7 @@ test("a booked site visit can be cancelled, freeing the slot and clearing the fo
   ).rows[0].id;
   await db.query("select crm_provision_organization($1,'Other','Owner')", [other]);
   await db.query(
-    "select crm_open_usage_period($1,'pro',1,now(),now()+interval '1 month',30000,60,30,0)",
+    "select crm_open_usage_period($1,'pro',1,now(),now()+interval '1 month',30000,60,30,1)",
     [org],
   );
   await login(owner);
@@ -502,25 +502,82 @@ test("a booked site visit can be cancelled, freeing the slot and clearing the fo
     ).rows[0].follow_up.toISOString(),
     start,
   );
-  // Another org can never even find this booking to cancel it.
-  await login(other);
+  // Completion is service-role only now: even the lead's own owner cannot call either
+  // cancellation RPC directly as an authenticated user, only through the server route.
   await assert.rejects(
-    db.query("select crm_prepare_visit_cancellation($1)", [reservation.booking_id]),
+    db.query("select crm_prepare_visit_cancellation($1,$2)", [
+      reservation.booking_id,
+      owner,
+    ]),
+    /permission denied/,
+  );
+  // A team member in the SAME org who does not own this lead cannot cancel it either,
+  // even when the caller is service-role and only the `actor` argument names them.
+  const agent2 = crypto.randomUUID();
+  await db.exec("reset role");
+  await db.query("insert into auth.users values($1,$2,now())", [
+    agent2,
+    agent2 + "@test.invalid",
+  ]);
+  await login("", "service_role");
+  await db.query(
+    "insert into crm_members(id,name,role,organization_id,joined_at) values($1,'Agent2','team',$2,now())",
+    [agent2, org],
+  );
+  await assert.rejects(
+    db.query("select crm_prepare_visit_cancellation($1,$2)", [
+      reservation.booking_id,
+      agent2,
+    ]),
     /unavailable/,
   );
-  await login(owner);
-  const prep = (
-    await db.query("select crm_prepare_visit_cancellation($1) j", [
+  // Another org's owner can never even find this booking to cancel it.
+  await assert.rejects(
+    db.query("select crm_prepare_visit_cancellation($1,$2)", [
       reservation.booking_id,
+      other,
+    ]),
+    /unavailable/,
+  );
+  const prep = (
+    await db.query("select crm_prepare_visit_cancellation($1,$2) j", [
+      reservation.booking_id,
+      owner,
     ])
   ).rows[0].j;
   assert.equal(prep.event_id, reservation.event_id);
   assert.ok(prep.refresh_token_encrypted);
-  await db.query("select crm_finish_visit_cancellation($1)", [reservation.booking_id]);
+  assert.ok(prep.cancellation_token);
+  // Finishing with the wrong actor, or a stale/mismatched cancellation attempt, is
+  // rejected rather than silently completing someone else's cancellation.
+  await assert.rejects(
+    db.query("select crm_finish_visit_cancellation($1,$2,$3)", [
+      reservation.booking_id,
+      agent2,
+      prep.cancellation_token,
+    ]),
+    /unavailable/,
+  );
+  await assert.rejects(
+    db.query("select crm_finish_visit_cancellation($1,$2,$3)", [
+      reservation.booking_id,
+      owner,
+      crypto.randomUUID(),
+    ]),
+    /attempt changed/,
+  );
+  await db.query("select crm_finish_visit_cancellation($1,$2,$3)", [
+    reservation.booking_id,
+    owner,
+    prep.cancellation_token,
+  ]);
   // Idempotent: finishing an already-cancelled booking is a silent no-op, not an error,
   // matching a retried request after a client-side timeout.
-  await db.query("select crm_finish_visit_cancellation($1)", [reservation.booking_id]);
-  await login("", "service_role");
+  await db.query("select crm_finish_visit_cancellation($1,$2,$3)", [
+    reservation.booking_id,
+    owner,
+    prep.cancellation_token,
+  ]);
   assert.equal(
     (
       await db.query("select status from crm_calendar_bookings where id=$1", [
@@ -548,14 +605,136 @@ test("a booked site visit can be cancelled, freeing the slot and clearing the fo
     ).rows[0].n,
     1,
   );
-  // Cancelling a visit that is not currently booked is rejected outright.
-  await assert.rejects(
-    db.query("select crm_prepare_visit_cancellation($1)", [reservation.booking_id]),
-    /not currently booked/,
-  );
-  // The freed slot can be booked again.
+  // Re-preparing an already-cancelled booking is a no-op, not an error, so a retried
+  // client request never fails just because a previous attempt already finished.
+  await login("", "service_role");
+  const repeat = (
+    await db.query("select crm_prepare_visit_cancellation($1,$2) j", [
+      reservation.booking_id,
+      owner,
+    ])
+  ).rows[0].j;
+  assert.equal(repeat.already_cancelled, true);
+  // The freed slot can be booked again, and the new attempt gets its own external event
+  // id rather than reusing the cancelled booking's, so a stale Google-side event can
+  // never be mistaken for the new one.
+  await login(owner);
   const rebooked = (
     await db.query("select crm_prepare_visit($1,$2,$3) j", [lead, start, end])
   ).rows[0].j;
   assert.equal(rebooked.run, true);
+  assert.notEqual(rebooked.event_id, reservation.event_id);
+  // A reserved-but-not-yet-confirmed visit cannot be cancelled through this flow; it
+  // must be reconciled (rejected/unknown/booked) first.
+  await login("", "service_role");
+  await assert.rejects(
+    db.query("select crm_prepare_visit_cancellation($1,$2)", [
+      rebooked.booking_id,
+      owner,
+    ]),
+    /not confirmed/,
+  );
+});
+
+test("cancelling a visit after its lead is reassigned still targets the original booking agent's calendar", async (t) => {
+  const db = new PGlite();
+  t.after(() => db.close());
+  await db.exec(
+    "create role anon;create role authenticated;create role service_role bypassrls;create schema auth;create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz);create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;grant usage on schema public,auth to anon,authenticated,service_role;",
+  );
+  for (const file of (
+    await readdir(new URL("../supabase/migrations/", import.meta.url))
+  )
+    .filter((f) => f.endsWith(".sql"))
+    .sort())
+    await db.exec(
+      await readFile(
+        new URL("../supabase/migrations/" + file, import.meta.url),
+        "utf8",
+      ),
+    );
+  const owner = crypto.randomUUID(),
+    agentB = crypto.randomUUID();
+  for (const id of [owner, agentB])
+    await db.query("insert into auth.users values($1,$2,now())", [
+      id,
+      id + "@test.invalid",
+    ]);
+  const login = async (id = "", role = "authenticated") => {
+    await db.exec("reset role");
+    await db.query("select set_config('request.jwt.claim.sub',$1,false)", [id]);
+    await db.exec(`set role ${role}`);
+  };
+  await login("", "service_role");
+  const org = (
+    await db.query("select crm_provision_organization($1,'Agency','Owner') id", [owner])
+  ).rows[0].id;
+  await db.query(
+    "select crm_open_usage_period($1,'pro',1,now(),now()+interval '1 month',30000,60,30,1)",
+    [org],
+  );
+  await db.query(
+    "insert into crm_members(id,name,role,organization_id,joined_at) values($1,'Agent B','team',$2,now())",
+    [agentB, org],
+  );
+  await login(owner);
+  await db.query("select crm_save_calendar_connection('owner-calendar','owner-enc')");
+  await login(agentB);
+  await db.query("select crm_save_calendar_connection('agentb-calendar','agentb-enc')");
+  const stage = (
+    await db.query(
+      "select id from crm_stages where organization_id=$1 and kind='open' order by position limit 1",
+      [org],
+    )
+  ).rows[0].id;
+  await login(owner);
+  const lead = (
+    await db.query(
+      "insert into crm_leads(name,stage_id,owner_id) values('Buyer',$1,$2) returning id",
+      [stage, owner],
+    )
+  ).rows[0].id;
+  const start = new Date(Date.now() + 2 * 86_400_000).toISOString();
+  const end = new Date(Date.now() + 2 * 86_400_000 + 1_800_000).toISOString();
+  // Booked while the lead still belongs to the owner: the booking snapshots the
+  // owner's calendar identity at this point.
+  const reservation = (
+    await db.query("select crm_prepare_visit($1,$2,$3) j", [lead, start, end])
+  ).rows[0].j;
+  await login("", "service_role");
+  await db.query("select crm_complete_visit($1,'booked')", [reservation.booking_id]);
+  assert.equal(
+    (
+      await db.query("select calendar_id from crm_calendar_bookings where id=$1", [
+        reservation.booking_id,
+      ])
+    ).rows[0].calendar_id,
+    "owner-calendar",
+  );
+  // Reassign the lead to agent B, as an admin action would.
+  await db.query("update crm_leads set owner_id=$1 where id=$2", [agentB, lead]);
+  // Cancelling now, as the new owner, must still resolve to the ORIGINAL booking
+  // agent's calendar (owner's), not agent B's, so the real Google event actually gets
+  // deleted instead of leaving it orphaned.
+  const prep = (
+    await db.query("select crm_prepare_visit_cancellation($1,$2) j", [
+      reservation.booking_id,
+      agentB,
+    ])
+  ).rows[0].j;
+  assert.equal(prep.calendar_id, "owner-calendar");
+  assert.equal(prep.refresh_token_encrypted, "owner-enc");
+  await db.query("select crm_finish_visit_cancellation($1,$2,$3)", [
+    reservation.booking_id,
+    agentB,
+    prep.cancellation_token,
+  ]);
+  assert.equal(
+    (
+      await db.query("select status from crm_calendar_bookings where id=$1", [
+        reservation.booking_id,
+      ])
+    ).rows[0].status,
+    "cancelled",
+  );
 });

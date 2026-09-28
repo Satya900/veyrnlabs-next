@@ -101,7 +101,7 @@ export function CalendarSettings({ demo }: { demo: boolean; role: string }) {
             ) : (
               <>
                 <p>
-                  Not connected. Requires an active Pro Plus subscription; each
+                  Not connected. Pro includes manual booking; Pro Plus adds automatic booking. Each
                   agent connects their own calendar.
                 </p>
                 <a className="crm-primary" href="/api/crm/calendar/connect">
