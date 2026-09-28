@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isCrmHostname } from "@/lib/site";
 
 // Both deployments use this repository. Only the CRM deployment sets CRM_HOST.
 // Host rewriting chooses the page; authentication and RLS enforce data access.
 export function proxy(request: NextRequest) {
-  const crmHost = process.env.CRM_HOST?.toLowerCase();
-  const isCrmHost =
-    !!crmHost && request.nextUrl.hostname.toLowerCase() === crmHost;
+  const isCrmHost = isCrmHostname(request.nextUrl.hostname);
   if (isCrmHost && request.nextUrl.pathname === "/") {
     const url = request.nextUrl.clone();
     url.pathname = "/crm";

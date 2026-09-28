@@ -15,6 +15,11 @@ const geistMono = Geist_Mono({
   weight: ["400"],
 });
 
+// Static, not per-request: reading the Host header here (to special-case the CRM host)
+// would force every marketing page to render dynamically instead of statically. The CRM
+// host is deindexed at the HTTP level instead, by proxy.ts's X-Robots-Tag header, which
+// Google documents as a full equivalent to this meta tag for exactly this kind of
+// site-wide, header-level control.
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
   title: site.title,
