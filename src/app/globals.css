@@ -20,6 +20,7 @@
   --color-mute: #7d8187;
   --color-hairline: #212327;
   --color-hairline-strong: rgba(255, 255, 255, 0.25);
+  --color-hairline-hover: rgba(255, 255, 255, 0.5);
   --color-canvas: #0a0a0a;
   --color-canvas-soft: #1a1c20;
   --color-canvas-card: #191919;
@@ -123,6 +124,9 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 .site-logo { position: relative; display: block; flex: 0 0 auto; width: 170px; aspect-ratio: 1775 / 350; overflow: hidden; }
 .site-logo .site-logo-image { position: absolute; width: 111.71831%; max-width: none; height: auto; left: -5.6338%; top: -64.28571%; }
 .footer-top .site-logo { width: 190px; }
+.vector-logo { display: inline-flex; align-items: center; gap: 10px; color: var(--color-mute); font: 400 19px/1 var(--font-sans), sans-serif; letter-spacing: -0.03em; text-decoration: none; }
+.vector-logo-mark { width: 28px; height: 28px; flex: none; }
+.vector-logo-word b { color: var(--color-ink); font-weight: 600; }
 @media (max-width: 700px) {
   .nav-inner .site-logo { width: 132px; }
 }

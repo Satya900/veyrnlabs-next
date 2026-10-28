@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { Logo } from "@/components/Logo";
+import { VectorLogo } from "@/components/Logo";
 import { Eyebrow } from "@/components/ui/Eyebrow";
 import { dueFollowUps, overdueTasks, sortedStages } from "@/lib/crm/workspace";
 import type { Workspace as Data } from "@/lib/crm/model";
@@ -113,7 +113,7 @@ export default function Workspace({
   if (!data)
     return (
       <main className="crm-loading">
-        <Logo href="/" eager />
+        <VectorLogo href="/" />
         <h1>Workspace unavailable</h1>
         <p role="alert">{error}</p>
         <Link href="/crm/login">Go to sign in</Link>

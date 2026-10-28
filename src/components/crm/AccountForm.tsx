@@ -3,7 +3,7 @@ import { crmFetch } from "./activity";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Logo } from "@/components/Logo";
+import { VectorLogo } from "@/components/Logo";
 import { Button } from "@/components/ui/Button";
 import { safeNextUrl } from "@/lib/crm/next-url";
 
@@ -61,7 +61,7 @@ export function AccountForm({
   return (
     <main className="crm-login">
       <header className="crm-login-header">
-        <Logo eager href="/" />
+        <VectorLogo href="/" />
         <Link href={`/crm/login?next=${encodeURIComponent(next)}`}>
           Sign in ↗
         </Link>

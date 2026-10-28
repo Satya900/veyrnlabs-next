@@ -1,17 +1,60 @@
-/* Veyrn Labs workspace. Colors and font families come from the same tokens
-   as the public homepage; only workspace-specific layout is defined here. */
+/* Veyrn Labs workspace. A light theme, following the pattern of established CRMs
+   (Attio, HubSpot, Linear): a warm tinted app background, white surfaces for content,
+   hairline borders with soft shadows for elevation, and one saturated accent reserved
+   for primary actions and selection. Re-declaring the shared homepage tokens here
+   restyles every token-based rule and Tailwind utility inside the workspace.
+   All text pairs meet WCAG AA (4.5:1) on white, the app background and card fills. */
 .crm-root {
+  /* Surfaces: --color-canvas is the content surface (panels, inputs, dialogs). */
+  --crm-app-bg: #f6f6f2;
+  --color-canvas: #ffffff;
+  --color-canvas-card: #f2f3ee;
+  --color-canvas-soft: #eceee6;
+  --color-canvas-mid: #d9dccf;
+  /* Text */
+  --color-ink: #1a1f16;
+  --color-body: #4a5243;
+  --color-mute: #687062;
+  /* Lines. Form fields get a 3:1 border (WCAG 1.4.11); dividers stay quiet. */
+  --color-hairline: #e4e6dd;
+  --color-hairline-strong: #cdd1c4;
+  --color-hairline-hover: #a9af9f;
+  --crm-input-border: #8f9585;
+  /* Brand: lime does not read on white, so actions use the brand's deep olive and
+     lime survives as the soft selection tint and in the logo mark. */
+  --color-primary: #3a5426;
+  --color-on-primary: #ffffff;
+  --color-ink-hover: #2d421d;
+  --crm-accent-soft: #eef5dc;
+  /* Status */
+  --crm-danger: #b42318;
+  --crm-danger-soft: #fef3f2;
+  --crm-success: #1d6b3a;
+  --crm-success-soft: #edf7ef;
+  --crm-warning: #93500a;
+  /* Elevation */
+  --crm-shadow-sm: 0 1px 2px rgb(26 31 22 / 0.06);
+  --crm-shadow-md: 0 4px 12px rgb(26 31 22 / 0.08);
+  --crm-shadow-lg: 0 16px 40px rgb(26 31 22 / 0.14);
+
   --crm-accent: var(--color-primary);
   --crm-text: var(--color-ink);
   --crm-muted: var(--color-mute);
   --crm-border: var(--color-hairline);
   min-height: 100vh;
-  background: var(--color-canvas);
+  background: var(--crm-app-bg);
   color: var(--color-ink);
   font-family: var(--font-sans), sans-serif;
   font-size: 14px;
   line-height: 1.7;
-  color-scheme: dark;
+  color-scheme: light;
+}
+/* The page behind the workspace (overscroll, scrollbars) matches it. Unsupported
+   browsers keep the site's dark page, which only shows at the edges. */
+html:has(.crm-root),
+html:has(.crm-root) body {
+  background: #f6f6f2;
+  color-scheme: light;
 }
 .crm-root * {
   box-sizing: border-box;
@@ -23,20 +66,20 @@
   margin: 0;
 }
 .crm-root :is(h1, h2, h3, strong, b) {
-  font-weight: 400;
+  font-weight: 500;
 }
 .crm-root h1 {
-  font-size: clamp(30px, 3.6vw, 46px);
-  line-height: 1.15;
-  letter-spacing: -0.04em;
+  font-size: clamp(24px, 2.2vw, 30px);
+  line-height: 1.2;
+  letter-spacing: -0.025em;
 }
 .crm-root h2 {
-  font-size: 23px;
+  font-size: 18px;
   line-height: 1.3;
   letter-spacing: -0.025em;
 }
 .crm-root h3 {
-  font-size: 19px;
+  font-size: 16px;
   line-height: 1.3;
   letter-spacing: -0.025em;
 }
@@ -72,7 +115,7 @@
     background-color 0.2s;
 }
 .crm-root button:hover:not(:disabled) {
-  border-color: var(--color-mute);
+  border-color: var(--color-hairline-hover);
   background: var(--color-canvas-soft);
 }
 .crm-root button.crm-primary {
@@ -89,7 +132,7 @@
   width: 100%;
   min-width: 0;
   padding: 12px;
-  border: 1px solid var(--color-hairline-strong);
+  border: 1px solid var(--crm-input-border);
   border-radius: 6px;
   color: var(--color-ink);
   background: var(--color-canvas);
@@ -134,9 +177,9 @@
   flex-direction: column;
   padding: 32px 24px 0;
   border-right: 1px solid var(--color-hairline);
-  background: var(--color-canvas);
+  background: var(--crm-app-bg);
 }
-.crm-sidebar > .site-logo {
+.crm-sidebar > .vector-logo {
   margin: 0 0 36px;
 }
 .crm-workspace-name {
@@ -180,10 +223,16 @@
   width: 20px;
   font-size: 18px;
 }
-.crm-sidebar nav button[aria-current="page"] {
-  background: var(--color-canvas-card);
+/* Nav hover is a fill, not an outline; the current item keeps its tint on hover. The
+   .crm-root prefix outranks the generic button hover rule. */
+.crm-root .crm-sidebar nav button:hover:not(:disabled) {
+  border-color: transparent;
+}
+.crm-sidebar nav button[aria-current="page"],
+.crm-root .crm-sidebar nav button[aria-current="page"]:hover:not(:disabled) {
+  background: var(--crm-accent-soft);
   color: var(--color-primary);
-  border-color: var(--color-hairline-strong);
+  border-color: transparent;
 }
 .crm-sidebar nav b,
 .crm-count {
@@ -318,8 +367,8 @@
   overflow: auto;
   border: 1px solid var(--color-hairline-strong);
   border-radius: 8px;
-  background: var(--color-canvas-card);
-  box-shadow: 0 20px 45px #0007;
+  background: var(--color-canvas);
+  box-shadow: var(--crm-shadow-lg);
   padding: 6px;
 }
 .crm-global-search-results p {
@@ -426,6 +475,7 @@
   border: 1px solid var(--color-hairline);
   border-radius: 10px;
   overflow: hidden;
+  box-shadow: var(--crm-shadow-sm);
 }
 .crm-stat {
   padding: 28px 24px;
@@ -449,8 +499,9 @@
 }
 .crm-stat > strong {
   display: block;
-  font-size: clamp(25px, 2.5vw, 36px);
-  letter-spacing: -0.05em;
+  font-size: clamp(24px, 2.2vw, 30px);
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
   line-height: 1.2;
   margin: 20px 0 12px;
 }
@@ -470,6 +521,7 @@
   border: 1px solid var(--color-hairline);
   border-radius: 12px;
   overflow: hidden;
+  box-shadow: var(--crm-shadow-sm);
 }
 .crm-panel-heading {
   display: flex;
@@ -685,15 +737,16 @@
   white-space: nowrap;
 }
 .crm-badge.won {
-  border-color: var(--color-body);
-  color: var(--color-ink);
+  border-color: color-mix(in srgb, var(--crm-success) 30%, transparent);
+  background: var(--crm-success-soft);
+  color: var(--crm-success);
 }
 .crm-badge.lost {
   border-style: dashed;
   color: var(--color-mute);
 }
 .crm-overdue {
-  color: var(--color-accent-sunset-soft);
+  color: var(--crm-danger);
 }
 .crm-content-footer {
   display: flex;
@@ -796,7 +849,7 @@
   padding: 16px 12px;
   border: 1px solid var(--color-hairline);
   border-radius: 10px;
-  background: var(--color-canvas);
+  background: var(--color-canvas-card);
 }
 .column-heading {
   padding: 0 4px 20px;
@@ -831,7 +884,8 @@
   padding: 20px 16px;
   border: 1px solid var(--color-hairline);
   border-radius: 8px;
-  background: var(--color-canvas-card);
+  background: var(--color-canvas);
+  box-shadow: var(--crm-shadow-sm);
   margin-bottom: 12px;
 }
 .crm-root .card-title {
@@ -1027,7 +1081,7 @@
   background: var(--color-canvas-card);
 }
 .crm-calendar-cell.is-today {
-  background: #d5f68806;
+  background: var(--crm-accent-soft);
 }
 .crm-calendar-date {
   font: 11px var(--font-mono), monospace;
@@ -1111,10 +1165,14 @@
   font-size: inherit;
 }
 .crm-error {
-  color: var(--color-accent-sunset-soft);
+  color: var(--crm-danger);
+  background: var(--crm-danger-soft);
+  border-color: color-mix(in srgb, var(--crm-danger) 25%, transparent);
 }
 .crm-success {
-  color: var(--color-ink);
+  color: var(--crm-success);
+  background: var(--crm-success-soft);
+  border-color: color-mix(in srgb, var(--crm-success) 25%, transparent);
 }
 .crm-error > a {
   margin-left: 8px;
@@ -1132,14 +1190,15 @@
   max-height: 90vh;
   margin: auto;
   padding: 0;
-  border: 1px solid var(--color-hairline-strong);
+  border: 1px solid var(--color-hairline);
   border-radius: 12px;
   background: var(--color-canvas);
   color: var(--color-ink);
+  box-shadow: var(--crm-shadow-lg);
 }
 .crm-dialog::backdrop {
-  background: #000b;
-  backdrop-filter: blur(8px);
+  background: rgb(26 31 22 / 0.35);
+  backdrop-filter: blur(4px);
 }
 .crm-dialog-inner {
   position: relative;
@@ -1525,7 +1584,8 @@
   padding: 32px;
   border: 1px solid var(--color-hairline);
   border-radius: 12px;
-  background: var(--color-canvas-card);
+  background: var(--color-canvas);
+  box-shadow: var(--crm-shadow-md);
 }
 .crm-root .login-form h2 {
   font-size: 34px;
@@ -1664,7 +1724,7 @@
     border-right: 0;
     border-bottom: 1px solid var(--color-hairline);
   }
-  .crm-sidebar > .site-logo {
+  .crm-sidebar > .vector-logo {
     margin: 0 0 24px;
   }
   .crm-sidebar nav {
@@ -1721,9 +1781,9 @@
   .crm-sidebar {
     padding-inline: 20px;
   }
-  .crm-sidebar > .site-logo,
-  .crm-login-header > .site-logo {
-    width: 132px;
+  .crm-sidebar > .vector-logo,
+  .crm-login-header > .vector-logo {
+    font-size: 17px;
   }
   .crm-content {
     padding: 32px 20px 20px;
@@ -1875,10 +1935,10 @@
 .crm-plan-usage .crm-settings-body { display: grid; gap: 16px; }
 .crm-plan-usage p { line-height: 1.6; }
 .crm-usage-meter > div { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; }
-.crm-usage-meter progress { display: block; width: 100%; height: 10px; margin: 10px 0; accent-color: #d9f98b; }
+.crm-usage-meter progress { display: block; width: 100%; height: 10px; margin: 10px 0; accent-color: var(--crm-accent); }
 .crm-plan-comparison { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 16px; }
 .crm-plan-card { border: 1px solid var(--crm-border); border-radius: 10px; padding: 20px; display: grid; gap: 8px; align-content: start; }
-.crm-plan-card.is-plus { border-color: var(--crm-accent); background: color-mix(in srgb, var(--crm-accent) 8%, transparent); }
+.crm-plan-card.is-plus { border-color: var(--crm-accent); background: var(--crm-accent-soft); }
 .crm-plan-card h3 { font-size: 16px; }
 .crm-plan-price { font-size: 22px; font-weight: 600; }
 .crm-plan-price small { font-size: 12px; font-weight: 400; color: var(--color-mute); }
@@ -1887,7 +1947,7 @@
 .crm-whatsapp-grid { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(0, 2fr); gap: 20px; align-items: start; }
 .crm-whatsapp-list { overflow: hidden; }
 .crm-whatsapp-contact { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; width: 100%; text-align: left; padding: 18px; border: 0; border-bottom: 1px solid var(--crm-border); border-radius: 0; overflow-wrap: anywhere; }
-.crm-whatsapp-contact[aria-pressed="true"] { background: color-mix(in srgb, var(--crm-accent) 12%, transparent); }
+.crm-whatsapp-contact[aria-pressed="true"] { background: var(--crm-accent-soft); }
 .crm-whatsapp-contact small, .crm-whatsapp-messages time { color: var(--crm-muted); font-size: 12px; }
 .crm-whatsapp-thread { min-width: 0; }
 .crm-whatsapp-messages { list-style: none; padding: 20px; margin: 0; display: grid; gap: 16px; max-height: 600px; overflow: auto; }

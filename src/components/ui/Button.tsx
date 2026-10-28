@@ -6,9 +6,9 @@ const base =
 const variants = {
   primary: "bg-primary text-on-primary border border-primary px-5 py-3 hover:bg-ink-hover",
   outline:
-    "bg-transparent text-ink border border-white/25 px-4 py-2.5 hover:border-white/50",
+    "bg-transparent text-ink border border-(--color-hairline-strong) px-4 py-2.5 hover:border-(--color-hairline-hover)",
   "outline-sm":
-    "bg-transparent text-ink border border-white/25 px-3.5 py-1.5 text-[13px] hover:border-white/50",
+    "bg-transparent text-ink border border-(--color-hairline-strong) px-3.5 py-1.5 text-[13px] hover:border-(--color-hairline-hover)",
 } as const;
 
 type Variant = keyof typeof variants;

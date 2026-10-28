@@ -3,7 +3,7 @@ import { crmFetch } from "./activity";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Logo } from "@/components/Logo";
+import { VectorLogo } from "@/components/Logo";
 import { Button } from "@/components/ui/Button";
 
 export function ResetPassword({ enabled }: { enabled: boolean }) {
@@ -46,7 +46,7 @@ export function ResetPassword({ enabled }: { enabled: boolean }) {
   return (
     <main className="crm-login">
       <header className="crm-login-header">
-        <Logo eager href="/" />
+        <VectorLogo href="/" />
         <Link href="/crm/login">Sign in ↗</Link>
       </header>
       <div className="crm-login-grid hero-grid">
