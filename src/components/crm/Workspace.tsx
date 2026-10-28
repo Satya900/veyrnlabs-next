@@ -113,7 +113,7 @@ export default function Workspace({
   if (!data)
     return (
       <main className="crm-loading">
-        <Logo href="/" eager />
+        <Logo href="/" />
         <h1>Workspace unavailable</h1>
         <p role="alert">{error}</p>
         <Link href="/crm/login">Go to sign in</Link>

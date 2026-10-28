@@ -4,7 +4,7 @@
 
 A split geometric V pairs forward motion with a verification gesture. The heavier veyrn wordmark establishes the brand; the lighter labs adds contrast. Lime and warm ivory connect the identity to the current site.
 
-Generated with the built-in image generation tool. This is a raster design master on a dark background. The header and footer use the approved image through a shared Logo component, with responsive framing and Next.js image optimization. The original image is preserved. The split-V symbol also has a simplified vector favicon source at public/brand/veyrn-mark.svg; scripts/generate-brand-icons.mjs creates the browser and Apple icon sizes from it.
+Generated with the built-in image generation tool. This is a raster design master on a dark background, preserved as the reference. Since the site moved to a light theme, the shared Logo component renders the app-icon tile (the split-V mark in lime on graphite, from public/brand/veyrn-mark.svg) beside a live-text wordmark, so it works on any background; the raster is no longer shipped on pages. The split-V symbol also has a simplified vector favicon source at public/brand/veyrn-mark.svg; scripts/generate-brand-icons.mjs creates the browser and Apple icon sizes from it.
 
 ## Initial prompt
 

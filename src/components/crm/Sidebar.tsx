@@ -38,7 +38,7 @@ export function Sidebar({
   const router = useRouter();
   return (
     <aside className="crm-sidebar">
-      <Logo href="/" eager />
+      <Logo href="/" />
       <div className="crm-workspace-name">
         <span className="status-dot" aria-hidden="true" />
         <div>

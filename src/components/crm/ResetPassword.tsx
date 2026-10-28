@@ -46,7 +46,7 @@ export function ResetPassword({ enabled }: { enabled: boolean }) {
   return (
     <main className="crm-login">
       <header className="crm-login-header">
-        <Logo eager href="/" />
+        <Logo href="/" />
         <Link href="/crm/login">Sign in ↗</Link>
       </header>
       <div className="crm-login-grid hero-grid">

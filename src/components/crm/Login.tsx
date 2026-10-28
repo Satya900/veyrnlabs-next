@@ -21,7 +21,7 @@ export default function Login({
   return (
     <main className="crm-login">
       <header className="crm-login-header">
-        <Logo eager href="/" />
+        <Logo href="/" />
         <ButtonLink href="/" variant="outline-sm">
           Back to website <span aria-hidden="true">↗</span>
         </ButtonLink>

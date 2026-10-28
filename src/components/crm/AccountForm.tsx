@@ -61,7 +61,7 @@ export function AccountForm({
   return (
     <main className="crm-login">
       <header className="crm-login-header">
-        <Logo eager href="/" />
+        <Logo href="/" />
         <Link href={`/crm/login?next=${encodeURIComponent(next)}`}>
           Sign in ↗
         </Link>
