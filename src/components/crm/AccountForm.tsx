@@ -1,4 +1,5 @@
 "use client";
+import { crmFetch } from "./activity";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -32,7 +33,7 @@ export function AccountForm({
         throw new Error(
           "This invitation link is incomplete. Ask your workspace owner for a new link.",
         );
-      const res = await fetch("/api/crm/account", {
+      const res = await crmFetch("/api/crm/account", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...values, email, invitation, action }),
@@ -194,7 +195,7 @@ export function AccountForm({
                 {message}
               </p>
             )}
-            <Button variant="primary" disabled={busy || !enabled}>
+            <Button aria-busy={busy} variant="primary" disabled={busy || !enabled}>
               {busy
                 ? "Please wait…"
                 : step === "verify"

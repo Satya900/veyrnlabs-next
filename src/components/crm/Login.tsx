@@ -1,4 +1,5 @@
 "use client";
+import { crmFetch } from "./activity";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -63,7 +64,7 @@ export default function Login({
               setError("");
               const form = new FormData(e.currentTarget);
               try {
-                const res = await fetch("/api/crm/session", {
+                const res = await crmFetch("/api/crm/session", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify(Object.fromEntries(form)),
@@ -108,7 +109,7 @@ export default function Login({
                 {error}
               </p>
             )}
-            <Button variant="primary" disabled={busy || !configured}>
+            <Button aria-busy={busy} variant="primary" disabled={busy || !configured}>
               {busy ? "Signing in…" : "Sign in →"}
             </Button>
           </form>

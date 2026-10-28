@@ -1,4 +1,5 @@
 "use client";
+import { crmFetch } from "./activity";
 import { useState } from "react";
 import { initials } from "@/lib/crm/workspace";
 import type { Member } from "@/lib/crm/model";
@@ -26,7 +27,7 @@ export function TeamMembers({
     setBusy(true);
     setError("");
     try {
-      const res = await fetch("/api/crm/members", {
+      const res = await crmFetch("/api/crm/members", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(pending),
@@ -78,7 +79,7 @@ export function TeamMembers({
           {pending.action === "transfer"
             ? `Make ${target.name} the owner? You will become an admin.`
             : `Remove ${target.name} from this workspace? Their assigned leads and clients become unassigned.`}
-          <button type="button" disabled={busy} onClick={() => void confirm()}>
+          <button aria-busy={busy} type="button" disabled={busy} onClick={() => void confirm()}>
             {busy ? "Please wait…" : "Confirm"}
           </button>
           <button type="button" disabled={busy} onClick={() => setPending(null)}>

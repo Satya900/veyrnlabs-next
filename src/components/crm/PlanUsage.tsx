@@ -1,4 +1,5 @@
 "use client";
+import { crmFetch } from "./activity";
 import { useState } from "react";
 import { CRM_PLANS, type UsageSummary } from "@/lib/crm/plans";
 import { Billing } from "./Billing";
@@ -20,7 +21,7 @@ export function PlanUsage({ demo, role }: { demo: boolean; role: string }) {
     setBusy(true);
     setError("");
     try {
-      const response = await fetch("/api/crm/usage", { cache: "no-store" });
+      const response = await crmFetch("/api/crm/usage", { cache: "no-store" });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error);
       setSummary(result);
@@ -37,7 +38,7 @@ export function PlanUsage({ demo, role }: { demo: boolean; role: string }) {
           <h2>Plan & usage</h2>
           <p>AI and WhatsApp allowances are shared across your company.</p>
         </div>
-        <button disabled={busy || demo} onClick={() => void load()}>
+        <button aria-busy={busy} disabled={busy || demo} onClick={() => void load()}>
           {busy ? "Loading…" : summary ? "Refresh" : "View usage"}
         </button>
       </div>

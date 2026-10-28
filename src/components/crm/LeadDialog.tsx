@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef } from "react";
+import { ActivityBar } from "./ActivityBar";
 import { ImportReview } from "./ImportReview";
 import { LeadDetail } from "./LeadDetail";
 import { LeadForm } from "./LeadForm";
@@ -65,6 +66,8 @@ export function LeadDialog({
         if (e.target === e.currentTarget) close();
       }}
     >
+      {/* A modal dialog renders in the top layer, above the page-level bar. */}
+      <ActivityBar />
       <div className="crm-dialog-inner">
         <button className="dialog-close" aria-label="Close dialog" disabled={busy} onClick={close}>
           ×

@@ -25,7 +25,7 @@ export function ImportReview({
         ))}
         {rows.length > 10 && <p>And {rows.length - 10} more…</p>}
       </div>
-      <button className="crm-primary" disabled={busy} onClick={onImport}>
+      <button aria-busy={busy} className="crm-primary" disabled={busy} onClick={onImport}>
         {busy ? "Importing…" : `Import ${rows.length} leads`}
       </button>
     </>

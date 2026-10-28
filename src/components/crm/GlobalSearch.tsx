@@ -1,5 +1,7 @@
 "use client";
+import { crmFetch } from "./activity";
 import { useEffect, useRef, useState } from "react";
+import { SkeletonRows } from "./Skeleton";
 import { useWorkspaceContext } from "./context";
 
 type SearchLead = { id: string; name: string; company: string; email: string };
@@ -19,7 +21,7 @@ export function GlobalSearch() {
     let active = true;
     const timer = setTimeout(() => {
       setLoading(true);
-      fetch(`/api/crm/search?q=${encodeURIComponent(q.trim())}`, { cache: "no-store" })
+      crmFetch(`/api/crm/search?q=${encodeURIComponent(q.trim())}`, { cache: "no-store" })
         .then((r) => r.json())
         .then((data) => {
           if (active) setResults(data);
@@ -60,7 +62,7 @@ export function GlobalSearch() {
       />
       {showPanel && (
         <div className="crm-global-search-results" role="listbox">
-          {loading && <p className="crm-muted">Searching…</p>}
+          {loading && !results && <SkeletonRows rows={3} variant="card" label="Searching" />}
           {!loading && empty && <p className="crm-muted">No matches for “{q.trim()}”.</p>}
           {results?.leads.map((l) => (
             <button

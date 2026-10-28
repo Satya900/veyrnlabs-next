@@ -1,4 +1,5 @@
 "use client";
+import { crmFetch } from "./activity";
 import { useEffect, useState } from "react";
 import { ReplyEditor } from "./ReplyEditor";
 type Draft = {
@@ -32,6 +33,7 @@ function ProposedVisit({ leadId, draft }: { leadId: string; draft: Draft }) {
       <p>Customer requested a site visit: {visitLabel(draft.proposed_visit_at)}.</p>
       {error && <p role="alert">{error}</p>}
       <button
+        aria-busy={busy}
         type="button"
         disabled={busy}
         onClick={async () => {
@@ -40,7 +42,7 @@ function ProposedVisit({ leadId, draft }: { leadId: string; draft: Draft }) {
           try {
             const start = new Date(draft.proposed_visit_at!);
             const end = new Date(start.getTime() + 30 * 60_000);
-            const response = await fetch("/api/crm/calendar/book", {
+            const response = await crmFetch("/api/crm/calendar/book", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
@@ -80,7 +82,7 @@ export function AIDraft({
   const [version, setVersion] = useState(0);
   useEffect(() => {
     const controller = new AbortController();
-    fetch(`/api/crm/ai?conversation=${conversation}`, {
+    crmFetch(`/api/crm/ai?conversation=${conversation}`, {
       signal: controller.signal,
       cache: "no-store",
     })
@@ -105,7 +107,7 @@ export function AIDraft({
     setBusy(true);
     setError("");
     try {
-      const response = await fetch("/api/crm/ai", {
+      const response = await crmFetch("/api/crm/ai", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action, conversation, paused: !paused }),
@@ -132,6 +134,7 @@ export function AIDraft({
       {error && <p role="alert">{error}</p>}
       <div className="crm-ai-actions">
         <button
+          aria-busy={busy}
           disabled={busy || !loaded || paused || !ready}
           onClick={() => void act("generate")}
         >

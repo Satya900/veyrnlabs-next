@@ -1,4 +1,5 @@
 "use client";
+import { crmFetch } from "./activity";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -16,7 +17,7 @@ export function ResetPassword({ enabled }: { enabled: boolean }) {
     setBusy(true);
     setError("");
     try {
-      const res = await fetch("/api/crm/account", {
+      const res = await crmFetch("/api/crm/account", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...values, email, action }),
@@ -133,7 +134,7 @@ export function ResetPassword({ enabled }: { enabled: boolean }) {
                 {message}
               </p>
             )}
-            <Button variant="primary" disabled={busy || !enabled}>
+            <Button aria-busy={busy} variant="primary" disabled={busy || !enabled}>
               {busy
                 ? "Please wait…"
                 : step === "reset"
