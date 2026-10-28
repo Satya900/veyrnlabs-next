@@ -197,33 +197,36 @@ export default function Workspace({
                 </button>
               </div>
             )}
-            {(effectiveView === "Overview" || effectiveView === "Reports") && (
-              <ReportingSummary from={from} to={to} setFrom={setFrom} setTo={setTo} />
-            )}
-            {effectiveView === "Overview" && <Overview />}
-            {effectiveView === "Leads" && (
-              <Leads
-                search={search}
-                setSearch={setSearch}
-                source={source}
-                setSource={setSource}
-                owner={owner}
-                setOwner={setOwner}
-                board={board}
-                setBoard={setBoard}
-                setImportRows={setImportRows}
-                setError={setError}
-              />
-            )}
-            {effectiveView === "Clients" && <Clients />}
-            {effectiveView === "Follow-ups" && <FollowUps />}
-            {effectiveView === "Reports" && showReports && <Reports from={from} to={to} />}
-            {effectiveView === "Settings" && <Settings />}
-            {effectiveView === "WhatsApp" && <WhatsApp openLead={async (id) => {
-              const latest = await reload();
-              if (!latest.leads.some((lead) => lead.id === id)) throw new Error("This lead is no longer available to your account.");
-              setSelected(id);
-            }} />}
+            {/* Keyed by view so each switch replays the entrance animation. */}
+            <div key={effectiveView} className="crm-view-enter">
+              {(effectiveView === "Overview" || effectiveView === "Reports") && (
+                <ReportingSummary from={from} to={to} setFrom={setFrom} setTo={setTo} />
+              )}
+              {effectiveView === "Overview" && <Overview />}
+              {effectiveView === "Leads" && (
+                <Leads
+                  search={search}
+                  setSearch={setSearch}
+                  source={source}
+                  setSource={setSource}
+                  owner={owner}
+                  setOwner={setOwner}
+                  board={board}
+                  setBoard={setBoard}
+                  setImportRows={setImportRows}
+                  setError={setError}
+                />
+              )}
+              {effectiveView === "Clients" && <Clients />}
+              {effectiveView === "Follow-ups" && <FollowUps />}
+              {effectiveView === "Reports" && showReports && <Reports from={from} to={to} />}
+              {effectiveView === "Settings" && <Settings />}
+              {effectiveView === "WhatsApp" && <WhatsApp openLead={async (id) => {
+                const latest = await reload();
+                if (!latest.leads.some((lead) => lead.id === id)) throw new Error("This lead is no longer available to your account.");
+                setSelected(id);
+              }} />}
+            </div>
             <footer className="crm-content-footer">
               <span>Veyrn Labs Workspace</span>
               <span>A little structure. A lot of possibility.</span>

@@ -1,5 +1,7 @@
 "use client";
+import { crmFetch } from "./activity";
 import { useEffect, useState } from "react";
+import { SkeletonRows } from "./Skeleton";
 import { deliveryLabel, type Delivery } from "@/lib/crm/delivery";
 type Attempt = Delivery & {
   origin?: string;
@@ -11,10 +13,11 @@ type Attempt = Delivery & {
 export function ReplyHistory({ conversation }: { conversation: string }) {
   const [items, setItems] = useState<Attempt[]>([]),
     [error, setError] = useState(""),
-    [version, setVersion] = useState(0);
+    [version, setVersion] = useState(0),
+    [loaded, setLoaded] = useState(false);
   useEffect(() => {
     const abort = new AbortController();
-    fetch(`/api/crm/whatsapp/send?conversation=${conversation}`, {
+    crmFetch(`/api/crm/whatsapp/send?conversation=${conversation}`, {
       signal: abort.signal,
       cache: "no-store",
     })
@@ -24,10 +27,14 @@ export function ReplyHistory({ conversation }: { conversation: string }) {
         if (!abort.signal.aborted) {
           setItems(data.attempts);
           setError("");
+          setLoaded(true);
         }
       })
       .catch((e) => {
-        if (!abort.signal.aborted) setError(e.message);
+        if (!abort.signal.aborted) {
+          setError(e.message);
+          setLoaded(true);
+        }
       });
     return () => abort.abort();
   }, [conversation, version]);
@@ -38,7 +45,8 @@ export function ReplyHistory({ conversation }: { conversation: string }) {
         Refresh reply history
       </button>
       {error && <p role="status">{error}</p>}
-      {!error && items.length === 0 && <p>No outgoing replies yet.</p>}
+      {!loaded && <SkeletonRows rows={2} variant="card" label="Loading reply history" />}
+      {loaded && !error && items.length === 0 && <p>No outgoing replies yet.</p>}
       <ol className="crm-whatsapp-messages">
         {[...items].reverse().map((item) => (
           <li key={item.id}>

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./crm.css";
+import { ActivityBar } from "@/components/crm/ActivityBar";
 
 export const metadata: Metadata = {
   title: "Workspace | Veyrn Labs",
@@ -8,5 +9,10 @@ export const metadata: Metadata = {
   alternates: { canonical: null },
 };
 export default function CrmLayout({ children }: { children: React.ReactNode }) {
-  return <div className="crm-root">{children}</div>;
+  return (
+    <div className="crm-root">
+      <ActivityBar />
+      {children}
+    </div>
+  );
 }

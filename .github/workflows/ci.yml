@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# A newer push to the same branch or PR makes the older run's result irrelevant.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      # Matches the Render worker's NODE_VERSION. The test suite imports .ts sources directly,
+      # which relies on Node's built-in type stripping (unflagged from 22.18).
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run test:crm
+      # Needs no secrets: CRM features fail closed when their env vars are unset. Fetches
+      # Google Fonts over the network, so a build failure here can be a transient fetch error.
+      - run: npm run build

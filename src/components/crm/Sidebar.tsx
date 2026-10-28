@@ -1,4 +1,5 @@
 "use client";
+import { crmFetch } from "./activity";
 import { useRouter } from "next/navigation";
 import { Logo } from "@/components/Logo";
 import type { Member } from "@/lib/crm/model";
@@ -80,7 +81,7 @@ export function Sidebar({
             <button
               aria-label="Sign out"
               onClick={async () => {
-                const res = await fetch("/api/crm/session", { method: "DELETE" });
+                const res = await crmFetch("/api/crm/session", { method: "DELETE" });
                 if (res.ok) {
                   router.push("/crm/login");
                   router.refresh();

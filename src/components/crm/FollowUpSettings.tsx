@@ -1,4 +1,5 @@
 "use client";
+import { crmFetch } from "./activity";
 import { useState } from "react";
 export function FollowUpSettings({ role, demo }: { role: string; demo: boolean }) {
   const [loaded, setLoaded] = useState(false);
@@ -29,7 +30,7 @@ export function FollowUpSettings({ role, demo }: { role: string; demo: boolean }
     setBusy(true);
     setError("");
     try {
-      const response = await fetch("/api/crm/followups", { cache: "no-store" });
+      const response = await crmFetch("/api/crm/followups", { cache: "no-store" });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error);
       setEnabled(Boolean(result.enabled));
@@ -53,7 +54,7 @@ export function FollowUpSettings({ role, demo }: { role: string; demo: boolean }
             with no logged contact or newer WhatsApp message.
           </p>
         </div>
-        <button disabled={busy || demo} onClick={() => void load()}>
+        <button aria-busy={busy} disabled={busy || demo} onClick={() => void load()}>
           {busy ? "Loading…" : loaded ? "Reload" : "Configure follow-ups"}
         </button>
       </div>
@@ -91,7 +92,7 @@ export function FollowUpSettings({ role, demo }: { role: string; demo: boolean }
                 setBusy(true);
                 setError("");
                 try {
-                  const r = await fetch("/api/crm/followups", {
+                  const r = await crmFetch("/api/crm/followups", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ enabled: !enabled }),

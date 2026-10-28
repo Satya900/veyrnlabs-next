@@ -157,7 +157,7 @@ export function LeadForm({
             )}
           </div>
         )}
-        <button className="crm-primary" disabled={busy}>
+        <button aria-busy={busy} className="crm-primary" disabled={busy}>
           {busy ? "Saving…" : lead ? "Save changes" : "Create lead →"}
         </button>
       </form>

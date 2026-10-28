@@ -1,4 +1,5 @@
 "use client";
+import { crmFetch } from "./activity";
 import { useEffect, useState } from "react";
 import { demoWorkspace } from "@/lib/crm/model";
 import type { Workspace as Data } from "@/lib/crm/model";
@@ -13,7 +14,7 @@ export function useWorkspaceData(demo: boolean, initialData: Data | null = null)
   const [now, setNow] = useState(() => Date.now());
 
   async function reload() {
-    const res = await fetch("/api/crm", { cache: "no-store" });
+    const res = await crmFetch("/api/crm", { cache: "no-store" });
     const result = await res.json();
     if (!res.ok) throw new Error(result.error);
     setData(result);
@@ -30,7 +31,7 @@ export function useWorkspaceData(demo: boolean, initialData: Data | null = null)
     } else if (!initialData) {
       // No server-rendered data (e.g. the initial fetch failed): fall back
       // to fetching client-side instead of leaving the page stuck loading.
-      fetch("/api/crm", { cache: "no-store", signal: controller.signal })
+      crmFetch("/api/crm", { cache: "no-store", signal: controller.signal })
         .then(async (response) => {
           const result = await response.json();
           if (!response.ok) throw new Error(result.error);
@@ -57,7 +58,7 @@ export function useWorkspaceData(demo: boolean, initialData: Data | null = null)
     setMessage("");
     try {
       if (!demo) {
-        const res = await fetch("/api/crm", {
+        const res = await crmFetch("/api/crm", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
@@ -109,7 +110,7 @@ export function useWorkspaceData(demo: boolean, initialData: Data | null = null)
       return true;
     }
     try {
-      const res = await fetch("/api/crm", {
+      const res = await crmFetch("/api/crm", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),

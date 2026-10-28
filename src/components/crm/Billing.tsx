@@ -1,4 +1,5 @@
 "use client";
+import { crmFetch } from "./activity";
 import { useState } from "react";
 import {
   CRM_PLANS,
@@ -45,7 +46,7 @@ export function Billing({ onStarted }: { onStarted: () => void }) {
     setBusy(key);
     setError("");
     try {
-      const res = await fetch("/api/crm/billing", {
+      const res = await crmFetch("/api/crm/billing", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "subscribe", plan, months }),
@@ -90,6 +91,7 @@ export function Billing({ onStarted }: { onStarted: () => void }) {
                     {rupees(price.totalPaise)} {period.label.toLowerCase()}
                   </span>
                   <button
+                    aria-busy={busy === key}
                     type="button"
                     disabled={!!busy}
                     onClick={() => void subscribe(plan, period.months)}

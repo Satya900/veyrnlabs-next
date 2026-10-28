@@ -1,5 +1,7 @@
 "use client";
+import { crmFetch } from "./activity";
 import { useEffect, useState } from "react";
+import { SkeletonRows } from "./Skeleton";
 import { useWorkspaceContext } from "./context";
 import { istDayBounds, overlaps, slotGrid, type Busy } from "@/lib/crm/calendar-slots";
 
@@ -25,7 +27,7 @@ export function ScheduleVisit({ leadId }: { leadId: string }) {
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`/api/crm/calendar/visit?leadId=${leadId}`, { cache: "no-store" })
+    crmFetch(`/api/crm/calendar/visit?leadId=${leadId}`, { cache: "no-store" })
       .then(async (r) => { const result = await r.json(); if (!r.ok) throw new Error(result.error || "Could not load this visit"); return result; })
       .then((result) => {
         if (!cancelled) setVisit(result.visit ?? null);
@@ -44,7 +46,7 @@ export function ScheduleVisit({ leadId }: { leadId: string }) {
     setCancelling(true);
     setError("");
     try {
-      const res = await fetch("/api/crm/calendar/cancel", {
+      const res = await crmFetch("/api/crm/calendar/cancel", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ bookingId: visit.booking_id }),
@@ -72,7 +74,7 @@ export function ScheduleVisit({ leadId }: { leadId: string }) {
         from: start.toISOString(),
         to: end.toISOString(),
       });
-      const res = await fetch(`/api/crm/calendar/slots?${params}`, {
+      const res = await crmFetch(`/api/crm/calendar/slots?${params}`, {
         cache: "no-store",
       });
       const result = await res.json();
@@ -91,7 +93,7 @@ export function ScheduleVisit({ leadId }: { leadId: string }) {
     setBooking(slotStart.toISOString());
     setError("");
     try {
-      const res = await fetch("/api/crm/calendar/book", {
+      const res = await crmFetch("/api/crm/calendar/book", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -127,6 +129,7 @@ export function ScheduleVisit({ leadId }: { leadId: string }) {
     return (
       <div className="crm-schedule-visit">
         <h3>Schedule a site visit</h3>
+        <SkeletonRows rows={2} label="Loading site visit" />
       </div>
     );
 
@@ -150,7 +153,7 @@ export function ScheduleVisit({ leadId }: { leadId: string }) {
           >
             Change time
           </button>
-          <button type="button" disabled={cancelling || !["booked", "cancelling"].includes(visit.status)} onClick={() => void cancelVisit()}>
+          <button type="button" aria-busy={cancelling} disabled={cancelling || !["booked", "cancelling"].includes(visit.status)} onClick={() => void cancelVisit()}>
             {cancelling ? "Cancelling…" : "Cancel visit"}
           </button>
         </div>
@@ -177,7 +180,7 @@ export function ScheduleVisit({ leadId }: { leadId: string }) {
             setBooked(null);
           }}
         />
-        <button type="button" disabled={loading} onClick={() => void loadSlots()}>
+        <button aria-busy={loading} type="button" disabled={loading} onClick={() => void loadSlots()}>
           {loading ? "Checking availability…" : "Check availability"}
         </button>
         {visit && rescheduling && (
@@ -215,13 +218,14 @@ export function ScheduleVisit({ leadId }: { leadId: string }) {
               <button
                 key={key}
                 type="button"
+                aria-busy={booking === key}
                 disabled={taken || past || !!booking}
                 onClick={async () => {
                   if (visit && rescheduling) {
                     setBooking(slotStart.toISOString());
                     setError("");
                     try {
-                      const res = await fetch("/api/crm/calendar/cancel", {
+                      const res = await crmFetch("/api/crm/calendar/cancel", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ bookingId: visit.booking_id }),

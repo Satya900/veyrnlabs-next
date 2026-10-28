@@ -1,4 +1,5 @@
 "use client";
+import { crmFetch } from "./activity";
 import { useState } from "react";
 import type { UsageSummary } from "@/lib/crm/plans";
 import { loadRazorpayScript } from "./Billing";
@@ -24,7 +25,7 @@ export function BillingManage({
     setBusy(true);
     setMessage("");
     try {
-      const response = await fetch("/api/crm/billing", {
+      const response = await crmFetch("/api/crm/billing", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action, subscriptionId, quantity }),

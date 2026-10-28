@@ -1,5 +1,7 @@
 "use client";
+import { crmFetch } from "../activity";
 import { useEffect, useState } from "react";
+import { SkeletonRows } from "../Skeleton";
 import { useWorkspaceContext } from "../context";
 import { AIDraft } from "../AIDraft";
 import { ReplyHistory } from "../ReplyHistory";
@@ -34,7 +36,7 @@ export function WhatsApp({
   useEffect(() => {
     if (demo) return;
     const controller = new AbortController();
-    fetch(`/api/crm/whatsapp${cursor}`, {
+    crmFetch(`/api/crm/whatsapp${cursor}`, {
       signal: controller.signal,
       cache: "no-store",
     })
@@ -118,7 +120,7 @@ export function WhatsApp({
             yet.
           </p>
         </div>
-        <button disabled={busy} onClick={reload}>
+        <button aria-busy={busy} disabled={busy} onClick={reload}>
           {busy ? "Loading…" : "Refresh inbox"}
         </button>
       </section>
@@ -132,6 +134,9 @@ export function WhatsApp({
           className="crm-panel crm-whatsapp-list"
           aria-label="WhatsApp conversations"
         >
+          {busy && !items.length && (
+            <SkeletonRows rows={4} variant="card" className="is-padded" label="Loading conversations" />
+          )}
           {!busy && !items.length && (
             <p className="crm-settings-body">
               No conversations yet. Incoming messages will appear here after
@@ -201,7 +206,7 @@ function Conversation({
   const [opening, setOpening] = useState(false);
   useEffect(() => {
     const controller = new AbortController();
-    fetch(`/api/crm/whatsapp?conversation=${conversation.id}${cursor}`, {
+    crmFetch(`/api/crm/whatsapp?conversation=${conversation.id}${cursor}`, {
       signal: controller.signal,
       cache: "no-store",
     })
@@ -275,11 +280,14 @@ function Conversation({
           </button>
         </div>
       )}
-      {busy && (
-        <p className="crm-settings-body" role="status">
-          Loading messages…
-        </p>
-      )}
+      {busy &&
+        (items.length ? (
+          <p className="crm-settings-body" role="status">
+            Loading messages…
+          </p>
+        ) : (
+          <SkeletonRows rows={3} variant="card" className="is-padded" label="Loading messages" />
+        ))}
       {more && (
         <button
           disabled={busy}

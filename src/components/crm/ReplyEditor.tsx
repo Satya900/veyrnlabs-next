@@ -1,4 +1,5 @@
 "use client";
+import { crmFetch } from "./activity";
 import { useEffect, useState } from "react";
 import { deliveryLabel, type Delivery } from "@/lib/crm/delivery";
 const labels: Record<string, string> = {
@@ -26,7 +27,7 @@ export function ReplyEditor({
   const [version, setVersion] = useState(0);
   useEffect(() => {
     const controller = new AbortController();
-    fetch(`/api/crm/whatsapp/send?draft=${draft}`, {
+    crmFetch(`/api/crm/whatsapp/send?draft=${draft}`, {
       signal: controller.signal,
       cache: "no-store",
     })
@@ -53,7 +54,7 @@ export function ReplyEditor({
         setBusy(true);
         setError("");
         try {
-          const response = await fetch("/api/crm/whatsapp/send", {
+          const response = await crmFetch("/api/crm/whatsapp/send", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ draft, text, approved }),

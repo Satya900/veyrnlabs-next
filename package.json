@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "typecheck": "next typegen && tsc --noEmit",
     "test:crm": "node --test tests/crm-*.test.mjs",
     "crm:worker": "node scripts/crm-auto-worker.mjs --watch"
   },

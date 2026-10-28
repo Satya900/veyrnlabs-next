@@ -1,4 +1,5 @@
 "use client";
+import { crmFetch } from "./activity";
 import { useEffect, useState } from "react";
 type MetaSDK = {
   init: (options: Record<string, unknown>) => void;
@@ -68,7 +69,7 @@ export function WhatsAppSettings({
     setBusy(true);
     setMessage("");
     try {
-      const r = await fetch("/api/crm/whatsapp/connect", { cache: "no-store" });
+      const r = await crmFetch("/api/crm/whatsapp/connect", { cache: "no-store" });
       const data = await r.json();
       if (!r.ok) throw new Error(data.error);
       setSetup(data);
@@ -108,7 +109,7 @@ export function WhatsAppSettings({
     setBusy(true);
     setMessage("");
     try {
-      const response = await fetch("/api/crm/whatsapp/connect", {
+      const response = await crmFetch("/api/crm/whatsapp/connect", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(

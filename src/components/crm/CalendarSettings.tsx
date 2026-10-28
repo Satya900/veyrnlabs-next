@@ -1,5 +1,7 @@
 "use client";
+import { crmFetch } from "./activity";
 import { useEffect, useState } from "react";
+import { SkeletonRows } from "./Skeleton";
 
 type Status = { connected: boolean; connected_at?: string };
 
@@ -21,7 +23,7 @@ export function CalendarSettings({ demo }: { demo: boolean; role: string }) {
   async function load() {
     setBusy(true);
     try {
-      const res = await fetch("/api/crm/calendar/status", { cache: "no-store" });
+      const res = await crmFetch("/api/crm/calendar/status", { cache: "no-store" });
       const result = await res.json();
       if (!res.ok) throw new Error(result.error);
       setStatus(result);
@@ -56,7 +58,7 @@ export function CalendarSettings({ demo }: { demo: boolean; role: string }) {
     setError("");
     setNotice("");
     try {
-      const res = await fetch("/api/crm/calendar/status", { method: "DELETE" });
+      const res = await crmFetch("/api/crm/calendar/status", { method: "DELETE" });
       const result = await res.json();
       if (!res.ok) throw new Error(result.error);
       await load();
@@ -85,7 +87,9 @@ export function CalendarSettings({ demo }: { demo: boolean; role: string }) {
               </p>
             )}
             {notice && <p role="status">{notice}</p>}
-            {status?.connected ? (
+            {!status && !error ? (
+              <SkeletonRows rows={2} label="Loading calendar connection" />
+            ) : status?.connected ? (
               <>
                 <p>
                   Connected

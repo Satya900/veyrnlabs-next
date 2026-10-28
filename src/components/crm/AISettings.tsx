@@ -1,4 +1,5 @@
 "use client";
+import { crmFetch } from "./activity";
 import { useState } from "react";
 export function AISettings({ role, demo }: { role: string; demo: boolean }) {
   const [loaded, setLoaded] = useState(false);
@@ -26,7 +27,7 @@ export function AISettings({ role, demo }: { role: string; demo: boolean }) {
     setBusy(true);
     setError("");
     try {
-      const response = await fetch("/api/crm/ai", { cache: "no-store" });
+      const response = await crmFetch("/api/crm/ai", { cache: "no-store" });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error);
       setKnowledge(result.settings.knowledge);
@@ -48,7 +49,7 @@ export function AISettings({ role, demo }: { role: string; demo: boolean }) {
             Prepare replies using your own company and property information.
           </p>
         </div>
-        <button disabled={busy || demo} onClick={() => void load()}>
+        <button aria-busy={busy} disabled={busy || demo} onClick={() => void load()}>
           {busy ? "Loading…" : loaded ? "Reload" : "Configure assistant"}
         </button>
       </div>
@@ -65,7 +66,7 @@ export function AISettings({ role, demo }: { role: string; demo: boolean }) {
               setError("");
               setMessage("");
               try {
-                const response = await fetch("/api/crm/ai", {
+                const response = await crmFetch("/api/crm/ai", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({
@@ -117,7 +118,7 @@ export function AISettings({ role, demo }: { role: string; demo: boolean }) {
                 AI provider setup is pending. You can save your knowledge now.
               </p>
             )}
-            <button className="crm-primary" disabled={busy}>
+            <button aria-busy={busy} className="crm-primary" disabled={busy}>
               {busy ? "Saving…" : "Save assistant settings"}
             </button>
           </form>

@@ -1,4 +1,5 @@
 "use client";
+import { crmFetch } from "./activity";
 import { useState } from "react";
 type Invite = {
   id: string;
@@ -23,7 +24,7 @@ export function TeamInvitations({
   const [link, setLink] = useState("");
   const [loaded, setLoaded] = useState(false);
   async function load() {
-    const res = await fetch("/api/crm/invitations");
+    const res = await crmFetch("/api/crm/invitations");
     const result = await res.json();
     if (!res.ok) throw new Error(result.error);
     setItems(result.invitations);
@@ -35,7 +36,7 @@ export function TeamInvitations({
     setLink("");
     try {
       if (body) {
-        const res = await fetch("/api/crm/invitations", {
+        const res = await crmFetch("/api/crm/invitations", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
@@ -87,7 +88,7 @@ export function TeamInvitations({
             {role === "owner" && <option value="admin">Admin</option>}
           </select>
         </label>
-        <button disabled={busy || demo}>
+        <button aria-busy={busy} disabled={busy || demo}>
           {busy ? "Please wait…" : "Create invitation link"}
         </button>
       </form>
