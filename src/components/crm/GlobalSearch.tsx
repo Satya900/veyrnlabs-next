@@ -62,7 +62,16 @@ export function GlobalSearch() {
       />
       {showPanel && (
         <div className="crm-global-search-results" role="listbox">
-          {loading && !results && <SkeletonRows rows={3} variant="card" label="Searching" />}
+          {loading &&
+            (results ? (
+              // Earlier results stay visible while a new query is pending; say so in text,
+              // since the activity bar is decorative and hidden from assistive technology.
+              <p className="crm-muted" role="status">
+                Searching…
+              </p>
+            ) : (
+              <SkeletonRows rows={3} variant="card" label="Searching" />
+            ))}
           {!loading && empty && <p className="crm-muted">No matches for “{q.trim()}”.</p>}
           {results?.leads.map((l) => (
             <button

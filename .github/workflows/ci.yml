@@ -19,6 +19,8 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       # Matches the Render worker's NODE_VERSION. The test suite imports .ts sources directly,
       # which relies on Node's built-in type stripping (unflagged from 22.18).
       - uses: actions/setup-node@v4
