@@ -6,7 +6,7 @@ export function Nav() {
   return (
     <header className="site-nav">
       <div className="nav-inner">
-        <Logo eager href="/#top" />
+        <Logo href="/#top" />
         <nav aria-label="Main navigation" className="flex items-center gap-7">
           <Link href="/#features" className="nav-secondary">
             Features

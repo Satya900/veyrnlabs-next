@@ -23,8 +23,9 @@ export default async function OpenGraphImage() {
         flexDirection: "column",
         justifyContent: "space-between",
         padding: 64,
-        background: "#10120f",
-        color: "#f1f0e9",
+        // Matches the site's light palette (globals.css): paper, ink, olive accent.
+        background: "#f6f6f2",
+        color: "#1a1f16",
         fontFamily: "sans-serif",
       }}
     >
@@ -39,7 +40,7 @@ export default async function OpenGraphImage() {
           <img src={markSrc} width={64} height={64} alt="" />
           <span style={{ fontSize: 35 }}>veyrn labs</span>
         </div>
-        <span style={{ fontSize: 16, color: "#d5f688", letterSpacing: 3 }}>
+        <span style={{ fontSize: 16, color: "#3a5426", letterSpacing: 3 }}>
           CRM FOR REAL ESTATE
         </span>
       </div>
@@ -54,16 +55,16 @@ export default async function OpenGraphImage() {
       >
         <span>Every property lead.</span>
         <span>A clearer</span>
-        <span style={{ color: "#d5f688" }}>next step.</span>
+        <span style={{ color: "#3a5426" }}>next step.</span>
       </div>
       <div
         style={{
           display: "flex",
-          borderTop: "1px solid #394031",
+          borderTop: "1px solid #cdd1c4",
           paddingTop: 24,
           justifyContent: "space-between",
           fontSize: 18,
-          color: "#b2b6ad",
+          color: "#4a5243",
         }}
       >
         <span>Lead management. Follow-ups. Team clarity.</span>

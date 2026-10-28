@@ -3,7 +3,7 @@ import { crmFetch } from "./activity";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { VectorLogo } from "@/components/Logo";
+import { Logo } from "@/components/Logo";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { Eyebrow } from "@/components/ui/Eyebrow";
 import { safeNextUrl } from "@/lib/crm/next-url";
@@ -21,7 +21,7 @@ export default function Login({
   return (
     <main className="crm-login">
       <header className="crm-login-header">
-        <VectorLogo href="/" />
+        <Logo href="/" />
         <ButtonLink href="/" variant="outline-sm">
           Back to website <span aria-hidden="true">↗</span>
         </ButtonLink>

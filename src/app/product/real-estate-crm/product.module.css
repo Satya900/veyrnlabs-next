@@ -41,11 +41,11 @@
 }
 .story {
   padding: 26px;
-  border: 1px solid #465338;
+  border: 1px solid var(--color-hairline);
   border-radius: 16px;
   background:
-    radial-gradient(ellipse at top right, #d5f68813, transparent 65%), #171b14;
-  box-shadow: 0 26px 70px #0003;
+    radial-gradient(ellipse at top right, #d5f68840, transparent 65%), var(--color-canvas);
+  box-shadow: var(--shadow-lg);
   transform: rotate(1deg);
 }
 .storyHeader {
@@ -78,7 +78,7 @@
   padding: 18px;
   border: 1px solid var(--color-hairline);
   border-radius: 10px 10px 10px 0;
-  background: #10120f;
+  background: var(--color-canvas-card);
   margin: 12px 24px 0 0;
 }
 .message > span,
@@ -96,8 +96,8 @@
 }
 .reply {
   margin: 12px 0 0 24px;
-  background: #26311d;
-  border-color: #465338;
+  background: var(--color-accent-soft);
+  border-color: #3a542630;
   border-radius: 10px 10px 0 10px;
 }
 .reply > span {
@@ -106,7 +106,7 @@
 .record {
   margin-top: 24px;
   padding-top: 20px;
-  border-top: 1px solid #465338;
+  border-top: 1px solid var(--color-hairline);
 }
 .record > p {
   font-size: 13px;
@@ -133,8 +133,8 @@
   margin: 36px 0;
 }
 .sources > span {
-  border: 1px solid #465338;
-  background: #1a2015;
+  border: 1px solid var(--color-hairline-strong);
+  background: var(--color-canvas);
   padding: 13px 20px;
   border-radius: 100px;
   font-size: 14px;
@@ -161,7 +161,7 @@
   background: var(--color-canvas-soft);
   padding: 20px 14px;
   font-size: 13px;
-  border-left: 2px solid #64724f;
+  border-left: 2px solid var(--color-primary);
 }
 .pipeline small {
   display: block;
@@ -220,11 +220,13 @@
   padding: 28px;
   border: 1px solid var(--color-hairline);
   border-radius: 12px;
-  background: #161a13;
+  background: var(--color-canvas);
+  box-shadow: var(--shadow-sm);
 }
 .featured {
-  border-color: #91a76b;
-  background: linear-gradient(160deg, #29321e, #171b14 60%);
+  border-color: var(--color-primary);
+  background: linear-gradient(160deg, var(--color-accent-soft), var(--color-canvas) 60%);
+  box-shadow: var(--shadow-md);
 }
 .planNumber {
   font:
@@ -276,7 +278,7 @@
   margin-top: 42px;
 }
 .buildSteps > div {
-  border-top: 1px solid #465338;
+  border-top: 1px solid var(--color-hairline);
   padding-top: 24px;
 }
 .buildSteps span {

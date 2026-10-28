@@ -1,7 +1,7 @@
 "use client";
 import { crmFetch } from "./activity";
 import { useRouter } from "next/navigation";
-import { VectorLogo } from "@/components/Logo";
+import { Logo } from "@/components/Logo";
 import type { Member } from "@/lib/crm/model";
 import { initials } from "@/lib/crm/workspace";
 import { site } from "@/lib/site";
@@ -38,7 +38,7 @@ export function Sidebar({
   const router = useRouter();
   return (
     <aside className="crm-sidebar">
-      <VectorLogo href="/" />
+      <Logo href="/" />
       <div className="crm-workspace-name">
         <span className="status-dot" aria-hidden="true" />
         <div>

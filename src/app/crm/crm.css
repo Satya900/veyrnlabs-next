@@ -1,41 +1,18 @@
-/* Veyrn Labs workspace. A light theme, following the pattern of established CRMs
-   (Attio, HubSpot, Linear): a warm tinted app background, white surfaces for content,
-   hairline borders with soft shadows for elevation, and one saturated accent reserved
-   for primary actions and selection. Re-declaring the shared homepage tokens here
-   restyles every token-based rule and Tailwind utility inside the workspace.
-   All text pairs meet WCAG AA (4.5:1) on white, the app background and card fills. */
+/* Veyrn Labs workspace. Colours come from the shared light palette in globals.css,
+   which follows established CRMs (Attio, HubSpot, Linear): a warm tinted app
+   background, white content surfaces with hairlines and soft shadows, and one accent
+   reserved for primary actions and selection. Only workspace aliases live here. */
 .crm-root {
-  /* Surfaces: --color-canvas is the content surface (panels, inputs, dialogs). */
-  --crm-app-bg: #f6f6f2;
-  --color-canvas: #ffffff;
-  --color-canvas-card: #f2f3ee;
-  --color-canvas-soft: #eceee6;
-  --color-canvas-mid: #d9dccf;
-  /* Text */
-  --color-ink: #1a1f16;
-  --color-body: #4a5243;
-  --color-mute: #687062;
-  /* Lines. Form fields get a 3:1 border (WCAG 1.4.11); dividers stay quiet. */
-  --color-hairline: #e4e6dd;
-  --color-hairline-strong: #cdd1c4;
-  --color-hairline-hover: #a9af9f;
-  --crm-input-border: #8f9585;
-  /* Brand: lime does not read on white, so actions use the brand's deep olive and
-     lime survives as the soft selection tint and in the logo mark. */
-  --color-primary: #3a5426;
-  --color-on-primary: #ffffff;
-  --color-ink-hover: #2d421d;
-  --crm-accent-soft: #eef5dc;
-  /* Status */
-  --crm-danger: #b42318;
-  --crm-danger-soft: #fef3f2;
-  --crm-success: #1d6b3a;
-  --crm-success-soft: #edf7ef;
-  --crm-warning: #93500a;
-  /* Elevation */
-  --crm-shadow-sm: 0 1px 2px rgb(26 31 22 / 0.06);
-  --crm-shadow-md: 0 4px 12px rgb(26 31 22 / 0.08);
-  --crm-shadow-lg: 0 16px 40px rgb(26 31 22 / 0.14);
+  --crm-app-bg: var(--color-paper);
+  --crm-input-border: var(--color-input-border);
+  --crm-accent-soft: var(--color-accent-soft);
+  --crm-danger: var(--color-danger);
+  --crm-danger-soft: var(--color-danger-soft);
+  --crm-success: var(--color-success);
+  --crm-success-soft: var(--color-success-soft);
+  --crm-shadow-sm: var(--shadow-sm);
+  --crm-shadow-md: var(--shadow-md);
+  --crm-shadow-lg: var(--shadow-lg);
 
   --crm-accent: var(--color-primary);
   --crm-text: var(--color-ink);
@@ -47,13 +24,6 @@
   font-family: var(--font-sans), sans-serif;
   font-size: 14px;
   line-height: 1.7;
-  color-scheme: light;
-}
-/* The page behind the workspace (overscroll, scrollbars) matches it. Unsupported
-   browsers keep the site's dark page, which only shows at the edges. */
-html:has(.crm-root),
-html:has(.crm-root) body {
-  background: #f6f6f2;
   color-scheme: light;
 }
 .crm-root * {
@@ -179,7 +149,7 @@ html:has(.crm-root) body {
   border-right: 1px solid var(--color-hairline);
   background: var(--crm-app-bg);
 }
-.crm-sidebar > .vector-logo {
+.crm-sidebar > .site-logo {
   margin: 0 0 36px;
 }
 .crm-workspace-name {
@@ -1724,7 +1694,7 @@ html:has(.crm-root) body {
     border-right: 0;
     border-bottom: 1px solid var(--color-hairline);
   }
-  .crm-sidebar > .vector-logo {
+  .crm-sidebar > .site-logo {
     margin: 0 0 24px;
   }
   .crm-sidebar nav {
@@ -1781,8 +1751,8 @@ html:has(.crm-root) body {
   .crm-sidebar {
     padding-inline: 20px;
   }
-  .crm-sidebar > .vector-logo,
-  .crm-login-header > .vector-logo {
+  .crm-sidebar > .site-logo,
+  .crm-login-header > .site-logo {
     font-size: 17px;
   }
   .crm-content {
