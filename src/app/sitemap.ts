@@ -36,6 +36,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
           changeFrequency: "monthly",
           priority: 0.3,
         },
+        {
+          url: siteUrl("/data-deletion"),
+          lastModified: "2026-11-03",
+          changeFrequency: "monthly",
+          priority: 0.3,
+        },
       ]
     : [];
 }
