@@ -23,6 +23,7 @@ export function Footer() {
           <Link href="/#faq">FAQ</Link>
           <Link href="/privacy">Privacy policy</Link>
           <Link href="/terms">Terms &amp; conditions</Link>
+          <Link href="/data-deletion">Data deletion</Link>
         </nav>
       </div>
       <div className="footer-bottom">
