@@ -55,12 +55,23 @@ export function TeamInvitations({
   }
   if (role === "team") return null;
   return (
-    <div className="crm-settings-body">
-      <h3>Invite a teammate</h3>
-      <p className="crm-muted">
-        Create a link for a specific email, then share it with that teammate.
-        Links expire after seven days. No email is sent automatically.
-      </p>
+    <div className="crm-team-invite">
+      <div className="crm-team-invite-head">
+        <div>
+          <h3>Invite a teammate</h3>
+          <p className="crm-muted">
+            Create a link for a specific email, then share it with that teammate.
+            Links expire after seven days. No email is sent automatically.
+          </p>
+        </div>
+        <button
+          type="button"
+          disabled={busy || demo}
+          onClick={() => void act()}
+        >
+          {loaded ? "Refresh" : "Show invitations"}
+        </button>
+      </div>
       <form
         className="crm-invite-form"
         onSubmit={(e) => {
@@ -88,8 +99,8 @@ export function TeamInvitations({
             {role === "owner" && <option value="admin">Admin</option>}
           </select>
         </label>
-        <button aria-busy={busy} disabled={busy || demo}>
-          {busy ? "Please wait…" : "Create invitation link"}
+        <button className="crm-primary" aria-busy={busy} disabled={busy || demo}>
+          {busy ? "Please wait…" : "Create link"}
         </button>
       </form>
       {demo && (
@@ -106,23 +117,17 @@ export function TeamInvitations({
           <input readOnly value={link} onFocus={(e) => e.target.select()} />
         </label>
       )}
-      <button
-        className="crm-demo-link"
-        type="button"
-        disabled={busy || demo}
-        onClick={() => void act()}
-      >
-        Refresh invitations
-      </button>
       {loaded && !items.length && (
         <p className="crm-muted">No invitations yet.</p>
       )}
+      {items.length > 0 && (
+      <ul className="crm-team-list">
       {items.map((item) => (
-        <div key={item.id} className="crm-invite-row">
-          <div>
+        <li key={item.id} className="crm-team-row">
+          <span className="crm-team-name">
             <strong>{item.email}</strong>
-            <p className="crm-muted">
-              {item.role} ·{" "}
+            <small>
+              {item.role === "admin" ? "Admin" : "Team member"} ·{" "}
               {item.accepted_at
                 ? "Accepted"
                 : item.revoked_at
@@ -130,8 +135,8 @@ export function TeamInvitations({
                   : new Date(item.expires_at).getTime() <= now
                     ? "Expired"
                     : "Pending"}
-            </p>
-          </div>
+            </small>
+          </span>
           {!item.accepted_at && !item.revoked_at && (
             <button
               disabled={busy}
@@ -140,8 +145,10 @@ export function TeamInvitations({
               Revoke
             </button>
           )}
-        </div>
+        </li>
       ))}
+      </ul>
+      )}
     </div>
   );
 }

@@ -184,9 +184,29 @@
   color: var(--color-mute);
   font-size: 11px;
 }
-.crm-workspace-name > span:last-child {
-  margin-left: auto;
-  color: var(--color-mute);
+.crm-workspace-name strong {
+  display: block;
+  font-weight: 500;
+  color: var(--color-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.crm-workspace-name > div {
+  min-width: 0;
+}
+.crm-workspace-mark {
+  text-transform: uppercase;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--crm-accent-soft);
+  color: var(--color-primary);
+  font-size: 12px;
+  font-weight: 600;
 }
 .crm-nav-label {
   display: block;
@@ -197,7 +217,7 @@
 .crm-sidebar nav {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
 }
 .crm-sidebar nav button {
   justify-content: flex-start;
@@ -207,9 +227,16 @@
   padding: 10px 12px;
   text-align: left;
 }
-.crm-sidebar nav button > span {
-  width: 20px;
-  font-size: 18px;
+.crm-nav-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+.crm-sidebar nav button .crm-nav-icon {
+  color: var(--color-mute);
+}
+.crm-sidebar nav button[aria-current="page"] .crm-nav-icon {
+  color: var(--color-primary);
 }
 /* Nav hover is a fill, not an outline; the current item keeps its tint on hover. The
    .crm-root prefix outranks the generic button hover rule. */
@@ -238,8 +265,10 @@
   padding-top: 32px;
 }
 .crm-sidebar-tip {
-  border-top: 1px solid var(--color-hairline);
-  padding: 24px 0;
+  padding: 16px;
+  border: 1px solid var(--color-hairline);
+  border-radius: 10px;
+  background: var(--color-canvas);
 }
 .crm-sidebar-tip > span {
   font:
@@ -249,20 +278,30 @@
   color: var(--color-mute);
 }
 .crm-sidebar-tip p {
-  margin: 12px 0 16px;
+  margin: 0 0 12px;
   font-size: 13px;
+  line-height: 1.5;
   color: var(--color-body);
 }
-.crm-sidebar-tip button {
-  padding: 0;
-  border: 0;
+.crm-root .crm-sidebar-tip button {
+  width: 100%;
+  padding: 8px 12px;
   font-size: 12px;
 }
-.crm-sidebar-support {
-  display: block;
-  padding-top: 16px;
+.crm-root .crm-sidebar-support {
+  display: grid;
+  gap: 2px;
+  padding: 16px 0 4px;
   font-size: 12px;
+  color: var(--color-body);
+  overflow-wrap: anywhere;
+}
+.crm-sidebar-support span {
   color: var(--color-mute);
+  font-size: 11px;
+}
+.crm-root .crm-sidebar-support:hover {
+  color: var(--color-primary);
 }
 .crm-profile {
   display: flex;
@@ -503,6 +542,12 @@
   grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
   gap: 24px;
   margin-bottom: 32px;
+}
+/* Settings stacks several panels per column; space them like the grid itself. */
+.crm-overview-grid > div:not(.crm-panel) {
+  display: grid;
+  gap: 24px;
+  align-content: start;
 }
 .crm-panel {
   background: var(--color-canvas);
@@ -802,6 +847,21 @@
 .crm-toolbar :is(input, select, button) {
   font-size: 12px;
 }
+.crm-root .crm-toolbar > :is(input, select, button),
+.crm-root .crm-toolbar .crm-search {
+  height: 40px;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+.crm-toolbar .crm-view-toggle {
+  height: 40px;
+  box-sizing: border-box;
+}
+.crm-root .crm-toolbar .crm-view-toggle button {
+  height: 100%;
+  padding-top: 0;
+  padding-bottom: 0;
+}
 .crm-toolbar select {
   width: 140px;
 }
@@ -826,13 +886,35 @@
 }
 .crm-board {
   display: flex;
-  align-items: flex-start;
-  gap: 20px;
+  align-items: stretch;
+  gap: 16px;
   overflow-x: auto;
-  padding-bottom: 24px;
+  padding-bottom: 16px;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-hairline-hover) transparent;
+  /* Fade the right edge so a column cut off by the viewport reads as "scroll for more". */
+  mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent);
+}
+/* macOS hides overlay scrollbars; keep the board's visible so cut-off columns read as scrollable. */
+.crm-board::-webkit-scrollbar {
+  height: 8px;
+}
+.crm-board::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: var(--color-hairline-strong);
+}
+.crm-board::-webkit-scrollbar-thumb:hover {
+  background: var(--color-hairline-hover);
+}
+.crm-board::-webkit-scrollbar-track {
+  background: transparent;
 }
 .crm-column {
-  flex: 0 0 276px;
+  display: flex;
+  flex-direction: column;
+  scroll-snap-align: start;
+  flex: 0 0 256px;
   min-height: 360px;
   padding: 16px 12px;
   border: 1px solid var(--color-hairline);
@@ -1918,7 +2000,7 @@
 .crm-invite-form button:disabled { opacity: .5; cursor: not-allowed; }
 .crm-invite-link { margin-top: 18px; }
 .crm-invite-row { display: flex; justify-content: space-between; gap: 12px; padding: 14px 0; border-top: 1px solid var(--color-hairline); overflow-wrap: anywhere; }
-.crm-plan-usage { margin-bottom: 20px; }
+.crm-plan-usage { margin-bottom: 0; }
 .crm-plan-usage .crm-panel-heading { flex-wrap: wrap; gap: 16px; }
 .crm-plan-usage .crm-settings-body { display: grid; gap: 16px; }
 .crm-plan-usage p { line-height: 1.6; }
@@ -1931,7 +2013,9 @@
 .crm-usage-meter > p { margin: 0; font-size: 12px; color: var(--crm-danger); }
 .crm-plan-comparison { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 16px; }
 .crm-plan-card { border: 1px solid var(--crm-border); border-radius: 10px; padding: 20px; display: grid; gap: 8px; align-content: start; }
-.crm-plan-card.is-plus { border-color: var(--crm-accent); background: var(--crm-accent-soft); }
+.crm-plan-card.is-current { border-color: var(--crm-accent); box-shadow: var(--crm-shadow-sm); }
+.crm-plan-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 24px; }
+.crm-plan-example { margin: 0 0 6px; padding: 12px 14px; border-radius: 8px; background: var(--color-canvas-card); font-size: 13px; line-height: 1.6; color: var(--color-body); }
 .crm-plan-card h3 { font-size: 16px; }
 .crm-plan-price { font-size: 22px; font-weight: 600; }
 .crm-plan-price small { font-size: 12px; font-weight: 400; color: var(--color-mute); }
@@ -2013,3 +2097,30 @@
 .crm-ai-draft { border-top: 1px solid var(--crm-border); display: grid; gap: 12px; }
 .crm-ai-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 .crm-ai-reply { white-space: pre-wrap; overflow-wrap: anywhere; border-left: 3px solid var(--crm-accent); padding: 12px 16px; }
+
+/* Settings: team members and invitations */
+.crm-team { display: grid; gap: 24px; }
+.crm-team-members { display: grid; gap: 12px; }
+.crm-team-list { display: grid; margin: 0; padding: 0; list-style: none; border: 1px solid var(--crm-border); border-radius: 10px; }
+.crm-team-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px 16px; }
+.crm-team-row + .crm-team-row { border-top: 1px solid var(--crm-border); }
+.crm-team-name { display: grid; flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.crm-team-name strong { font-size: 14px; font-weight: 500; }
+.crm-team-name small { font-size: 12px; color: var(--color-mute); }
+.crm-team .crm-notice { margin: 0; }
+.crm-team-invite { display: grid; gap: 16px; padding-top: 24px; border-top: 1px solid var(--crm-border); }
+.crm-team-invite-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.crm-team-invite-head h3 { font-size: 15px; }
+.crm-team-invite-head .crm-muted { margin: 4px 0 0; line-height: 1.6; }
+.crm-root .crm-team-invite-head button { flex-shrink: 0; padding: 6px 12px; font-size: 12px; }
+.crm-root .crm-team-invite .crm-invite-form { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) auto; align-items: end; gap: 12px; margin: 0; }
+.crm-root .crm-team-invite .crm-invite-form :is(input, select, button) { height: 44px; padding-top: 0; padding-bottom: 0; }
+.crm-root .crm-team-invite .crm-invite-form button { padding: 0 20px; }
+.crm-root .crm-team-invite .crm-invite-form label { display: grid; gap: 8px; align-self: end; }
+.crm-team-invite .crm-invite-link { margin: 0; }
+@media (max-width: 640px) {
+  .crm-root .crm-team-invite .crm-invite-form { grid-template-columns: 1fr; }
+  .crm-team-invite-head { flex-direction: column; }
+}
+.crm-settings-stack { display: grid; gap: 24px; }
+.crm-settings-stack > .crm-overview-grid { margin-bottom: 0; }

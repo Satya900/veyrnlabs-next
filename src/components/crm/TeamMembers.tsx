@@ -4,6 +4,8 @@ import { useState } from "react";
 import { initials } from "@/lib/crm/workspace";
 import type { Member } from "@/lib/crm/model";
 
+const roleLabel: Record<string, string> = { owner: "Owner", admin: "Admin", team: "Team member" };
+
 export function TeamMembers({
   members,
   role,
@@ -48,12 +50,16 @@ export function TeamMembers({
     (role === "owner" || (role === "admin" && m.role === "team"));
   const target = members.find((m) => m.id === pending?.id);
   return (
-    <>
+    <div className="crm-team-members">
+      <ul className="crm-team-list">
       {members.map((m) => (
-        <div key={m.id} className="crm-follow-row">
+        <li key={m.id} className="crm-team-row">
           <span className="crm-avatar">{initials(m.name)}</span>
-          <strong>{m.name}</strong>
-          <span className="crm-badge">{m.role}</span>
+          <span className="crm-team-name">
+            <strong>{m.name}</strong>
+            {m.id === selfId && <small>You</small>}
+          </span>
+          <span className="crm-badge">{roleLabel[m.role] ?? m.role}</span>
           {!demo && role === "owner" && m.role !== "owner" && (
             <button
               type="button"
@@ -72,8 +78,9 @@ export function TeamMembers({
               Remove
             </button>
           )}
-        </div>
+        </li>
       ))}
+      </ul>
       {pending && target && (
         <div className="crm-notice">
           {pending.action === "transfer"
@@ -92,6 +99,6 @@ export function TeamMembers({
           {error}
         </p>
       )}
-    </>
+    </div>
   );
 }

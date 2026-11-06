@@ -1,4 +1,5 @@
 "use client";
+import { CRM_PLANS } from "@/lib/crm/plans";
 import { useState } from "react";
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
@@ -158,6 +159,8 @@ export default function Workspace({
           changeView={changeView}
           overdueCount={overdueCount}
           user={data.user}
+          organizationName={data.organization?.name}
+          planLabel={data.plan.active && data.plan.plan ? `${CRM_PLANS[data.plan.plan].name} plan` : "Free plan"}
           demo={demo}
           showReports={showReports}
           onAddLead={() => setEditing("new")}
@@ -228,7 +231,7 @@ export default function Workspace({
               }} />}
             </div>
             <footer className="crm-content-footer">
-              <span>Veyrn Labs Workspace</span>
+              <span>Veyrn CRM</span>
               <span>A little structure. A lot of possibility.</span>
             </footer>
           </main>
