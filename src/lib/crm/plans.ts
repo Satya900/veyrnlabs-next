@@ -44,7 +44,19 @@ export type BillingStatus =
   | "paused"
   | "expired";
 export type UsageSummary = {
-  seat_subscriptions?: { id: string; quantity: number; status: string }[];
+  seat_subscriptions?: {
+    id: string;
+    quantity: number;
+    status: string;
+    unit_paise?: number | null;
+  }[];
+  billing_unavailable?: boolean;
+  billing?: {
+    plan: PlanId;
+    billing_months: BillingMonths;
+    amount_paise: number;
+    status: BillingStatus;
+  };
   trial?: boolean;
   status: "unconfigured" | "inactive" | "active";
   billing_status?: BillingStatus | null;

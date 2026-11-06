@@ -65,7 +65,7 @@ export function Settings() {
         </div>
         <div>
           <PlanUsage demo={demo} role={data.user.role} />
-          <PlanComparison plan={data.plan.plan} role={data.user.role} />
+          <PlanComparison plan={data.plan.plan} active={data.plan.active} role={data.user.role} />
           <CalendarSettings demo={demo} role={data.user.role} />
           <WhatsAppSettings demo={demo} role={data.user.role} />
         </div>

@@ -69,11 +69,22 @@ export async function POST(request: Request) {
           keyId: process.env.RAZORPAY_KEY_ID,
         });
       }
-      const result = await cancelRazorpaySubscription(
-        process.env,
-        id,
-        status !== "created" && status !== "authenticated",
-      );
+      const neverCharged = status === "created" || status === "authenticated";
+      let result: { status?: unknown };
+      try {
+        result = await cancelRazorpaySubscription(process.env, id, !neverCharged);
+      } catch (error) {
+        // A checkout started with other Razorpay keys (for example test mode before going
+        // live) doesn't exist in this account, so nothing can ever be billed for it.
+        // Close it locally, but only when it never reached a charge.
+        if (
+          !neverCharged ||
+          !(error instanceof RazorpayRejected) ||
+          !/invalid|not (be )?found|does not exist/i.test(error.message)
+        )
+          throw error;
+        result = { status: "cancelled" };
+      }
       if (result.status === "cancelled") {
         const update = seat
           ? db
