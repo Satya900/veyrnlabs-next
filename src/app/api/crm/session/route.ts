@@ -1,10 +1,17 @@
 import { cookies } from "next/headers";
-import { accountsEnabled, ensureMembership } from "@/lib/crm/accounts";
+import {
+  accountsEnabled,
+  ensureMembership,
+  hasWorkspace,
+  selectOrganization,
+} from "@/lib/crm/accounts";
 import {
   configured,
   cookieName,
   jsonBody,
+  organizationCookieName,
   sameOrigin,
+  session,
   supabase,
 } from "@/lib/crm/server";
 
@@ -37,11 +44,7 @@ export async function POST(request: Request) {
         },
         { status: 401 },
       );
-    const { data: member } = await supabase(data.session.access_token)
-      .from("crm_members")
-      .select("id")
-      .eq("id", data.user.id)
-      .single();
+    const member = await hasWorkspace(data.session.access_token);
     if (!member && accountsEnabled()) {
       try {
         await ensureMembership(data.user);
@@ -84,6 +87,7 @@ export async function DELETE(request: Request) {
   const jar = await cookies();
   const token = jar.get(cookieName)?.value;
   jar.delete(cookieName);
+  jar.delete(organizationCookieName);
   // Revoking server-side, not just dropping the cookie, means a token captured
   // before logout (shared machine, browser history) can't keep working after.
   // An already-expired or already-revoked token is not a logout failure.
@@ -95,4 +99,28 @@ export async function DELETE(request: Request) {
     }
   }
   return Response.json({ ok: true });
+}
+
+/** Switches the workspace a login with several businesses is working in. */
+export async function PATCH(request: Request) {
+  if (!sameOrigin(request))
+    return Response.json({ error: "Invalid request origin." }, { status: 403 });
+  const auth = await session();
+  if (!auth)
+    return Response.json({ error: "Sign in to continue." }, { status: 401 });
+  try {
+    const body = await jsonBody(request, 1000);
+    const target = auth.memberships.find(
+      (m) => m.organization_id === body.organization,
+    );
+    if (!target)
+      return Response.json(
+        { error: "You don't have access to that workspace." },
+        { status: 403 },
+      );
+    await selectOrganization(target.organization_id);
+    return Response.json({ ok: true });
+  } catch {
+    return Response.json({ error: "Invalid request." }, { status: 400 });
+  }
 }

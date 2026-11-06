@@ -2124,3 +2124,19 @@
 }
 .crm-settings-stack { display: grid; gap: 24px; }
 .crm-settings-stack > .crm-overview-grid { margin-bottom: 0; }
+
+/* Workspace switcher (logins that belong to more than one business) */
+.crm-workspace-switch { position: relative; }
+.crm-root button.crm-workspace-name { width: 100%; justify-content: flex-start; gap: 12px; padding: 0 0 24px; border: 0; border-bottom: 1px solid var(--color-hairline); border-radius: 0; background: transparent; text-align: left; }
+.crm-root button.crm-workspace-name:hover:not(:disabled) { background: transparent; border-color: var(--color-hairline); }
+.crm-root button.crm-workspace-name > .crm-nav-icon { margin-left: auto; color: var(--color-mute); }
+.crm-root button.crm-workspace-name[aria-expanded="true"] > .crm-nav-icon { transform: rotate(180deg); }
+.crm-workspace-menu { position: absolute; z-index: 20; top: calc(100% - 16px); left: 0; right: 0; display: grid; gap: 2px; padding: 8px; border: 1px solid var(--color-hairline); border-radius: 10px; background: var(--color-canvas); box-shadow: var(--crm-shadow-lg); }
+.crm-workspace-menu .crm-nav-label { margin: 4px 8px 6px; }
+.crm-root .crm-workspace-menu button { justify-content: flex-start; gap: 10px; padding: 8px; border: 0; text-align: left; }
+.crm-root .crm-workspace-menu button:hover:not(:disabled) { background: var(--color-canvas-soft); }
+.crm-workspace-menu button > span:nth-child(2) { display: grid; min-width: 0; }
+.crm-workspace-menu strong { font-weight: 500; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.crm-workspace-menu small { font-size: 11px; color: var(--color-mute); }
+.crm-workspace-menu .crm-workspace-mark { width: 28px; height: 28px; font-size: 11px; }
+.crm-workspace-menu button > .crm-nav-icon { margin-left: auto; color: var(--color-primary); }

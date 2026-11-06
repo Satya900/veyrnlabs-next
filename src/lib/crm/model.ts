@@ -68,6 +68,12 @@ export type Workspace = {
   user: Member;
   plan: PlanTier;
   organization?: { name: string };
+  organizationId?: string;
+  memberships?: {
+    organization_id: string;
+    organization_name: string;
+    role: Role;
+  }[];
 };
 export const defaultStages: Stage[] = [
   "New",
