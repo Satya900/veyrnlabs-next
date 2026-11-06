@@ -5,6 +5,17 @@ import { EXTRA_SEAT_PAISE, type UsageSummary } from "@/lib/crm/plans";
 import { loadRazorpayScript } from "./Billing";
 
 const rupees = (paise: number) => `₹${(paise / 100).toLocaleString("en-IN")}`;
+const seatStatus: Record<string, string> = {
+  created: "Payment pending",
+  authenticated: "Awaiting first charge",
+  active: "Active",
+  pending: "Payment retrying",
+  halted: "Payment failed",
+  cancelled: "Cancelled",
+  completed: "Ended",
+  expired: "Expired",
+  paused: "Paused",
+};
 
 export function BillingManage({
   summary,
@@ -53,74 +64,93 @@ export function BillingManage({
       setBusy(false);
     }
   }
+  const renewable =
+    summary.billing_status &&
+    !["cancelled", "completed", "expired"].includes(summary.billing_status);
+  const seats = summary.seat_subscriptions ?? [];
   return (
-    <div className="crm-ai-settings">
-      {summary.billing_status === "created" && (
-        <button disabled={busy} onClick={() => void act("resume")}>
-          Resume checkout
-        </button>
-      )}
-      {summary.billing_status &&
-        !["cancelled", "completed", "expired"].includes(
-          summary.billing_status,
-        ) && (
-          <button disabled={busy} onClick={() => void act("cancel")}>
-            Cancel plan renewal
-          </button>
-        )}
-      {summary.status === "active" && !summary.trial && (
-        <>
-          <h3>Additional users</h3>
-          <p>
-            {rupees(EXTRA_SEAT_PAISE)} per user per month, billed separately. No duration discount.
-            Seats activate after payment; AI and message allowances stay the
-            same.
-          </p>
-          <label>
-            Seats to add{" "}
-            <input
-              type="number"
-              min={1}
-              max={100}
-              value={quantity}
-              onChange={(e) => setQuantity(Number(e.target.value))}
-            />
-          </label>
-          <button
-            disabled={
-              busy ||
-              !Number.isInteger(quantity) ||
-              quantity < 1 ||
-              quantity > 100
-            }
-            onClick={() => void act("subscribe-seats")}
-          >
-            Add {quantity} seats · {rupees(quantity * EXTRA_SEAT_PAISE)}
-            /month
-          </button>
-        </>
-      )}
-      {summary.seat_subscriptions?.map((seat) => (
-        <div key={seat.id}>
-          <p>
-            {seat.quantity} additional users ·{" "}
-            {rupees(seat.quantity * EXTRA_SEAT_PAISE)}/month ·{" "}
-            {seat.status}
-          </p>
-          {seat.status === "created" && (
-            <button disabled={busy} onClick={() => void act("resume", seat.id)}>
-              Complete seat payment
+    <div className="crm-billing-manage">
+      {(summary.billing_status === "created" || renewable) && (
+        <div className="crm-billing-actions">
+          {summary.billing_status === "created" && (
+            <button className="crm-primary" disabled={busy} onClick={() => void act("resume")}>
+              Resume checkout
             </button>
           )}
-          <button disabled={busy} onClick={() => void act("cancel", seat.id)}>
-            Cancel these seats’ renewal
-          </button>
+          {renewable && (
+            <button disabled={busy} onClick={() => void act("cancel")}>
+              Cancel plan renewal
+            </button>
+          )}
         </div>
-      ))}
-      <p>
-        Removing a team member does not cancel a paid seat. Cancel the seat
-        subscription to stop its renewal.
-      </p>
+      )}
+      {(summary.status === "active" && !summary.trial) || seats.length > 0 ? (
+        <section className="crm-billing-seats">
+          <div>
+            <h3>Additional users</h3>
+            <p className="crm-muted">
+              {rupees(EXTRA_SEAT_PAISE)} per user per month, billed separately
+              with no duration discount. Removing a team member doesn’t cancel
+              a paid seat; cancel the seat’s renewal here.
+            </p>
+          </div>
+          {summary.status === "active" && !summary.trial && (
+            <div className="crm-seat-add">
+              <label>
+                Seats to add
+                <input
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={quantity}
+                  onChange={(e) => setQuantity(Number(e.target.value))}
+                />
+              </label>
+              <button
+                className="crm-primary"
+                disabled={
+                  busy ||
+                  !Number.isInteger(quantity) ||
+                  quantity < 1 ||
+                  quantity > 100
+                }
+                onClick={() => void act("subscribe-seats")}
+              >
+                Add {quantity} {quantity === 1 ? "seat" : "seats"} ·{" "}
+                {rupees(quantity * EXTRA_SEAT_PAISE)}/month
+              </button>
+            </div>
+          )}
+          {seats.length > 0 && (
+            <ul className="crm-seat-list">
+              {seats.map((seat) => (
+                <li key={seat.id}>
+                  <div>
+                    <strong>
+                      {seat.quantity} additional {seat.quantity === 1 ? "user" : "users"}
+                    </strong>
+                    <span className={seat.status === "active" ? "crm-badge won" : "crm-badge"}>
+                      {seatStatus[seat.status] ?? seat.status}
+                    </span>
+                  </div>
+                  <div className="crm-seat-list-actions">
+                    {seat.status === "created" && (
+                      <button className="crm-primary" disabled={busy} onClick={() => void act("resume", seat.id)}>
+                        Complete payment
+                      </button>
+                    )}
+                    {!["cancelled", "completed", "expired"].includes(seat.status) && (
+                      <button disabled={busy} onClick={() => void act("cancel", seat.id)}>
+                        Cancel renewal
+                      </button>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      ) : null}
       {message && <p role="status">{message}</p>}
     </div>
   );
