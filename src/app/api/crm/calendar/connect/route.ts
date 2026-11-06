@@ -22,7 +22,9 @@ function settingsUrl(request: Request, params: Record<string, string>) {
 export async function GET(request: Request) {
   if (!googleCalendarConfigured(process.env))
     return new Response("Calendar connection is not enabled yet.", { status: 503 });
-  const auth = await session();
+  // A plain link can't carry the tab's workspace header, so the page passes it here.
+  const workspace = new URL(request.url).searchParams.get("workspace") || undefined;
+  const auth = await session(workspace);
   if (!auth)
     return Response.redirect(siteUrl(request, "/crm/login"), 302);
   const { data } = await auth.db.rpc("crm_calendar_entitlement");
@@ -38,7 +40,9 @@ export async function GET(request: Request) {
   const host = request.headers.get("host");
   const redirectUri = `https://${host}/api/crm/calendar/callback`;
   const state = randomBytes(24).toString("hex");
-  (await cookies()).set(STATE_COOKIE, state, {
+  // The workspace rides along with the state, so the callback saves the connection to the
+  // business that started it even if another tab switches workspace meanwhile.
+  (await cookies()).set(STATE_COOKIE, `${state}.${auth.organizationId}`, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     // Lax, not strict: this cookie must survive the top-level redirect Google sends

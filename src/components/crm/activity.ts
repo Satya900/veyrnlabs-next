@@ -7,11 +7,23 @@ let pending = 0;
 const listeners = new Set<() => void>();
 const emit = () => listeners.forEach((listener) => listener());
 
-/** `fetch` for CRM client code: identical behaviour, but tracked by the activity indicator. */
+// The workspace this tab is showing. Sent with every CRM request so a tab keeps acting in
+// the business it displays even after another tab switches workspace.
+let workspace: string | undefined;
+export function setCrmWorkspace(id: string | undefined) {
+  workspace = id;
+}
+export function crmWorkspace() {
+  return workspace;
+}
+
+/** `fetch` for CRM client code: tracked by the activity indicator and bound to this tab's workspace. */
 export function crmFetch(input: RequestInfo | URL, init?: RequestInit) {
   pending++;
   emit();
-  return fetch(input, init).finally(() => {
+  const headers = new Headers(init?.headers);
+  if (workspace && !headers.has("x-crm-workspace")) headers.set("x-crm-workspace", workspace);
+  return fetch(input, { ...init, headers }).finally(() => {
     pending--;
     emit();
   });

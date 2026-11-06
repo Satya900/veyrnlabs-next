@@ -15,8 +15,8 @@ test("one login can belong to several businesses and acts only in the one it sel
     .sort())
     await db.exec(await readFile(new URL("../supabase/migrations/" + file, import.meta.url), "utf8"));
 
-  const ownerA = crypto.randomUUID(), agent = crypto.randomUUID(), outsider = crypto.randomUUID();
-  for (const [id, email] of [[ownerA, "owner@a.test"], [agent, "agent@b.test"], [outsider, "x@c.test"]])
+  const ownerA = crypto.randomUUID(), agent = crypto.randomUUID(), outsider = crypto.randomUUID(), helper = crypto.randomUUID();
+  for (const [id, email] of [[ownerA, "owner@a.test"], [agent, "agent@b.test"], [outsider, "x@c.test"], [helper, "helper@b.test"]])
     await db.query("insert into auth.users values($1,$2,now())", [id, email]);
   // Simulates PostgREST: the login comes from the JWT, the chosen business from a header.
   const login = async (id = "", role = "authenticated", org = null) => {
@@ -89,6 +89,12 @@ test("one login can belong to several businesses and acts only in the one it sel
     assert.equal((await db.query("select id from crm_organizations")).rows.length, 0);
   }
 
+  // The switcher lists both businesses for the login.
+  await login(agent);
+  assert.deepEqual(
+    (await db.query("select organization_name from crm_my_memberships() order by organization_name")).rows.map((r) => r.organization_name),
+    ["Agency A", "Agency B"],
+  );
   // Removing the agent from Agency A leaves their own business untouched.
   await login(ownerA);
   await db.query("select crm_remove_member($1)", [inA.id]);
@@ -97,4 +103,23 @@ test("one login can belong to several businesses and acts only in the one it sel
     (await db.query("select organization_id from crm_members where user_id=$1", [agent])).rows.map((r) => r.organization_id),
     [orgB],
   );
+
+  // Losing the original membership (id = login id) must not hide the login's other
+  // businesses: rejoin A, then hand B to someone else and leave it.
+  await login("", "service_role");
+  const token2 = createHash("sha256").update("invite-token-2").digest("hex");
+  await login(ownerA);
+  await db.query("select crm_create_invitation('agent@b.test','team',$1)", [token2]);
+  await login("", "service_role");
+  await db.query("select crm_accept_invitation($1,$2,'Agent')", [token2, agent]);
+  await db.query("insert into crm_subscriptions(organization_id,plan,billing_months,active) values($1,'pro_plus',1,true)", [orgB]);
+  await db.query("insert into crm_members(id,organization_id,name,role) values($1,$2,'Helper','team')", [helper, orgB]);
+  await login(agent, "authenticated", orgB);
+  await db.query("select crm_transfer_ownership($1)", [helper]);
+  await login(helper, "authenticated", orgB);
+  await db.query("select crm_remove_member($1)", [agent]);
+  await login(agent);
+  const left = (await db.query("select organization_name from crm_my_memberships()")).rows;
+  assert.deepEqual(left.map((r) => r.organization_name), ["Agency A"]);
+  assert.equal((await one("select crm_organization_id() org")).org, orgA);
 });
