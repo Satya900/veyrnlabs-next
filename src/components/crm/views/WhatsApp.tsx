@@ -23,7 +23,17 @@ export function WhatsApp({
 }: {
   openLead: (id: string) => Promise<void>;
 }) {
-  const { demo, data } = useWorkspaceContext();
+  const { demo, data, reload: reloadWorkspace } = useWorkspaceContext();
+  // Team members can see colleagues' conversations when the workspace shares all leads,
+  // but replying stays with the lead's assigned agent (and owners/admins).
+  const replyOwner = (leadId: string) => {
+    if (data.user.role !== "team") return null;
+    const owner = data.leads.find((l) => l.id === leadId)?.owner_id;
+    if (owner === data.user.id) return null;
+    return owner
+      ? (data.members.find((m) => m.id === owner)?.name ?? "the assigned agent")
+      : "an owner or admin until someone is assigned";
+  };
   const [items, setItems] = useState<WhatsAppConversation[]>([]);
   const [connection, setConnection] = useState<WhatsAppConnection | null>(null);
   const [setup, setSetup] = useState<WhatsAppSetup | null>(null);
@@ -86,6 +96,8 @@ export function WhatsApp({
     setCursor("");
     select(null);
     setRefresh((value) => value + 1);
+    // Lead ownership decides who may reply, so pick up any reassignment as well.
+    void reloadWorkspace();
   }
   return (
     <>
@@ -98,7 +110,9 @@ export function WhatsApp({
                 ? "Business number mapped for incoming messages"
                 : "Inbound connection paused"
               : data.user.role === "team"
-                ? "Conversations for your assigned leads"
+                ? data.organization?.team_sees_all_leads === false
+                  ? "Conversations for your assigned leads"
+                  : "Conversations for your workspace's leads"
                 : "Your business number has not been connected yet."}
           </p>
           {setup && (
@@ -175,13 +189,14 @@ export function WhatsApp({
             key={`${selected.id}-${refresh}`}
             conversation={selected}
             openLead={() => openLead(selected.lead_id)}
+            replyOwner={replyOwner(selected.lead_id)}
           />
         ) : (
           <section className="crm-panel crm-settings-body">
             <h2>Select a conversation</h2>
             <p>
               Each conversation is linked to a CRM lead. New contacts create an
-              unassigned lead for your admin to review.
+              unassigned lead that an admin can assign or a teammate can claim.
             </p>
           </section>
         )}
@@ -193,9 +208,12 @@ export function WhatsApp({
 function Conversation({
   conversation,
   openLead,
+  replyOwner,
 }: {
   conversation: WhatsAppConversation;
   openLead: () => Promise<void>;
+  /** Null when the viewer may reply; otherwise who handles replies for this lead. */
+  replyOwner: string | null;
 }) {
   const [items, setItems] = useState<WhatsAppMessage[]>([]);
   const [cursor, setCursor] = useState("");
@@ -318,11 +336,18 @@ function Conversation({
           </li>
         ))}
       </ol>
-      <AIDraft
-        key={conversation.id}
-        conversation={conversation.id}
-        leadId={conversation.lead_id}
-      />
+      {replyOwner === null ? (
+        <AIDraft
+          key={conversation.id}
+          conversation={conversation.id}
+          leadId={conversation.lead_id}
+        />
+      ) : (
+        <p className="crm-plan-notice crm-settings-body">
+          Replies to this client are handled by {replyOwner}. You can read the
+          conversation and add notes on the lead.
+        </p>
+      )}
       <ReplyHistory key={`replies-${conversation.id}`} conversation={conversation.id} />
       <p className="crm-settings-body crm-muted">
         Every AI reply is a draft. A person reviews and sends it before the customer sees it.

@@ -2140,3 +2140,14 @@
 .crm-workspace-menu small { font-size: 11px; color: var(--color-mute); }
 .crm-workspace-menu .crm-workspace-mark { width: 28px; height: 28px; font-size: 11px; }
 .crm-workspace-menu button > .crm-nav-icon { margin-left: auto; color: var(--color-primary); }
+
+/* Settings: team lead visibility */
+.crm-visibility { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin: 0; padding: 0; border: 0; }
+.crm-visibility legend { margin-bottom: 8px; padding: 0; font-size: 13px; font-weight: 500; color: var(--color-ink); }
+.crm-root .crm-visibility label { flex-direction: row; align-items: flex-start; gap: 10px; padding: 12px 14px; border: 1px solid var(--crm-border); border-radius: 10px; cursor: pointer; }
+.crm-root .crm-visibility label:has(input:checked) { border-color: var(--crm-accent); background: var(--crm-accent-soft); }
+.crm-root .crm-visibility input { width: auto; margin-top: 3px; accent-color: var(--crm-accent); }
+.crm-visibility span { display: grid; gap: 2px; }
+.crm-visibility strong { font-size: 13px; font-weight: 500; color: var(--color-ink); }
+.crm-visibility small { font-size: 12px; color: var(--color-mute); line-height: 1.5; }
+.crm-root button.crm-claim { margin-left: 10px; padding: 4px 10px; font-size: 12px; }

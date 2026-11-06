@@ -26,8 +26,10 @@ export function LeadDetail({
   const sortedActivity = [...data.activities]
     .sort((a, b) => b.created_at.localeCompare(a.created_at))
     .filter((a) => a.lead_id === current.id);
+  const canAct = data.user.role !== "team" || current.owner_id === data.user.id;
   return (
     <>
+      {/* Teammates may see a colleague's lead; converting and booking stay with its agent. */}
       <Eyebrow>LEAD DETAILS</Eyebrow>
       <h2>{current.name}</h2>
       <p>
@@ -37,7 +39,8 @@ export function LeadDetail({
         <button onClick={onEdit}>Edit details</button>
         <button
           className="crm-primary"
-          disabled={busy || !!current.client_id}
+          disabled={busy || !!current.client_id || !canAct}
+          title={canAct ? undefined : "Only the assigned agent, an owner or an admin can convert this lead."}
           onClick={() => void mutate({ action: "convert", id: current.id })}
         >
           {current.client_id ? "✓ Converted to client" : "Convert to client ↗"}
@@ -93,7 +96,19 @@ export function LeadDetail({
         </div>
         <div>
           <dt>Owner</dt>
-          <dd>{data.members.find((m) => m.id === current.owner_id)?.name || "Unassigned"}</dd>
+          <dd>
+            {data.members.find((m) => m.id === current.owner_id)?.name || "Unassigned"}
+            {!current.owner_id && data.user.role === "team" && (
+              <button
+                type="button"
+                className="crm-claim"
+                disabled={busy}
+                onClick={() => void mutate({ action: "claim", id: current.id })}
+              >
+                Assign to me
+              </button>
+            )}
+          </dd>
         </div>
         <div>
           <dt>Next follow-up</dt>
@@ -126,7 +141,17 @@ export function LeadDetail({
         />
         <button disabled={busy}>Save activity</button>
       </form>
-      {data.plan.active && <ScheduleVisit leadId={current.id} />}
+      {data.plan.active &&
+        (canAct ? (
+          <ScheduleVisit leadId={current.id} />
+        ) : (
+          <p className="crm-plan-notice">
+            Site visits for this lead are booked by{" "}
+            {data.members.find((m) => m.id === current.owner_id)?.name ??
+              "an owner or admin until someone is assigned"}
+            .
+          </p>
+        ))}
       <h3>Schedule a task</h3>
       <form
         className="crm-task-form"

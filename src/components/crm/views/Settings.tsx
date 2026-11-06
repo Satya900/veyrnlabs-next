@@ -13,6 +13,7 @@ import { FollowUpSettings } from "../FollowUpSettings";
 
 export function Settings() {
   const { data, stages, busy, mutate, demo, now, reload } = useWorkspaceContext();
+  const teamSeesAll = data.organization?.team_sees_all_leads !== false;
   return (
     <div className="crm-settings-stack">
       <AISettings demo={demo} role={data.user.role} />
@@ -48,12 +49,38 @@ export function Settings() {
               <div>
                 <h2>Your team</h2>
                 <p>
-                  Owners and admins see all leads; team members see assigned
-                  leads.
+                  {teamSeesAll
+                    ? "Everyone sees all of this workspace's leads. Team members reply to and book visits for their own leads."
+                    : "Owners and admins see all leads; team members see only the leads assigned to them."}
                 </p>
               </div>
             </div>
             <div className="crm-settings-body crm-team">
+              {data.user.role === "owner" && (
+                <fieldset className="crm-visibility" disabled={busy || demo}>
+                  <legend>Team members can see</legend>
+                  {[
+                    { value: true, label: "All leads", hint: "Best for small teams that share enquiries." },
+                    { value: false, label: "Only leads assigned to them", hint: "Keeps each agent's clients private." },
+                  ].map((option) => (
+                    <label key={option.label}>
+                      <input
+                        type="radio"
+                        name="team-visibility"
+                        checked={teamSeesAll === option.value}
+                        onChange={async () => {
+                          if (await mutate({ action: "teamVisibility", allLeads: option.value }))
+                            await reload();
+                        }}
+                      />
+                      <span>
+                        <strong>{option.label}</strong>
+                        <small>{option.hint}</small>
+                      </span>
+                    </label>
+                  ))}
+                </fieldset>
+              )}
               <TeamMembers
                 members={data.members}
                 role={data.user.role}

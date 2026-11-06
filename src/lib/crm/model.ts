@@ -67,7 +67,7 @@ export type Workspace = {
   saved_views: SavedView[];
   user: Member;
   plan: PlanTier;
-  organization?: { name: string };
+  organization?: { name: string; team_sees_all_leads?: boolean };
   organizationId?: string;
   memberships?: {
     organization_id: string;
