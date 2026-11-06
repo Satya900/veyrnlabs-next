@@ -59,14 +59,15 @@ export async function POST(request: Request) {
       const rows = inputs.map((input) => {
         if (!input || typeof input !== "object")
           throw new Error("Invalid lead.");
-        return {
+        const row: Record<string, unknown> = {
           ...validateLead(input),
           stage_id: input.stage_id || stages?.[0]?.id,
-          owner_id:
-            auth.member.role === "team"
-              ? auth.member.id
-              : input.owner_id || null,
         };
+        // Team members create leads for themselves, and editing a colleague's lead (when
+        // the workspace shares all leads) must not take it over: leave the owner alone.
+        if (auth.member.role !== "team") row.owner_id = input.owner_id || null;
+        else if (!id) row.owner_id = auth.member.id;
+        return row;
       });
       result = id
         ? await auth.db
@@ -93,6 +94,21 @@ export async function POST(request: Request) {
           if (activity) changes.activities = [activity];
         }
       }
+    } else if (action === "claim") {
+      // Assign an unassigned lead to yourself; the database refuses anything else for team members.
+      result = await auth.db
+        .from("crm_leads")
+        .update({ owner_id: auth.member.id })
+        .eq("id", id)
+        .is("owner_id", null)
+        .select("*")
+        .single();
+      if (!result.error) changes = { leads: [result.data] };
+    } else if (action === "teamVisibility") {
+      if (typeof body.allLeads !== "boolean") throw new Error("Choose a visibility setting.");
+      const { error } = await auth.db.rpc("crm_set_team_visibility", { all_leads: body.allLeads });
+      if (error) throw new Error("Only the workspace owner can change lead visibility.");
+      return Response.json({ ok: true, reload: true });
     } else if (action === "stage") {
       if (typeof body.stage_id !== "string") throw new Error("Choose a stage.");
       result = await auth.db

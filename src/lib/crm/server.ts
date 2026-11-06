@@ -127,7 +127,7 @@ export async function loadWorkspace(auth: Auth): Promise<Workspace> {
     Promise.all(WORKSPACE_TABLES.map((name) => fetchAllRows(auth.db, `crm_${name}`))),
     auth.db.rpc("crm_plan_tier"),
     // RLS limits this to the member's own organization.
-    auth.db.from("crm_organizations").select("name").maybeSingle(),
+    auth.db.from("crm_organizations").select("name,team_sees_all_leads").maybeSingle(),
   ]);
   const data: Record<string, unknown> = {
     user: auth.member,
