@@ -2,7 +2,13 @@ import "server-only";
 import { createHash } from "node:crypto";
 import type { User, Session } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
-import { configured, cookieName, supabase } from "./server";
+import {
+  configured,
+  cookieName,
+  organizationCookieName,
+  supabase,
+  type Membership,
+} from "./server";
 
 export const accountsEnabled = () =>
   configured() &&
@@ -22,7 +28,7 @@ export async function ensureMembership(user: User, invitation = "") {
   if (invitation) {
     if (!/^[a-f0-9]{64}$/.test(invitation))
       throw new Error("Invalid invitation link.");
-    const { error } = await service.rpc("crm_accept_invitation", {
+    const { data: organization, error } = await service.rpc("crm_accept_invitation", {
       hashed_token: hashInvitation(invitation),
       verified_user: user.id,
       member_name: name || "Member",
@@ -31,20 +37,24 @@ export async function ensureMembership(user: User, invitation = "") {
       throw new Error(
         "This company's included seats are full. Ask the company admin to arrange an additional seat, then sign in through your invitation again.",
       );
+    if (error?.message?.includes("Verified email required"))
+      throw new Error("Verify your email before accepting this invitation.");
     if (error)
       throw new Error(
-        "Cannot accept this invitation. Check the invited email, expiry, and whether you already belong to another business.",
+        "This invitation can't be used. It may have expired, been revoked or replaced, or been sent to a different email than the one you signed in with. Ask for a new link.",
       );
+    // Open the business the person was just invited to, even if they belong to others.
+    if (typeof organization === "string") await selectOrganization(organization);
     return;
   }
-  const { data: member, error } = await service
+  const { data: members, error } = await service
     .from("crm_members")
     .select("id")
-    .eq("id", user.id)
-    .maybeSingle();
+    .eq("user_id", user.id)
+    .limit(1);
   if (error)
     throw new Error("Workspace setup is unavailable. Please try again later.");
-  if (member) return;
+  if (members.length) return;
   const organization = user.user_metadata?.organization;
   if (
     user.user_metadata?.crm_signup !== true ||
@@ -69,6 +79,22 @@ export async function ensureMembership(user: User, invitation = "") {
     );
 }
 
+/** True when the login has at least one membership with an active seat. */
+export async function hasWorkspace(accessToken: string) {
+  const { data } = await supabase(accessToken).rpc("crm_my_memberships");
+  return ((data ?? []) as Membership[]).some((m) => m.active);
+}
+
+export async function selectOrganization(organizationId: string) {
+  (await cookies()).set(organizationCookieName, organizationId, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 365,
+  });
+}
+
 export async function saveAccountSession(session: Session) {
   (await cookies()).set(cookieName, session.access_token, {
     httpOnly: true,
@@ -84,13 +110,8 @@ export async function saveAccountSession(session: Session) {
 }
 
 /** Signs the browser in only if the verified identity already belongs to a workspace. */
-export async function signInIfMember(user: User, session: Session) {
-  const { data: member } = await supabase(session.access_token)
-    .from("crm_members")
-    .select("id")
-    .eq("id", user.id)
-    .maybeSingle();
-  if (!member) return false;
+export async function signInIfMember(session: Session) {
+  if (!(await hasWorkspace(session.access_token))) return false;
   await saveAccountSession(session);
   return true;
 }

@@ -160,6 +160,8 @@ export default function Workspace({
           overdueCount={overdueCount}
           user={data.user}
           organizationName={data.organization?.name}
+          organizationId={data.organizationId}
+          memberships={data.memberships}
           planLabel={data.plan.active && data.plan.plan ? `${CRM_PLANS[data.plan.plan].name} plan` : "Free plan"}
           demo={demo}
           showReports={showReports}

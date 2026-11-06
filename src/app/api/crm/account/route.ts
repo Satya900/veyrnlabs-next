@@ -93,7 +93,7 @@ export async function POST(request: Request) {
           { error: "Unable to reset your password. Try again." },
           { status: 400 },
         );
-      const signedIn = await signInIfMember(data.user, data.session);
+      const signedIn = await signInIfMember(data.session);
       return Response.json({
         ok: true,
         ...(signedIn

@@ -7,7 +7,16 @@ export { sameOrigin } from "./origin";
 export const configured = () =>
   Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY);
 export const cookieName = "veyrn_crm_session";
-export function supabase(token?: string, service = false) {
+/** The business the signed-in login is working in, when it belongs to more than one. */
+export const organizationCookieName = "veyrn_crm_org";
+export type Membership = {
+  member_id: string;
+  organization_id: string;
+  organization_name: string;
+  role: Member["role"];
+  active: boolean;
+};
+export function supabase(token?: string, service = false, organization?: string) {
   const url = process.env.SUPABASE_URL;
   const key = service
     ? process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -20,7 +29,16 @@ export function supabase(token?: string, service = false) {
       detectSessionInUrl: false,
     },
     ...(token
-      ? { global: { headers: { Authorization: `Bearer ${token}` } } }
+      ? {
+          global: {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              // Read by crm_member_id(); the database ignores it unless the login is a
+              // member of that business.
+              ...(organization ? { "x-crm-organization": organization } : {}),
+            },
+          },
+        }
       : {}),
   });
 }
@@ -34,16 +52,33 @@ export async function session() {
     error,
   } = await db.auth.getUser(token);
   if (error || !user) return null;
-  const { data: member } = await db
+  const { data } = await db.rpc("crm_my_memberships");
+  const memberships = ((data ?? []) as Membership[]).filter((m) => m.active);
+  if (!memberships.length) return null;
+  const chosen = (await cookies()).get(organizationCookieName)?.value;
+  const current =
+    memberships.find((m) => m.organization_id === chosen) ?? memberships[0];
+  const scoped = supabase(token, false, current.organization_id);
+  const { data: member } = await scoped
     .from("crm_members")
     .select("id,name,role")
-    .eq("id", user.id)
+    .eq("id", current.member_id)
     .single();
   if (!member) return null;
-  return { db, member: member as Member };
+  return {
+    db: scoped,
+    member: member as Member,
+    organizationId: current.organization_id,
+    memberships,
+  };
 }
 
-type Auth = { db: ReturnType<typeof supabase>; member: Member };
+type Auth = {
+  db: ReturnType<typeof supabase>;
+  member: Member;
+  organizationId: string;
+  memberships: Membership[];
+};
 const WORKSPACE_TABLES = [
   "leads",
   "clients",
@@ -82,6 +117,12 @@ export async function loadWorkspace(auth: Auth): Promise<Workspace> {
     user: auth.member,
     plan: planResult.data ?? { plan: null, active: false },
     organization: orgResult.data ?? undefined,
+    organizationId: auth.organizationId,
+    memberships: auth.memberships.map((m) => ({
+      organization_id: m.organization_id,
+      organization_name: m.organization_name,
+      role: m.role,
+    })),
   };
   WORKSPACE_TABLES.forEach((name, i) => {
     data[name] = results[i];
