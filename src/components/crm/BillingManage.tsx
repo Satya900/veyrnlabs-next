@@ -20,9 +20,12 @@ const seatStatus: Record<string, string> = {
 export function BillingManage({
   summary,
   reload,
+  part = "all",
 }: {
   summary: UsageSummary;
   reload: () => void;
+  /** "actions" = plan checkout/renewal buttons only, "seats" = additional users only. */
+  part?: "all" | "actions" | "seats";
 }) {
   const [quantity, setQuantity] = useState(1);
   const [busy, setBusy] = useState(false);
@@ -31,7 +34,7 @@ export function BillingManage({
     if (
       action === "cancel" &&
       !window.confirm(
-        "Cancel this subscription’s renewal? Already-paid access continues until its end date.",
+        "Cancel this? An unpaid checkout is removed. For a paid subscription, renewal stops and already-paid access continues until its end date.",
       )
     )
       return;
@@ -70,7 +73,7 @@ export function BillingManage({
   const seats = summary.seat_subscriptions ?? [];
   return (
     <div className="crm-billing-manage">
-      {(summary.billing_status === "created" || renewable) && (
+      {part !== "seats" && (summary.billing_status === "created" || renewable) && (
         <div className="crm-billing-actions">
           {summary.billing_status === "created" && (
             <button className="crm-primary" disabled={busy} onClick={() => void act("resume")}>
@@ -79,19 +82,22 @@ export function BillingManage({
           )}
           {renewable && (
             <button disabled={busy} onClick={() => void act("cancel")}>
-              Cancel plan renewal
+              {summary.billing_status === "created" ? "Cancel checkout" : "Cancel plan renewal"}
             </button>
           )}
         </div>
       )}
-      {(summary.status === "active" && !summary.trial) || seats.length > 0 ? (
+      {part !== "actions" &&
+      ((summary.status === "active" && !summary.trial) || seats.length > 0) ? (
         <section className="crm-billing-seats">
           <div>
             <h3>Additional users</h3>
             <p className="crm-muted">
               {rupees(EXTRA_SEAT_PAISE)} per user per month, billed separately
-              with no duration discount. Removing a team member doesn’t cancel
-              a paid seat; cancel the seat’s renewal here.
+              with no duration discount.{" "}
+              {summary.status === "active"
+                ? "Removing a team member doesn’t cancel a paid seat; cancel the seat’s renewal here."
+                : "You can add users once your plan is active."}
             </p>
           </div>
           {summary.status === "active" && !summary.trial && (
@@ -128,20 +134,21 @@ export function BillingManage({
                   <div>
                     <strong>
                       {seat.quantity} additional {seat.quantity === 1 ? "user" : "users"}
+                      {seat.unit_paise ? ` · ${rupees(seat.quantity * seat.unit_paise)}/month` : ""}
                     </strong>
                     <span className={seat.status === "active" ? "crm-badge won" : "crm-badge"}>
                       {seatStatus[seat.status] ?? seat.status}
                     </span>
                   </div>
                   <div className="crm-seat-list-actions">
-                    {seat.status === "created" && (
+                    {seat.status === "created" && summary.status === "active" && (
                       <button className="crm-primary" disabled={busy} onClick={() => void act("resume", seat.id)}>
                         Complete payment
                       </button>
                     )}
                     {!["cancelled", "completed", "expired"].includes(seat.status) && (
                       <button disabled={busy} onClick={() => void act("cancel", seat.id)}>
-                        Cancel renewal
+                        {seat.status === "created" ? "Cancel checkout" : "Cancel renewal"}
                       </button>
                     )}
                   </div>

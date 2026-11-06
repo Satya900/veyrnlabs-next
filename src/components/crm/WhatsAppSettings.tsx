@@ -136,12 +136,18 @@ export function WhatsAppSettings({
   return (
     <section className="crm-panel">
       <div className="crm-panel-heading">
-        <h2>WhatsApp connection</h2>
+        <div>
+          <h2>WhatsApp connection</h2>
+          <p>Receive and answer WhatsApp enquiries from your own business number.</p>
+        </div>
         <button disabled={busy || demo} onClick={() => void load()}>
           Manage connection
         </button>
       </div>
       <div className="crm-settings-body">
+        {!setup && !demo && (
+          <p className="crm-muted">Open Manage connection to check or change your number.</p>
+        )}
         {setup?.connection && (
           <p>
             {setup.connection.display_phone} ·{" "}
