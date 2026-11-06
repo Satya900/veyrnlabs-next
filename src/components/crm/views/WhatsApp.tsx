@@ -23,7 +23,7 @@ export function WhatsApp({
 }: {
   openLead: (id: string) => Promise<void>;
 }) {
-  const { demo, data } = useWorkspaceContext();
+  const { demo, data, reload: reloadWorkspace } = useWorkspaceContext();
   // Team members can see colleagues' conversations when the workspace shares all leads,
   // but replying stays with the lead's assigned agent (and owners/admins).
   const replyOwner = (leadId: string) => {
@@ -96,6 +96,8 @@ export function WhatsApp({
     setCursor("");
     select(null);
     setRefresh((value) => value + 1);
+    // Lead ownership decides who may reply, so pick up any reassignment as well.
+    void reloadWorkspace();
   }
   return (
     <>

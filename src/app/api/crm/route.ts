@@ -65,8 +65,11 @@ export async function POST(request: Request) {
         };
         // Team members create leads for themselves, and editing a colleague's lead (when
         // the workspace shares all leads) must not take it over: leave the owner alone.
+        // validateLead passes through any owner_id the client sent, so set or drop it here:
+        // only the explicit claim action changes ownership for a team member.
         if (auth.member.role !== "team") row.owner_id = input.owner_id || null;
         else if (!id) row.owner_id = auth.member.id;
+        else delete row.owner_id;
         return row;
       });
       result = id
