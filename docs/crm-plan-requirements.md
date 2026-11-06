@@ -4,9 +4,9 @@ User-confirmed requirements, updated 2026-09-24. See `crm-launch-hardening.md` f
 
 | Rule               | Pro                                               | Pro Plus                                          |
 | ------------------ | ------------------------------------------------- | ------------------------------------------------- |
-| Base monthly price | INR 4,000                                         | INR 6,000                                         |
+| Base monthly price | INR 499 (from 28 Oct 2026; was 4,000)              | INR 699 (from 28 Oct 2026; was 6,000)              |
 | Included users     | 1: the company's main admin                       | 3 total: the main admin plus 2 invited users      |
-| Additional users   | INR 500 per additional user beyond the included 1 | INR 500 per additional user beyond the included 3 |
+| Additional users   | INR 199 per additional user beyond the included 1 | INR 199 per additional user beyond the included 3 |
 | Scheduling         | Manual scheduling                                 | Automatic scheduling                              |
 
 The main admin counts toward the included user allowance. The two additional included Pro Plus seats are part of the plan, not a temporary promotion. Both plans allow additional paid users beyond their included allowance.

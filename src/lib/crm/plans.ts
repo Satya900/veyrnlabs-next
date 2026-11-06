@@ -1,19 +1,26 @@
+// Prices are an explicit table (paise per month, GST extra), not a computed discount, so
+// every billed total is a whole rupee amount that matches its Razorpay Plan exactly.
+// Keep in sync with crm_plan_monthly_paise and crm_seat_monthly_paise in the database.
 export const CRM_PLANS = {
   pro: {
     name: "Pro",
-    monthlyPaise: 400_000,
+    monthlyPaise: 49_900,
+    periodMonthlyPaise: { 1: 49_900, 3: 44_900, 12: 39_900 },
     includedSeats: 1,
     automaticScheduling: false,
   },
   pro_plus: {
     name: "Pro Plus",
-    monthlyPaise: 600_000,
+    monthlyPaise: 69_900,
+    periodMonthlyPaise: { 1: 69_900, 3: 62_900, 12: 55_900 },
     includedSeats: 3,
     automaticScheduling: true,
   },
 } as const;
+export const EXTRA_SEAT_PAISE = 19_900;
 export type PlanId = keyof typeof CRM_PLANS;
 export type BillingMonths = 1 | 3 | 12;
+// Advertised savings for each prepay period; the price table above rounds to whole rupees.
 export const BILLING_DISCOUNTS = { 1: 0, 3: 10, 12: 20 } as const;
 
 export function planPrice(plan: PlanId, months: BillingMonths) {
@@ -22,8 +29,7 @@ export function planPrice(plan: PlanId, months: BillingMonths) {
     !Object.hasOwn(BILLING_DISCOUNTS, months)
   )
     throw new Error("Invalid subscription plan.");
-  const monthlyPaise =
-    (CRM_PLANS[plan].monthlyPaise * (100 - BILLING_DISCOUNTS[months])) / 100;
+  const monthlyPaise = CRM_PLANS[plan].periodMonthlyPaise[months];
   return { monthlyPaise, totalPaise: monthlyPaise * months };
 }
 

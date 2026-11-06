@@ -2,6 +2,7 @@ import { jsonBody, sameOrigin, session, supabase } from "@/lib/crm/server";
 import {
   CRM_PLANS,
   BILLING_DISCOUNTS,
+  EXTRA_SEAT_PAISE,
   planPrice,
   type BillingMonths,
   type PlanId,
@@ -114,7 +115,14 @@ export async function POST(request: Request) {
         !Object.hasOwn(BILLING_DISCOUNTS, months))
     )
       throw new Error("Choose a valid plan and duration.");
-    if (!seats) billingAllowances(process.env, plan);
+    // The payment webhook rejects overhead at or above 70% of the monthly price; fail here,
+    // before the customer pays, rather than leaving a paid cycle needing reconciliation.
+    if (
+      !seats &&
+      billingAllowances(process.env, plan).overheadPaise * 100 >=
+        planPrice(plan, months).monthlyPaise * 70
+    )
+      throw new Error("Billing allowances exceed this plan's price. Contact support.");
     const providerPlan = seats
       ? process.env.RAZORPAY_PLAN_EXTRA_SEAT
       : razorpayPlanId(process.env, plan, months);
@@ -144,7 +152,7 @@ export async function POST(request: Request) {
       providerPlan,
       quantity,
       months,
-      seats ? 50000 : planPrice(plan, months).totalPaise,
+      seats ? EXTRA_SEAT_PAISE : planPrice(plan, months).totalPaise,
       attempt.id,
     );
     const { error: saveError } = await db.rpc("crm_finish_checkout", {

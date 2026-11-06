@@ -4,15 +4,23 @@ import { readFile } from "node:fs/promises";
 import { PGlite } from "@electric-sql/pglite";
 import { planPrice, CRM_PLANS } from "../src/lib/crm/plans.ts";
 
-test("plan prices preserve agreed discounts and seats", () => {
+test("plan prices follow the explicit price card and seats", () => {
+  assert.deepEqual(planPrice("pro", 1), {
+    monthlyPaise: 49900,
+    totalPaise: 49900,
+  });
   assert.deepEqual(planPrice("pro", 12), {
-    monthlyPaise: 320000,
-    totalPaise: 3840000,
+    monthlyPaise: 39900,
+    totalPaise: 478800,
   });
   assert.deepEqual(planPrice("pro_plus", 3), {
-    monthlyPaise: 540000,
-    totalPaise: 1620000,
+    monthlyPaise: 62900,
+    totalPaise: 188700,
   });
+  // Every billed total is a whole rupee amount, so it can match a Razorpay Plan exactly.
+  for (const plan of Object.keys(CRM_PLANS))
+    for (const months of [1, 3, 12])
+      assert.equal(planPrice(plan, months).totalPaise % 100, 0);
   assert.equal(CRM_PLANS.pro.includedSeats, 1);
   assert.equal(CRM_PLANS.pro_plus.includedSeats, 3);
   assert.throws(() => planPrice("unknown", 1));

@@ -10,7 +10,7 @@ import styles from "./pricing.module.css";
 
 const title = "AI Real Estate CRM Software & Pricing | Veyrn Labs";
 const description =
-  "Organise real estate leads and automate follow-ups with Veyrn CRM. Pro from ₹4,000/month and Pro Plus from ₹6,000/month, with quarterly and annual savings.";
+  "Organise real estate leads and automate follow-ups with Veyrn CRM. Pro from ₹499/month and Pro Plus from ₹699/month, or from ₹399/month billed annually.";
 export const metadata: Metadata = {
   title,
   description,
@@ -56,7 +56,7 @@ export default function CRMSoftwarePage() {
           <div className={styles.strip}>
             <span>AI-drafted follow-ups</span>
             <span>Organised pipeline</span>
-            <span>Standard onboarding included</span>
+            <span>Self-serve setup</span>
           </div>
         </section>
         <Section id="pricing">
@@ -113,8 +113,8 @@ export default function CRMSoftwarePage() {
                 "Quarterly billing includes a 10% discount and is paid every three months upfront. Annual billing includes a 20% discount and is paid for the full year upfront. The monthly figure shown for these options is the equivalent monthly cost, not a monthly payment.",
               ],
               [
-                "What is included in onboarding?",
-                "Standard onboarding helps you get started with the product: setting up your pipeline, adding your team, and importing your existing leads by CSV. Bespoke development and custom integrations are scoped separately, as their own project.",
+                "How do I get set up?",
+                "Setup is self-serve: create your workspace, import your existing leads by CSV, invite your team and connect WhatsApp from Settings. Email support helps if you get stuck. Bespoke development and custom integrations are scoped separately, as their own project.",
               ],
               [
                 "Are AI and messaging usage unlimited?",
