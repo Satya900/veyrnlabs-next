@@ -185,11 +185,11 @@ test("launch migrations enforce prepaid continuity, paid seats, booking serializ
     sub = "sub_base",
     plan = "plan_base",
     payment = "pay_base",
-    amount = 1620000,
+    amount = 188700,
     months = 3,
   ) =>
     db.query(
-      "select crm_apply_paid_event($1,$2,$3,'active',now(),$4,now()-interval '1 day',now()-interval '1 day'+make_interval(months=>$6),$5,'INR',50000,100,100)",
+      "select crm_apply_paid_event($1,$2,$3,'active',now(),$4,now()-interval '1 day',now()-interval '1 day'+make_interval(months=>$6),$5,'INR',20000,100,100)",
       [
         createHash("sha256").update(String(++n)).digest("hex"),
         sub,
@@ -238,7 +238,11 @@ test("launch migrations enforce prepaid continuity, paid seats, booking serializ
   await db.query("select crm_finish_checkout($1,'sub_seats','plan_seats')", [
     seats.id,
   ]);
-  await event("sub_seats", "plan_seats", "pay_seats", 100000, 1);
+  await assert.rejects(
+    event("sub_seats", "plan_seats", "pay_old_price", 100000, 1),
+    /amount mismatch/,
+  );
+  await event("sub_seats", "plan_seats", "pay_seats", 39800, 1);
   assert.equal(
     (await db.query("select crm_paid_seats($1) n", [org])).rows[0].n,
     2,
@@ -407,7 +411,7 @@ test("cancelling does not unlock a new checkout while paid access is still runni
   await login("", "service_role");
   await db.query("select crm_finish_checkout($1,'sub_pro','plan_pro')", [start.id]);
   await db.query(
-    "select crm_apply_paid_event($1,'sub_pro','plan_pro','active',now(),'pay_pro',now()-interval '1 day',now()-interval '1 day'+interval '1 month',400000,'INR',50000,100,50)",
+    "select crm_apply_paid_event($1,'sub_pro','plan_pro','active',now(),'pay_pro',now()-interval '1 day',now()-interval '1 day'+interval '1 month',49900,'INR',20000,100,50)",
     [createHash("sha256").update("evt1").digest("hex")],
   );
   // Cancel: crm_billing_subscriptions.status flips to 'cancelled' immediately, the same

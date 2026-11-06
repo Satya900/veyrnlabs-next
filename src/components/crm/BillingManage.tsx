@@ -1,8 +1,10 @@
 "use client";
 import { crmFetch } from "./activity";
 import { useState } from "react";
-import type { UsageSummary } from "@/lib/crm/plans";
+import { EXTRA_SEAT_PAISE, type UsageSummary } from "@/lib/crm/plans";
 import { loadRazorpayScript } from "./Billing";
+
+const rupees = (paise: number) => `₹${(paise / 100).toLocaleString("en-IN")}`;
 
 export function BillingManage({
   summary,
@@ -70,7 +72,7 @@ export function BillingManage({
         <>
           <h3>Additional users</h3>
           <p>
-            ₹500 per user per month, billed separately. No duration discount.
+            {rupees(EXTRA_SEAT_PAISE)} per user per month, billed separately. No duration discount.
             Seats activate after payment; AI and message allowances stay the
             same.
           </p>
@@ -93,7 +95,7 @@ export function BillingManage({
             }
             onClick={() => void act("subscribe-seats")}
           >
-            Add {quantity} seats · ₹{(quantity * 500).toLocaleString("en-IN")}
+            Add {quantity} seats · {rupees(quantity * EXTRA_SEAT_PAISE)}
             /month
           </button>
         </>
@@ -101,8 +103,8 @@ export function BillingManage({
       {summary.seat_subscriptions?.map((seat) => (
         <div key={seat.id}>
           <p>
-            {seat.quantity} additional users · ₹
-            {(seat.quantity * 500).toLocaleString("en-IN")}/month ·{" "}
+            {seat.quantity} additional users ·{" "}
+            {rupees(seat.quantity * EXTRA_SEAT_PAISE)}/month ·{" "}
             {seat.status}
           </p>
           {seat.status === "created" && (

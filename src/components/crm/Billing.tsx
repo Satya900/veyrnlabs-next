@@ -87,7 +87,7 @@ export function Billing({ onStarted }: { onStarted: () => void }) {
                 <div key={key} className="crm-billing-plan">
                   <strong>{CRM_PLANS[plan].name}</strong>
                   <span>
-                    {rupees(price.monthlyPaise)}/month, billed{" "}
+                    {rupees(price.monthlyPaise)}/month + GST, billed{" "}
                     {rupees(price.totalPaise)} {period.label.toLowerCase()}
                   </span>
                   <button

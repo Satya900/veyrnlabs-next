@@ -2,7 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { ButtonLink } from "@/components/ui/Button";
-import { CRM_PLANS, planPrice, type PlanId } from "@/lib/crm/plans";
+import {
+  CRM_PLANS,
+  EXTRA_SEAT_PAISE,
+  planPrice,
+  type PlanId,
+} from "@/lib/crm/plans";
 import styles from "./pricing.module.css";
 
 type PlanStatus = {
@@ -34,7 +39,7 @@ const plans = [
       "Manual site-visit scheduling",
       "Defined AI and messaging allowances; no unlimited usage",
       "Lead and pipeline overview",
-      "Standard onboarding and support",
+      "Self-serve setup with email support",
     ],
   },
   {
@@ -47,7 +52,7 @@ const plans = [
       "3 included users: admin plus 2 teammates",
       "AI books eligible site visits straight from WhatsApp, no back-and-forth",
       "Lead-source performance reporting to see what's converting",
-      "Standard onboarding and priority support",
+      "Self-serve setup with priority email support",
     ],
   },
 ];
@@ -111,7 +116,7 @@ export function Pricing() {
       </div>
       <p className={styles.billingNote} aria-live="polite">
         {period.months === 1
-          ? "Pay monthly. Standard onboarding included."
+          ? "Pay monthly. Cancel renewal any time."
           : `Pay for ${period.months} months upfront and save ${period.discount}% compared with monthly billing.`}
       </p>
       <div className={styles.cards}>
@@ -175,7 +180,7 @@ export function Pricing() {
               <p className={styles.description}>{plan.description}</p>
               <div className={styles.price}>
                 <strong>{rupees(monthly)}</strong>
-                <span>/month</span>
+                <span>/month + GST</span>
               </div>
               <p className={styles.total}>
                 {rupees(total)} billed {period.name.toLowerCase()}
@@ -209,8 +214,8 @@ export function Pricing() {
         })}
       </div>
       <p className={styles.terms}>
-        Prices in INR, before applicable taxes. Additional users cost ₹500
-        each. AI and messaging usage are limited by plan; allowances reset
+        Prices in INR, exclusive of 18% GST. Additional users cost{" "}
+        {rupees(EXTRA_SEAT_PAISE / 100)} each per month. AI and messaging usage are limited by plan; allowances reset
         each billing period and never trigger automatic overage charges.
         Subscribing opens secure checkout with Razorpay and starts billing
         immediately.
