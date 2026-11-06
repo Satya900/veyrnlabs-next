@@ -50,6 +50,7 @@ export type UsageSummary = {
     status: string;
     unit_paise?: number | null;
   }[];
+  billing_unavailable?: boolean;
   billing?: {
     plan: PlanId;
     billing_months: BillingMonths;

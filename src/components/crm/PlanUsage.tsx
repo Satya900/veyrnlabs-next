@@ -10,6 +10,7 @@ const stuckBillingMessage: Record<string, string> = {
   authenticated: "Payment method saved; waiting for the first charge to confirm your plan.",
   pending: "A recent charge failed and is being retried by Razorpay.",
   halted: "Billing was paused after repeated failed charges. Contact us to resolve this.",
+  paused: "Billing is paused. Cancel it to choose a different plan, or contact us to resume it.",
 };
 
 const periodName: Record<number, string> = { 1: "Monthly", 3: "Quarterly", 12: "Annual" };
@@ -18,6 +19,7 @@ const billingBadge: Record<string, string> = {
   authenticated: "Awaiting first charge",
   pending: "Payment retrying",
   halted: "Payment failed",
+  paused: "Paused",
 };
 const rupees = (paise: number) => `₹${(paise / 100).toLocaleString("en-IN")}`;
 const formatDate = (iso: string) =>
@@ -30,9 +32,15 @@ function BillSummary({ summary }: { summary: UsageSummary }) {
     (seat) => seat.status !== "created" && seat.unit_paise,
   );
   if (!base && !seats.length) return null;
-  const seatTotal = seats.reduce((sum, seat) => sum + seat.quantity * seat.unit_paise!, 0);
+  // Only seats that are actually charging count toward the total; paused or failing ones
+  // are listed with their status.
+  const seatTotal = seats
+    .filter((seat) => seat.status === "active")
+    .reduce((sum, seat) => sum + seat.quantity * seat.unit_paise!, 0);
   const monthlyTotal =
-    base?.billing_months === 1 ? base.amount_paise + seatTotal : null;
+    base?.billing_months === 1 && base.status === "active"
+      ? base.amount_paise + seatTotal
+      : null;
   return (
     <div className="crm-bill">
     <dl>
@@ -52,6 +60,7 @@ function BillSummary({ summary }: { summary: UsageSummary }) {
           <dt>
             {seat.quantity} additional {seat.quantity === 1 ? "user" : "users"} ×{" "}
             {rupees(seat.unit_paise!)}
+            {seat.status !== "active" ? ` (${seat.status}, not charging)` : ""}
           </dt>
           <dd>{rupees(seat.quantity * seat.unit_paise!)}/month</dd>
         </div>
@@ -74,7 +83,7 @@ export function PlanUsage({ demo, role }: { demo: boolean; role: string }) {
   const [error, setError] = useState("");
   const pending =
     !!summary?.billing &&
-    ["created", "authenticated", "pending", "halted"].includes(summary.billing.status);
+    ["created", "authenticated", "pending", "halted", "paused"].includes(summary.billing.status);
   if (role === "team") return null;
   async function load() {
     setBusy(true);
@@ -182,7 +191,12 @@ export function PlanUsage({ demo, role }: { demo: boolean; role: string }) {
               No paid plan is active right now. AI and WhatsApp automation turn
               on once {pending ? "checkout is complete" : "you subscribe"}.
             </p>
-            {!pending &&
+            {summary.billing_unavailable ? (
+              <p role="alert" className="crm-plan-notice">
+                Billing details are temporarily unavailable, so plan changes are
+                hidden. Refresh in a moment or contact support.
+              </p>
+            ) : !pending &&
               (role === "owner" ? (
                 <Billing onStarted={() => void load()} />
               ) : (
