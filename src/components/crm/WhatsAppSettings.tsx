@@ -1,6 +1,7 @@
 "use client";
 import { crmFetch } from "./activity";
 import { useEffect, useState } from "react";
+import { GupshupConnect } from "./GupshupConnect";
 type MetaSDK = {
   init: (options: Record<string, unknown>) => void;
   login: (
@@ -18,7 +19,14 @@ type Setup = {
   appId: string;
   configId: string;
   version: string;
-  connection?: { active: boolean; display_phone: string };
+  connection?: {
+    active: boolean;
+    display_phone: string;
+    provider?: "meta" | "gupshup";
+    provider_app?: string | null;
+  };
+  callbackUrl?: string | null;
+  gupshupReady?: boolean;
 };
 export function WhatsAppSettings({
   role,
@@ -151,17 +159,22 @@ export function WhatsAppSettings({
         {setup?.connection && (
           <p>
             {setup.connection.display_phone} ·{" "}
-            {setup.connection.active ? "Connected" : "Disconnected"}
+            {setup.connection.active
+              ? `Connected${setup.connection.provider === "gupshup" ? " through Gupshup" : " through Meta"}`
+              : "Disconnected"}
           </p>
         )}
-        {setup && !setup.ready && (
-          <p>
-            Customer number onboarding is awaiting Meta app configuration.
-            Contact your administrator.
-          </p>
+        {role === "owner" && setup && (
+          <GupshupConnect
+            connection={setup.connection}
+            callbackUrl={setup.callbackUrl ?? null}
+            ready={!!setup.gupshupReady}
+            onChanged={load}
+          />
         )}
-        {role === "owner" && setup?.ready && (
+        {role === "owner" && setup?.ready && setup.connection?.provider !== "gupshup" && (
           <>
+            <h3 className="crm-provider-alt">Or connect directly through Meta</h3>
             <p>
               Authorize your business account and number through Meta. Reconnect
               here if your permissions expire.

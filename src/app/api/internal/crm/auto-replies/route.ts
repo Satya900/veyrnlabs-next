@@ -91,6 +91,8 @@ export async function POST(request: Request) {
             WHATSAPP_SEND_ORGANIZATION_ID: config.org,
             WHATSAPP_SEND_PHONE_ID: config.phone,
             WHATSAPP_SEND_WABA_ID: config.waba,
+            WHATSAPP_SEND_PROVIDER: config.provider,
+            WHATSAPP_SEND_APP: config.app,
           },
           (name, args) => db.rpc(name, args),
         );

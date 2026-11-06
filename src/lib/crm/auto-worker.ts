@@ -5,7 +5,7 @@ import {
   MAX_INPUT_TOKENS,
   MAX_OUTPUT_TOKENS,
 } from "./ai-provider.ts";
-import { sendConfig, sendWhatsAppReply } from "./whatsapp-send.ts";
+import { sendConfig, sendReply } from "./whatsapp-send.ts";
 import { overlaps, resolveIstSlot } from "./calendar-slots.ts";
 import { decryptCalendarToken } from "./calendar-crypto.ts";
 import {
@@ -263,8 +263,8 @@ export async function processAutoReply(
     await end("skipped", "Reply already has a send attempt; no resend.");
     return { status: "skipped" };
   }
-  const result = await sendWhatsAppReply(
-    send.token,
+  const result = await sendReply(
+    send,
     job.phone,
     job.recipient,
     job.body,
