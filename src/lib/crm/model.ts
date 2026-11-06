@@ -67,6 +67,7 @@ export type Workspace = {
   saved_views: SavedView[];
   user: Member;
   plan: PlanTier;
+  organization?: { name: string };
 };
 export const defaultStages: Stage[] = [
   "New",

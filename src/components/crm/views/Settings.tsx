@@ -14,7 +14,7 @@ import { FollowUpSettings } from "../FollowUpSettings";
 export function Settings() {
   const { data, stages, busy, mutate, demo, now, reload } = useWorkspaceContext();
   return (
-    <div>
+    <div className="crm-settings-stack">
       <AISettings demo={demo} role={data.user.role} />
       <FollowUpSettings demo={demo} role={data.user.role} />
       <div className="crm-overview-grid">
@@ -53,14 +53,16 @@ export function Settings() {
                 </p>
               </div>
             </div>
-            <TeamMembers
-              members={data.members}
-              role={data.user.role}
-              selfId={data.user.id}
-              demo={demo}
-              reload={reload}
-            />
-            <TeamInvitations role={data.user.role} demo={demo} now={now} />
+            <div className="crm-settings-body crm-team">
+              <TeamMembers
+                members={data.members}
+                role={data.user.role}
+                selfId={data.user.id}
+                demo={demo}
+                reload={reload}
+              />
+              <TeamInvitations role={data.user.role} demo={demo} now={now} />
+            </div>
           </section>
         </div>
         <div>
