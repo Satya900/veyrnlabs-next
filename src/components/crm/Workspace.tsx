@@ -8,6 +8,7 @@ import { dueFollowUps, overdueTasks, sortedStages } from "@/lib/crm/workspace";
 import type { Workspace as Data } from "@/lib/crm/model";
 import type { Editing, View } from "./types";
 import { useWorkspaceData } from "./useWorkspaceData";
+import { setCrmWorkspace } from "./activity";
 import { WorkspaceProvider } from "./context";
 import { WorkspaceSkeleton } from "./WorkspaceSkeleton";
 import { Sidebar } from "./Sidebar";
@@ -81,6 +82,9 @@ export default function Workspace({
     mutate,
     optimisticMutate,
   } = useWorkspaceData(demo, initialData);
+  // Bind this tab's requests to the workspace it is showing (see crmFetch). Set during
+  // render so it is in place before any child effect or handler sends a request.
+  setCrmWorkspace(demo ? undefined : data?.organizationId);
   // initialView comes from the server-read ?view= param, so the client's first
   // render matches SSR exactly (reading window.location here instead would give
   // the server and the client different answers and trigger a hydration mismatch).

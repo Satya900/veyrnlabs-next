@@ -63,7 +63,9 @@ declare f record;
 begin
  for f in
   select p.oid from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-  where n.nspname = 'public' and p.proname <> 'crm_member_id' and p.prosrc like '%auth.uid()%'
+  -- crm_member_id and crm_my_memberships genuinely mean the login, not the membership.
+  where n.nspname = 'public' and p.proname not in ('crm_member_id', 'crm_my_memberships')
+    and p.prosrc like '%auth.uid()%'
  loop
   execute replace(pg_get_functiondef(f.oid), 'auth.uid()', 'public.crm_member_id()');
  end loop;

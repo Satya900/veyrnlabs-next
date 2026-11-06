@@ -1,6 +1,6 @@
 import "server-only";
 import { createClient } from "@supabase/supabase-js";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import type { Member, Workspace } from "./model";
 export { sameOrigin } from "./origin";
 
@@ -9,6 +9,8 @@ export const configured = () =>
 export const cookieName = "veyrn_crm_session";
 /** The business the signed-in login is working in, when it belongs to more than one. */
 export const organizationCookieName = "veyrn_crm_org";
+/** Sent by each browser tab so its requests act in the workspace that tab is showing. */
+export const workspaceHeaderName = "x-crm-workspace";
 export type Membership = {
   member_id: string;
   organization_id: string;
@@ -42,7 +44,13 @@ export function supabase(token?: string, service = false, organization?: string)
       : {}),
   });
 }
-export async function session() {
+/**
+ * The signed-in member, scoped to one workspace. An explicit `organization` (or the tab's
+ * x-crm-workspace header) wins over the last-chosen cookie, so a tab left open on one
+ * business keeps acting there after another tab switches; a requested workspace the login
+ * doesn't belong to yields no session rather than a silent fallback.
+ */
+export async function session(organization?: string) {
   if (!configured()) return null;
   const token = (await cookies()).get(cookieName)?.value;
   if (!token) return null;
@@ -55,9 +63,17 @@ export async function session() {
   const { data } = await db.rpc("crm_my_memberships");
   const memberships = ((data ?? []) as Membership[]).filter((m) => m.active);
   if (!memberships.length) return null;
-  const chosen = (await cookies()).get(organizationCookieName)?.value;
-  const current =
-    memberships.find((m) => m.organization_id === chosen) ?? memberships[0];
+  const requested =
+    organization ?? (await headers()).get(workspaceHeaderName) ?? undefined;
+  let current: Membership | undefined;
+  if (requested) {
+    current = memberships.find((m) => m.organization_id === requested);
+    if (!current) return null;
+  } else {
+    const chosen = (await cookies()).get(organizationCookieName)?.value;
+    current =
+      memberships.find((m) => m.organization_id === chosen) ?? memberships[0];
+  }
   const scoped = supabase(token, false, current.organization_id);
   const { data: member } = await scoped
     .from("crm_members")

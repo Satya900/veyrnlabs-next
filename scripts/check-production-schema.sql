@@ -1,7 +1,13 @@
 -- Veyrn CRM production schema check. Paste into the Supabase SQL editor and run.
--- Lists every object the repository's migrations create that production lacks or has a different body for.
--- Function bodies are compared with all whitespace and line endings ignored.
--- An empty result means production matches the repo.
+-- Compares production's public schema with what the repository's migrations build:
+--   * every function exists with the same signature and body,
+--   * every column exists,
+--   * every row-level security policy exists with the same conditions,
+--   * every trigger exists.
+-- Bodies and policy conditions are compared with whitespace removed, so a change that
+-- only adds or removes spaces (including inside a quoted string) is not reported.
+-- An empty result means those objects match. It does not compare grants, indexes,
+-- constraints, column types or data.
 with expected_fn(sig, h) as (values
   ('public.crm_accept_invitation(hashed_token text, verified_user uuid, member_name text)', '780c879d23566a381b61057a26f89ba8'),
   ('public.crm_access(assigned uuid)', '032c56e50b7fa1c267d088c06cce29c5'),
@@ -41,7 +47,7 @@ with expected_fn(sig, h) as (values
   ('public.crm_member_departure()', '9d8437bfcd195803b6911f82ba2e51d6'),
   ('public.crm_member_id()', '1c89c6ddb586dfd0a92fd05210bdd40a'),
   ('public.crm_member_seat_active(member uuid)', 'c6f80e6ce5ae378ab9b3540d581166ae'),
-  ('public.crm_my_memberships()', '82be4b48305757558385a2f4c9bc2c7f'),
+  ('public.crm_my_memberships()', '627334c91aaad93746ab4774f1da29cf'),
   ('public.crm_open_ai_trial(org uuid)', '8408ecd797b3fc24961bdef851e4c339'),
   ('public.crm_open_usage_period(org uuid, selected_plan text, months integer, period_start timestamp with time zone, period_end timestamp with time zone, overhead bigint, ai_allowance integer, whatsapp_allowance integer, paid_seats integer)', 'e8edb963b4eb2d47e18b7f1392cce89e'),
   ('public.crm_organization_id()', 'da1dd5b3751542fd6a1a5bc1c98729ae'),
@@ -352,6 +358,47 @@ with expected_fn(sig, h) as (values
   ('crm_worker_health', 'last_error'),
   ('crm_worker_health', 'last_seen'),
   ('crm_worker_health', 'last_success')
+), expected_policy(t, p, h) as (values
+  ('crm_activities', 'activity_insert', 'c487a4ca9a70a947e05bc72a4cf70588'),
+  ('crm_activities', 'activity_read', '421a5c3cabfdbfa6963d217b1be7c704'),
+  ('crm_activities', 'organization_isolation', 'b8f3408787490f032f527bbe70042f51'),
+  ('crm_ai_drafts', 'ai_drafts_access', 'a3533c044c5e806507943446671340a2'),
+  ('crm_ai_settings', 'ai_settings_admin', '7f2ae966a842ab9be39cdda933300adc'),
+  ('crm_auto_jobs', 'auto_jobs_admin', '7f2ae966a842ab9be39cdda933300adc'),
+  ('crm_clients', 'clients_read', 'd4166295f548f8153ccba0de40aca441'),
+  ('crm_clients', 'organization_isolation', 'b8f3408787490f032f527bbe70042f51'),
+  ('crm_followup_jobs', 'followup_jobs_admin', '7f2ae966a842ab9be39cdda933300adc'),
+  ('crm_followup_sends', 'followup_sends_admin', '7f2ae966a842ab9be39cdda933300adc'),
+  ('crm_invitations', 'invitation_directory', '7f2ae966a842ab9be39cdda933300adc'),
+  ('crm_leads', 'leads_insert', '322c65be18b48154d85b6c781d7faeb3'),
+  ('crm_leads', 'leads_read', 'd4fc6df6a439b893410f575cc9184eea'),
+  ('crm_leads', 'leads_update', '659f707d6e3b73353a9e615379a22863'),
+  ('crm_leads', 'organization_isolation', 'b8f3408787490f032f527bbe70042f51'),
+  ('crm_members', 'member_directory', '9fc3e08377974271836b68fd3fb3f3ba'),
+  ('crm_members', 'organization_isolation', 'b8f3408787490f032f527bbe70042f51'),
+  ('crm_organizations', 'organization_read', '7bbbfa9d5e0d027efcd728b53a889081'),
+  ('crm_saved_views', 'organization_isolation', 'b8f3408787490f032f527bbe70042f51'),
+  ('crm_saved_views', 'saved_views_own', '25904fc248330afa0f2d6a889af1495e'),
+  ('crm_stages', 'organization_isolation', 'b8f3408787490f032f527bbe70042f51'),
+  ('crm_stages', 'stages_insert', 'd68eb86a58d2178249267b0c185fc3a2'),
+  ('crm_stages', 'stages_read', '9fc3e08377974271836b68fd3fb3f3ba'),
+  ('crm_stages', 'stages_update', '005359b3c0f210f3eea25155e5638934'),
+  ('crm_tasks', 'organization_isolation', 'b8f3408787490f032f527bbe70042f51'),
+  ('crm_tasks', 'tasks_insert', '5eeb29a1a57fb58a0bf96cc04c8baf27'),
+  ('crm_tasks', 'tasks_read', '421a5c3cabfdbfa6963d217b1be7c704'),
+  ('crm_tasks', 'tasks_update', 'bf7b9cca10fddd10caf2190a3f8908ee'),
+  ('crm_whatsapp_connections', 'whatsapp_connection_admin', '7f2ae966a842ab9be39cdda933300adc'),
+  ('crm_whatsapp_conversations', 'whatsapp_conversation_access', '069862cb19f58a3f4dd004594806aea3'),
+  ('crm_whatsapp_messages', 'whatsapp_message_access', '6499c25bb3fc6e4eca9fa851d0350bfb'),
+  ('crm_whatsapp_outbox', 'outbox_visible', '6cc5834b6915416f033393a5d11acf35')
+), expected_trigger(t, n) as (values
+  ('crm_leads', 'crm_lead_after'),
+  ('crm_leads', 'crm_lead_before'),
+  ('crm_members', 'crm_member_default_user'),
+  ('crm_members', 'crm_member_departure'),
+  ('crm_members', 'crm_member_seat_allowance'),
+  ('crm_whatsapp_messages', 'crm_incoming_auto_reply'),
+  ('crm_whatsapp_outbox', 'crm_outbox_delivery')
 ), actual_fn as (
   select 'public.'||p.proname||'('||pg_get_function_identity_arguments(p.oid)||')' sig, md5(regexp_replace(p.prosrc, '\s+', '', 'g')) h
   from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public'
@@ -366,4 +413,15 @@ where p.proname like 'crm\_%' and not exists (select 1 from expected_fn e where 
 union all
 select 'missing column', e.t||'.'||e.c from expected_col e
 where not exists (select 1 from information_schema.columns i where i.table_schema='public' and i.table_name=e.t and i.column_name=e.c)
+union all
+select 'missing policy', e.t||'.'||e.p from expected_policy e
+where not exists (select 1 from pg_policies a where a.schemaname='public' and a.tablename=e.t and a.policyname=e.p)
+union all
+select 'policy differs from repo', e.t||'.'||e.p from expected_policy e
+join pg_policies a on a.schemaname='public' and a.tablename=e.t and a.policyname=e.p
+where md5(regexp_replace(coalesce(a.qual,'')||'|'||coalesce(a.with_check,''), '\s+', '', 'g'))<>e.h
+union all
+select 'missing trigger', e.t||'.'||e.n from expected_trigger e
+where not exists (select 1 from pg_trigger g join pg_class c on c.oid=g.tgrelid join pg_namespace s on s.oid=c.relnamespace
+ where s.nspname='public' and c.relname=e.t and g.tgname=e.n and not g.tgisinternal)
 order by 1, 2;
