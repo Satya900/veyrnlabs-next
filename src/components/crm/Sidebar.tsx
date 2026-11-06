@@ -64,33 +64,55 @@ export function Sidebar({
   const [menuOpen, setMenuOpen] = useState(false);
   const [switching, setSwitching] = useState("");
   const switcher = useRef<HTMLDivElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const menuItems = () =>
+    Array.from(switcher.current?.querySelectorAll<HTMLButtonElement>('[role="menuitemradio"]') ?? []);
+  const closeMenu = (restoreFocus: boolean) => {
+    setMenuOpen(false);
+    if (restoreFocus) trigger.current?.focus();
+  };
   useEffect(() => {
     if (!menuOpen) return;
-    const close = (event: MouseEvent | KeyboardEvent) => {
-      if (event instanceof KeyboardEvent ? event.key === "Escape" : !switcher.current?.contains(event.target as Node))
-        setMenuOpen(false);
+    // Start on the current workspace so arrow keys move from there.
+    const items = menuItems();
+    (items.find((item) => item.getAttribute("aria-checked") === "true") ?? items[0])?.focus();
+    const onPointer = (event: MouseEvent) => {
+      if (!switcher.current?.contains(event.target as Node)) setMenuOpen(false);
     };
-    document.addEventListener("mousedown", close);
-    document.addEventListener("keydown", close);
-    return () => {
-      document.removeEventListener("mousedown", close);
-      document.removeEventListener("keydown", close);
-    };
+    document.addEventListener("mousedown", onPointer);
+    return () => document.removeEventListener("mousedown", onPointer);
   }, [menuOpen]);
+  function onMenuKey(event: React.KeyboardEvent) {
+    const items = menuItems();
+    const index = items.indexOf(document.activeElement as HTMLButtonElement);
+    const move = (to: number) => {
+      event.preventDefault();
+      items[(to + items.length) % items.length]?.focus();
+    };
+    if (event.key === "ArrowDown") move(index + 1);
+    else if (event.key === "ArrowUp") move(index - 1);
+    else if (event.key === "Home") move(0);
+    else if (event.key === "End") move(items.length - 1);
+    else if (event.key === "Escape") {
+      event.preventDefault();
+      closeMenu(true);
+    } else if (event.key === "Tab") closeMenu(false);
+  }
   async function switchTo(organization: string) {
-    if (organization === organizationId) return setMenuOpen(false);
+    if (organization === organizationId) return closeMenu(true);
     setSwitching(organization);
-    const res = await crmFetch("/api/crm/session", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ organization }),
-    });
-    if (res.ok) {
+    try {
+      const res = await crmFetch("/api/crm/session", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ organization }),
+      });
+      if (!res.ok) throw new Error();
       // A full load resets every view, filter and cache to the new business's data.
       window.location.reload();
-    } else {
+    } catch {
       setSwitching("");
-      setMenuOpen(false);
+      closeMenu(true);
       onSignOutError("Couldn't switch workspace. Please try again.");
     }
   }
@@ -111,17 +133,24 @@ export function Sidebar({
       {canSwitch ? (
         <div className="crm-workspace-switch" ref={switcher}>
           <button
+            ref={trigger}
             type="button"
             className="crm-workspace-name"
             aria-haspopup="menu"
             aria-expanded={menuOpen}
             onClick={() => setMenuOpen((open) => !open)}
+            onKeyDown={(event) => {
+              if (event.key === "ArrowDown" && !menuOpen) {
+                event.preventDefault();
+                setMenuOpen(true);
+              }
+            }}
           >
             {workspaceSummary}
             <Icon name="chevron" />
           </button>
           {menuOpen && (
-            <div className="crm-workspace-menu" role="menu" aria-label="Switch workspace">
+            <div className="crm-workspace-menu" role="menu" aria-label="Switch workspace" onKeyDown={onMenuKey}>
               <span className="crm-nav-label">Your workspaces</span>
               {memberships.map((m) => (
                 <button

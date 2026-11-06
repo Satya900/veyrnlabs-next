@@ -1,5 +1,5 @@
 "use client";
-import { crmFetch } from "./activity";
+import { crmFetch, crmWorkspace } from "./activity";
 import { useEffect, useState } from "react";
 import { SkeletonRows } from "./Skeleton";
 
@@ -108,7 +108,10 @@ export function CalendarSettings({ demo }: { demo: boolean; role: string }) {
                   Not connected. Pro includes manual booking; Pro Plus adds automatic booking. Each
                   agent connects their own calendar.
                 </p>
-                <a className="crm-primary" href="/api/crm/calendar/connect">
+                <a
+                  className="crm-primary"
+                  href={`/api/crm/calendar/connect${crmWorkspace() ? `?workspace=${encodeURIComponent(crmWorkspace()!)}` : ""}`}
+                >
                   Connect Google Calendar
                 </a>
               </>

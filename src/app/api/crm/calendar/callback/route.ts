@@ -21,11 +21,11 @@ function settingsUrl(request: Request, params: Record<string, string>) {
 
 export async function GET(request: Request) {
   const jar = await cookies();
-  const expectedState = jar.get(STATE_COOKIE)?.value;
+  const [expectedState, workspace] = (jar.get(STATE_COOKIE)?.value ?? "").split(".");
   jar.delete(STATE_COOKIE);
   if (!googleCalendarConfigured(process.env))
     return new Response("Calendar connection is not enabled yet.", { status: 503 });
-  const auth = await session();
+  const auth = await session(workspace || undefined);
   if (!auth)
     return Response.redirect(siteUrl(request, "/crm/login"), 302);
 
