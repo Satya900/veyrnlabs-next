@@ -1905,7 +1905,12 @@
 .crm-plan-usage .crm-settings-body { display: grid; gap: 16px; }
 .crm-plan-usage p { line-height: 1.6; }
 .crm-usage-meter > div { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; }
-.crm-usage-meter progress { display: block; width: 100%; height: 10px; margin: 10px 0; accent-color: var(--crm-accent); }
+.crm-usage-meter progress { display: block; width: 100%; height: 8px; margin: 10px 0 6px; border: 0; border-radius: 999px; overflow: hidden; appearance: none; background: var(--color-canvas-soft); accent-color: var(--crm-accent); }
+.crm-usage-meter progress::-webkit-progress-bar { background: var(--color-canvas-soft); border-radius: 999px; }
+.crm-usage-meter progress::-webkit-progress-value { background: var(--crm-accent); border-radius: 999px; }
+.crm-usage-meter progress::-moz-progress-bar { background: var(--crm-accent); border-radius: 999px; }
+.crm-usage-meter > div span { font-variant-numeric: tabular-nums; color: var(--color-body); }
+.crm-usage-meter > p { margin: 0; font-size: 12px; color: var(--crm-danger); }
 .crm-plan-comparison { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 16px; }
 .crm-plan-card { border: 1px solid var(--crm-border); border-radius: 10px; padding: 20px; display: grid; gap: 8px; align-content: start; }
 .crm-plan-card.is-plus { border-color: var(--crm-accent); background: var(--crm-accent-soft); }
@@ -1913,6 +1918,50 @@
 .crm-plan-price { font-size: 22px; font-weight: 600; }
 .crm-plan-price small { font-size: 12px; font-weight: 400; color: var(--color-mute); }
 .crm-plan-card ul { display: grid; gap: 6px; margin-top: 4px; padding-left: 18px; font-size: 12px; color: var(--color-mute); }
+
+/* Plan & usage: current plan, plan picker, seats */
+.crm-plan-notice { padding: 12px 14px; border: 1px solid var(--crm-border); border-radius: 8px; background: var(--color-canvas-card); color: var(--color-body); font-size: 13px; }
+.crm-plan-current { display: grid; gap: 16px; padding: 18px 20px; border: 1px solid var(--crm-border); border-radius: 10px; background: var(--color-canvas); }
+.crm-plan-current-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.crm-plan-current-head h3 { margin-top: 4px; font-size: 18px; }
+.crm-plan-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px 20px; margin: 0; }
+.crm-plan-facts dt { font-size: 12px; color: var(--color-mute); }
+.crm-plan-facts dd { margin: 2px 0 0; font-size: 14px; color: var(--color-ink); }
+
+.crm-plan-picker { display: grid; gap: 16px; }
+.crm-plan-picker-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.crm-plan-picker-head p { margin: 0; color: var(--color-body); }
+.crm-period-toggle { display: inline-flex; gap: 2px; padding: 3px; border: 1px solid var(--crm-border); border-radius: 8px; background: var(--color-canvas-card); }
+.crm-root .crm-period-toggle button { padding: 6px 12px; border: 0; border-radius: 6px; font-size: 12px; line-height: 18px; color: var(--color-body); background: transparent; }
+.crm-root .crm-period-toggle button:hover:not(:disabled) { background: var(--color-canvas-soft); }
+.crm-root .crm-period-toggle button[aria-pressed="true"] { background: var(--color-canvas); color: var(--color-ink); box-shadow: var(--crm-shadow-sm); }
+.crm-period-toggle button span { font-size: 11px; color: var(--color-success); }
+.crm-plan-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+.crm-plan-option { display: flex; flex-direction: column; gap: 10px; padding: 20px; border: 1px solid var(--crm-border); border-radius: 10px; background: var(--color-canvas); }
+.crm-plan-option.is-plus { border-color: var(--crm-accent); box-shadow: var(--crm-shadow-sm); }
+.crm-plan-option-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 28px; }
+.crm-plan-option-head h3 { font-size: 16px; }
+.crm-plan-option-price { margin: 0; display: flex; align-items: baseline; gap: 4px; }
+.crm-plan-option-price strong { font-size: 26px; font-weight: 600; color: var(--color-ink); letter-spacing: -0.01em; }
+.crm-plan-option-price span { font-size: 12px; color: var(--color-mute); }
+.crm-plan-option .crm-muted { margin: 0; }
+.crm-plan-option ul { flex: 1; display: grid; gap: 8px; align-content: start; margin: 4px 0 0; padding: 0; list-style: none; font-size: 12px; line-height: 1.5; color: var(--color-body); }
+.crm-plan-option li { position: relative; padding-left: 16px; }
+.crm-plan-option li::before { content: ""; position: absolute; left: 2px; top: 0.55em; width: 6px; height: 6px; border-radius: 50%; background: var(--crm-accent); }
+.crm-root .crm-plan-option button { width: 100%; margin-top: 6px; }
+
+.crm-billing-manage { display: grid; gap: 16px; }
+.crm-billing-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.crm-billing-seats { display: grid; gap: 14px; padding-top: 16px; border-top: 1px solid var(--crm-border); }
+.crm-billing-seats h3 { font-size: 15px; }
+.crm-billing-seats .crm-muted { margin: 4px 0 0; line-height: 1.6; }
+.crm-seat-add { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; }
+.crm-root .crm-seat-add label { width: 120px; }
+.crm-seat-list { display: grid; margin: 0; padding: 0; list-style: none; border: 1px solid var(--crm-border); border-radius: 10px; }
+.crm-seat-list li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; }
+.crm-seat-list li + li { border-top: 1px solid var(--crm-border); }
+.crm-seat-list li > div:first-child { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+.crm-seat-list-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .crm-whatsapp-status { display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 24px; margin-bottom: 20px; flex-wrap: wrap; }
 .crm-whatsapp-grid { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(0, 2fr); gap: 20px; align-items: start; }
 .crm-whatsapp-list { overflow: hidden; }

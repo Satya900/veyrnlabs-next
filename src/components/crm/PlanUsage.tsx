@@ -55,12 +55,50 @@ export function PlanUsage({ demo, role }: { demo: boolean; role: string }) {
         {!demo && !summary && !error && (
           <p>View your subscription, included users and available usage.</p>
         )}
+        {summary?.plan && (
+          <div className="crm-plan-current">
+            <div className="crm-plan-current-head">
+              <div>
+                <span className="crm-eyebrow">Current plan</span>
+                <h3>{CRM_PLANS[summary.plan].name}</h3>
+              </div>
+              <span className={summary.status === "active" ? "crm-badge won" : "crm-badge"}>
+                {summary.status === "active" ? "Active" : "Not active"}
+              </span>
+            </div>
+            <dl className="crm-plan-facts">
+              <div>
+                <dt>Users</dt>
+                <dd>
+                  {summary.member_count} of{" "}
+                  {(summary.included_seats ?? 0) + (summary.purchased_seats ?? 0)} seats in use
+                </dd>
+              </div>
+              <div>
+                <dt>Seats</dt>
+                <dd>
+                  {summary.included_seats} included
+                  {summary.purchased_seats ? ` + ${summary.purchased_seats} additional` : ""}
+                </dd>
+              </div>
+              <div>
+                <dt>Site-visit booking</dt>
+                <dd>{summary.automatic_scheduling ? "Automatic" : "Manual"}</dd>
+              </div>
+              {summary.status === "active" && summary.period_end && (
+                <div>
+                  <dt>Allowance resets</dt>
+                  <dd>{new Date(summary.period_end).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</dd>
+                </div>
+              )}
+            </dl>
+          </div>
+        )}
         {(summary?.status === "unconfigured" || summary?.status === "inactive") && (
           <>
-            <p>
-              No paid allowance is currently active. AI and WhatsApp
-              automation remain unavailable until your plan and allowances are
-              configured.
+            <p className="crm-plan-notice">
+              No paid plan is active right now. AI and WhatsApp automation turn
+              on once you subscribe.
             </p>
             {!summary.billing_status ||
             ["cancelled", "completed", "expired"].includes(summary.billing_status) ? (
@@ -70,38 +108,15 @@ export function PlanUsage({ demo, role }: { demo: boolean; role: string }) {
                 <p>Ask the workspace owner to activate a plan.</p>
               )
             ) : (
-              <p role="status">
+              <p role="status" className="crm-plan-notice">
                 {stuckBillingMessage[summary.billing_status] ??
                   `Checkout status: ${summary.billing_status}.`}
               </p>
             )}
           </>
         )}
-        {summary?.plan && (
-          <>
-            <h3>{CRM_PLANS[summary.plan].name}</h3>
-            <p>
-              {summary.member_count} users · {summary.included_seats} included +{" "}
-              {summary.purchased_seats} additional seats
-            </p>
-            <p>
-              Scheduling entitlement:{" "}
-              {summary.automatic_scheduling ? "Automatic" : "Manual"}.
-            </p>
-          </>
-        )}
-        {summary?.status === "inactive" && (
-          <p>
-            No active usage period. Contact support to renew or activate your
-            subscription.
-          </p>
-        )}
         {summary?.status === "active" && (
           <>
-            <p>
-              Current allowance ends{" "}
-              {new Date(summary.period_end!).toLocaleDateString("en-IN")}.
-            </p>
             <UsageMeter
               label="AI replies"
               used={summary.ai_used!}
@@ -118,10 +133,9 @@ export function PlanUsage({ demo, role }: { demo: boolean; role: string }) {
                 allowance.
               </p>
             )}
-            <p>
+            <p className="crm-muted">
               Pending requests count toward usage. Reaching an allowance pauses
-              the affected automation. Additional usage requires a separately
-              approved purchase; there are no automatic overage charges.
+              the affected automation. There are no automatic overage charges.
             </p>
           </>
         )}
