@@ -1,6 +1,7 @@
 import { workerHealthWindow } from "@/lib/crm/worker-health";
 import { jsonBody, sameOrigin, session, supabase } from "@/lib/crm/server";
 import { tenantSendConfig } from "@/lib/crm/whatsapp-tenant";
+import { replySoon } from "@/lib/crm/auto-replies-runner";
 import {
   aiConfig,
   aiCost,
@@ -186,6 +187,15 @@ export async function POST(request: Request) {
     }
     if (typeof body.conversation !== "string" || !uuid.test(body.conversation))
       throw new Error("Invalid conversation.");
+    if (body.action === "resume") {
+      const { data: queued, error } = await auth.db.rpc("crm_resume_ai", {
+        conversation: body.conversation,
+      });
+      if (error) throw new Error("Unable to resume AI for this conversation.");
+      // Answer the waiting message now rather than at the next worker run.
+      if (queued) replySoon();
+      return Response.json({ ok: true, queued: Boolean(queued) }, { headers });
+    }
     if (body.action === "handover") {
       if (typeof body.paused !== "boolean")
         throw new Error("Invalid handover.");

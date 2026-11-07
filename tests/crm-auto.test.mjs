@@ -702,6 +702,18 @@ test("automatic jobs require opt-in and revalidate takeover, knowledge, ownershi
   await db.query("update crm_whatsapp_outbox set origin='manual', created_at=now() where id=$1", [typed]);
   await incoming("And the maintenance charges?");
   assert.equal(await queued(), 0);
+  // "Resume AI now" ends the quiet period and answers the waiting message straight away.
+  await login(other);
+  await assert.rejects(db.query("select crm_resume_ai($1)", [chat]), /Conversation unavailable/);
+  await login(owner);
+  assert.equal((await db.query("select crm_resume_ai($1) q", [chat])).rows[0].q, true);
+  await db.exec("reset role");
+  assert.equal(await queued(), 1);
+  // Messages after resuming are answered even though the typed reply was under 30 minutes ago.
+  await incoming("Is there a gym?");
+  assert.equal(await queued(), 1);
+  await db.query("update crm_auto_jobs set status='skipped' where status='queued'");
+  await db.query("update crm_whatsapp_conversations set ai_resumed_at=null where id=$1", [chat]);
   await db.query("update crm_whatsapp_outbox set created_at=now()-interval '31 minutes' where id=$1", [typed]);
   await incoming("Hello?");
   assert.equal(await queued(), 1);

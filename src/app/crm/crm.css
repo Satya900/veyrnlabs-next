@@ -2118,6 +2118,16 @@
 .crm-whatsapp-notice { margin: 0; padding: 16px 20px; border-top: 1px solid var(--crm-border); color: var(--color-body); font-size: 13px; }
 .crm-whatsapp-ai { border-top: 1px solid var(--crm-border); }
 .crm-whatsapp-ai summary { padding: 12px 20px; cursor: pointer; color: var(--crm-muted); font-size: 13px; }
+/* Inbox: automatic-reply status for one chat */
+.crm-ai-status { display: flex; align-items: center; gap: 10px; padding: 10px 20px; border-top: 1px solid var(--crm-border); font-size: 13px; }
+.crm-ai-status p { flex: 1; margin: 0; display: grid; gap: 2px; color: var(--crm-text); }
+.crm-ai-status small { color: var(--crm-muted); font-size: 12px; }
+.crm-ai-status.on .crm-dot { background: var(--crm-success); }
+.crm-ai-status.quiet .crm-dot { background: #d08a12; }
+.crm-ai-status.paused .crm-dot { background: var(--color-mute); }
+.crm-ai-status.quiet, .crm-ai-status.paused { background: color-mix(in srgb, #d08a12 7%, var(--color-canvas)); }
+.crm-root .crm-ai-status button { flex-shrink: 0; padding: 6px 12px; font-size: 12px; }
+
 /* AI insights: score badge, summary card, suggested replies */
 .crm-score { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; line-height: 18px; white-space: nowrap; vertical-align: middle; }
 .crm-score::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
