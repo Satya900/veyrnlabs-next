@@ -6,7 +6,9 @@ export type AIConfig = {
   inputRate: number;
   outputRate: number;
 };
-export const MAX_OUTPUT_TOKENS = 700;
+// Haiku 5.5 counts ~30% more tokens than earlier models for the same text; leave room for
+// three suggestions plus details in Hindi or Hinglish.
+export const MAX_OUTPUT_TOKENS = 1000;
 // 12k knowledge + 8 x 1.5k messages: reserve above their UTF-8 byte length plus prompt/schema overhead.
 export const MAX_INPUT_TOKENS = 110_000;
 export function aiConfig(
