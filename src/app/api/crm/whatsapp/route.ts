@@ -48,14 +48,22 @@ export async function GET(request: Request) {
       query = query.or(
         `sent_at.lt.${time},and(sent_at.eq.${time},id.lt.${id})`,
       );
-    const { data, error } = await query;
+    const [{ data, error }, optedOut] = await Promise.all([
+      query,
+      auth.db.rpc("crm_whatsapp_opted_out", { conversation }),
+    ]);
     if (error)
       return Response.json(
         { error: "Could not load messages." },
         { status: 503 },
       );
     return Response.json(
-      { messages: data.slice(0, 50), has_more: data.length > 50 },
+      {
+        messages: data.slice(0, 50),
+        has_more: data.length > 50,
+        // Unknown until the opt-in migration is applied; sending still checks it server-side.
+        opted_out: optedOut.error ? false : Boolean(optedOut.data),
+      },
       { headers },
     );
   }
@@ -73,7 +81,7 @@ export async function GET(request: Request) {
     query,
     auth.db
       .from("crm_whatsapp_connections")
-      .select("display_phone,active")
+      .select("display_phone,active,provider")
       .maybeSingle(),
     auth.member.role !== "team"
       ? auth.db
@@ -92,9 +100,23 @@ export async function GET(request: Request) {
       },
       { status: 503 },
     );
+  const page = conversations.data.slice(0, 50);
+  const optedOut = page.length
+    ? await auth.db.rpc("crm_whatsapp_opted_out_conversations", {
+        ids: page.map((c) => c.id),
+      })
+    : { data: [], error: null };
+  // A set-returning function comes back as plain ids or as { function_name: id } rows.
+  const blocked = new Set(
+    optedOut.error
+      ? []
+      : ((optedOut.data ?? []) as unknown[]).map((row) =>
+          typeof row === "string" ? row : String(Object.values(row as object)[0]),
+        ),
+  );
   return Response.json(
     {
-      conversations: conversations.data.slice(0, 50),
+      conversations: page.map((c) => ({ ...c, opted_out: blocked.has(c.id) })),
       has_more: conversations.data.length > 50,
       connection: connection.data,
       setup:

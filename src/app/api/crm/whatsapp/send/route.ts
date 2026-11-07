@@ -18,7 +18,7 @@ export async function GET(request: Request) {
       )
       .eq("conversation_id", conversation)
       .order("created_at", { ascending: false })
-      .limit(20);
+      .limit(50);
     if (error)
       return Response.json(
         { error: "Reply history requires the outbound migration." },

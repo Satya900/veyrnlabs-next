@@ -141,6 +141,42 @@ export function GupshupConnect({
           WhatsApp app, connect your number, then copy the app name and API key here.
         </small>
       </p>
+      <details className="crm-setup-guide">
+        <summary>New to Gupshup? Step-by-step setup (about 20 minutes)</summary>
+        <ol>
+          <li>
+            <strong>Create a free account</strong> at gupshup.io with your business email.
+          </li>
+          <li>
+            <strong>Create a WhatsApp app.</strong> Pick a short name with letters and numbers
+            only (e.g. SunriseRealty). This is the <em>app name</em> you&apos;ll enter below.
+          </li>
+          <li>
+            <strong>Connect your number.</strong> In the app, start the WhatsApp onboarding and
+            sign in with Facebook. Choose or create your Meta business, then add the number your
+            clients know. It can&apos;t be active on the WhatsApp app at the same time, so delete
+            the WhatsApp account on that phone first (or use a new number). Verify it with the
+            code Meta sends and set your display name.
+          </li>
+          <li>
+            <strong>Add wallet balance</strong> in Gupshup. Meta&apos;s per-message charges for
+            follow-up templates are paid from it.
+          </li>
+          <li>
+            <strong>Copy the API key</strong> from the app&apos;s settings. Gupshup shows it only
+            once, so paste it straight into the form below.
+          </li>
+          <li>
+            <strong>Connect here,</strong> then paste the callback URL we show you into Gupshup
+            → Webhooks so incoming messages reach your inbox.
+          </li>
+          <li>
+            <strong>Turn on follow-ups</strong> in WhatsApp follow-ups above: create the template
+            in Gupshup, add it once approved, use Send test, then switch it on.
+          </li>
+        </ol>
+        <p>Stuck on a step? Email support and we&apos;ll set it up with you.</p>
+      </details>
       <label>
         Gupshup app name
         <input name="app" required maxLength={100} autoComplete="off" placeholder="VeyrnRealty" />
