@@ -43,6 +43,7 @@ export async function POST(request: Request) {
   // identical retry would then skip as already processed.
   let overheadPaise = 0,
     aiAllowance = 0,
+    firstMonthAiAllowance = 0,
     whatsappAllowance = 0;
   if (parsed.openPeriod) {
     const { data: sub } = await db
@@ -55,7 +56,7 @@ export async function POST(request: Request) {
       if (!seat) return new Response("Unknown subscription; please retry", { status: 503 });
     }
     try {
-      if (sub) ({ overheadPaise, aiAllowance, whatsappAllowance } = billingAllowances(
+      if (sub) ({ overheadPaise, aiAllowance, firstMonthAiAllowance, whatsappAllowance } = billingAllowances(
         process.env,
         sub.plan,
       ));
@@ -82,6 +83,8 @@ export async function POST(request: Request) {
     overhead: overheadPaise,
     ai_allowance: aiAllowance,
     whatsapp_allowance: whatsappAllowance,
+    // Only used if this payment opens the workspace's first paid month.
+    first_ai_allowance: firstMonthAiAllowance,
   });
   if (error) {
     console.error("razorpay webhook: crm_apply_paid_event failed", {

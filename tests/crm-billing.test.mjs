@@ -25,7 +25,6 @@ const env = {
   RAZORPAY_PLAN_PRO_PLUS_3: "plan_pro_plus_3",
   RAZORPAY_PLAN_PRO_PLUS_12: "plan_pro_plus_12",
   CRM_OVERHEAD_PRO_PAISE: "50000",
-  CRM_AI_ALLOWANCE_PRO: "100",
   CRM_WHATSAPP_ALLOWANCE_PRO: "50",
 };
 
@@ -44,14 +43,15 @@ test("razorpayPlanId requires every plan/period combination to be explicitly con
   assert.throws(() => razorpayPlanId({ ...env, RAZORPAY_PLAN_PRO_3: "" }, "pro", 3));
 });
 
-test("billingAllowances never invents a rate and requires all three positive integers", () => {
+test("billingAllowances never invents overhead or WhatsApp rates; AI comes from the plan table", () => {
   assert.deepEqual(billingAllowances(env, "pro"), {
     overheadPaise: 50000,
-    aiAllowance: 100,
+    aiAllowance: 1000,
+    firstMonthAiAllowance: 2500,
     whatsappAllowance: 50,
   });
   assert.throws(() => billingAllowances(env, "pro_plus"));
-  assert.throws(() => billingAllowances({ ...env, CRM_AI_ALLOWANCE_PRO: "0" }, "pro"));
+  assert.throws(() => billingAllowances({ ...env, CRM_OVERHEAD_PRO_PAISE: "0" }, "pro"));
   assert.throws(() => billingAllowances({ ...env, CRM_WHATSAPP_ALLOWANCE_PRO: "-1" }, "pro"));
 });
 

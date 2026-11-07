@@ -1,5 +1,5 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
-import type { BillingMonths, PlanId } from "./plans";
+import { CRM_PLANS, type BillingMonths, type PlanId } from "./plans.ts";
 
 type Env = Record<string, string | undefined>;
 export class RazorpayRejected extends Error {}
@@ -91,24 +91,25 @@ export async function createRazorpaySubscription(
   return { subscriptionId: body.id, razorpayPlan };
 }
 
-/** Operator-reviewed rates only; never invents an allowance if unset. */
+/**
+ * Overhead and WhatsApp limits are operator-reviewed env values and never invented if unset.
+ * AI actions come from the published plan table, so the plan cards and billing always agree.
+ */
 export function billingAllowances(env: Env, plan: PlanId) {
   const prefix = plan === "pro" ? "PRO" : "PRO_PLUS";
   const overhead = Number(env[`CRM_OVERHEAD_${prefix}_PAISE`]);
-  const ai = Number(env[`CRM_AI_ALLOWANCE_${prefix}`]);
   const whatsapp = Number(env[`CRM_WHATSAPP_ALLOWANCE_${prefix}`]);
   if (
     !Number.isSafeInteger(overhead) ||
     overhead <= 0 ||
-    !Number.isSafeInteger(ai) ||
-    ai <= 0 ||
     !Number.isSafeInteger(whatsapp) ||
     whatsapp <= 0
   )
     throw new Error("Billing allowances are not configured for this plan yet.");
   return {
     overheadPaise: overhead,
-    aiAllowance: ai,
+    aiAllowance: CRM_PLANS[plan].aiActions,
+    firstMonthAiAllowance: CRM_PLANS[plan].firstMonthAiActions,
     whatsappAllowance: whatsapp,
   };
 }

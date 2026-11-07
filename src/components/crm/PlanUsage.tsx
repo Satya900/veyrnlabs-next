@@ -115,7 +115,7 @@ export function PlanUsage({ demo, role }: { demo: boolean; role: string }) {
         {error && <p role="alert">{error}</p>}
         {summary?.trial && (
           <p>
-            Testing allowance · {summary.ai_limit} AI drafts and{" "}
+            Testing allowance · {summary.ai_limit} AI actions and{" "}
             {summary.whatsapp_limit} manually approved WhatsApp replies. No paid
             subscription is active.
           </p>
@@ -207,7 +207,7 @@ export function PlanUsage({ demo, role }: { demo: boolean; role: string }) {
         {summary?.status === "active" && (
           <>
             <UsageMeter
-              label="AI replies"
+              label="AI actions"
               used={summary.ai_used!}
               limit={summary.ai_limit!}
             />

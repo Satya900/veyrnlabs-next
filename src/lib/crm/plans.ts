@@ -8,6 +8,8 @@ export const CRM_PLANS = {
     periodMonthlyPaise: { 1: 49_900, 3: 44_900, 12: 39_900 },
     includedSeats: 1,
     automaticScheduling: false,
+    aiActions: 1_000,
+    firstMonthAiActions: 2_500,
   },
   pro_plus: {
     name: "Pro Plus",
@@ -15,8 +17,12 @@ export const CRM_PLANS = {
     periodMonthlyPaise: { 1: 69_900, 3: 62_900, 12: 55_900 },
     includedSeats: 3,
     automaticScheduling: true,
+    aiActions: 3_000,
+    firstMonthAiActions: 6_000,
   },
 } as const;
+// AI actions are counted per workspace per month: one reply suggestion refresh, draft or
+// follow-up email each. A workspace's first paid month gets firstMonthAiActions instead.
 export const EXTRA_SEAT_PAISE = 19_900;
 export type PlanId = keyof typeof CRM_PLANS;
 export type BillingMonths = 1 | 3 | 12;
