@@ -1,5 +1,14 @@
+import { sendGupshupText } from "./whatsapp-gupshup.ts";
+
+export type SendConfig = NonNullable<ReturnType<typeof sendConfig>>;
 export function sendConfig(env: Record<string, string | undefined>) {
   const cost = Number(env.WHATSAPP_REPLY_COST_PAISE);
+  const provider = env.WHATSAPP_SEND_PROVIDER === "gupshup" ? "gupshup" : "meta";
+  if (
+    provider === "gupshup" &&
+    !/^[A-Za-z0-9_.-]{1,100}$/.test(env.WHATSAPP_SEND_APP ?? "")
+  )
+    return null;
   if (
     env.WHATSAPP_SEND_ENABLED !== "true" ||
     !env.WHATSAPP_ACCESS_TOKEN?.trim() ||
@@ -17,7 +26,22 @@ export function sendConfig(env: Record<string, string | undefined>) {
     phone: env.WHATSAPP_SEND_PHONE_ID!,
     waba: env.WHATSAPP_SEND_WABA_ID!,
     cost,
-  };
+    provider,
+    app: env.WHATSAPP_SEND_APP ?? "",
+  } as const;
+}
+
+/** Sends a text reply through whichever provider the workspace connected. */
+export function sendReply(
+  send: Pick<SendConfig, "provider" | "token" | "app">,
+  phone: string,
+  recipient: string,
+  body: string,
+  request: typeof fetch = fetch,
+) {
+  return send.provider === "gupshup"
+    ? sendGupshupText(send.token, send.app, phone, recipient, body, request)
+    : sendWhatsAppReply(send.token, phone, recipient, body, request);
 }
 export type SendResult = {
   status: "accepted" | "rejected" | "unknown";

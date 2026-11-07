@@ -1,5 +1,5 @@
 import { jsonBody, sameOrigin, session, supabase } from "@/lib/crm/server";
-import { sendWhatsAppReply } from "@/lib/crm/whatsapp-send";
+import { sendReply } from "@/lib/crm/whatsapp-send";
 import { tenantSendConfig } from "@/lib/crm/whatsapp-tenant";
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -88,12 +88,7 @@ export async function POST(request: Request) {
           : "Unable to prepare this reply.",
       );
     if (!job.run) return Response.json({ status: job.status }, { headers });
-    const result = await sendWhatsAppReply(
-      config.token,
-      job.phone,
-      job.recipient,
-      job.body,
-    );
+    const result = await sendReply(config, job.phone, job.recipient, job.body);
     const finished = await db.rpc("crm_finish_whatsapp_reply", {
       job: job.id,
       outcome: result.status,

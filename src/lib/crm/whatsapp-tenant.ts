@@ -20,7 +20,7 @@ export async function tenantSendConfig(
   if (!org) return null;
   const { data: connection } = await db
     .from("crm_whatsapp_connections")
-    .select("active,phone_number_id,waba_id")
+    .select("active,phone_number_id,waba_id,provider,provider_app")
     .eq("organization_id", org)
     .maybeSingle();
   if (!connection?.active) return null;
@@ -46,12 +46,16 @@ export async function tenantSendConfig(
         WHATSAPP_SEND_ORGANIZATION_ID: org,
         WHATSAPP_SEND_PHONE_ID: connection.phone_number_id,
         WHATSAPP_SEND_WABA_ID: connection.waba_id,
+        WHATSAPP_SEND_PROVIDER: connection.provider,
+        WHATSAPP_SEND_APP: connection.provider_app ?? "",
       });
     } catch {
       return null;
     }
   }
-  const legacy = sendConfig(process.env);
+  // The single-number env setup predates providers and is Meta only.
+  if (connection.provider !== "meta") return null;
+  const legacy = sendConfig({ ...process.env, WHATSAPP_SEND_PROVIDER: "meta" });
   return legacy?.org === org &&
     legacy.phone === connection.phone_number_id &&
     legacy.waba === connection.waba_id
