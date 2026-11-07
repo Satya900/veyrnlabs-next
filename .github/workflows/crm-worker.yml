@@ -1,4 +1,7 @@
 name: CRM auto-reply worker
+# Backup scheduler: GitHub delays scheduled runs on quiet repositories by hours, so the
+# primary trigger is Supabase Cron (docs/crm-worker-cron.md). Running both is safe; every
+# job is claimed under a lock and never sent twice.
 
 on:
   schedule:
@@ -10,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     # Two sequential 130s-capped calls can take up to ~4.3 minutes combined; give real headroom
     # rather than the single-call budget, so a slow first call can't truncate the second.
-    timeout-minutes: 6
+    timeout-minutes: 8
     steps:
       - name: Poll the CRM auto-reply worker endpoint
         env:
@@ -32,4 +35,14 @@ jobs:
           curl -sS -X POST "$CRM_WORKER_BASE_URL/api/internal/crm/follow-ups" \
             -H "Authorization: Bearer $CRM_WORKER_SECRET" \
             --max-time 130 \
+            --fail-with-body
+      - name: Poll the WhatsApp follow-up worker endpoint
+        if: always()
+        env:
+          CRM_WORKER_SECRET: ${{ secrets.CRM_WORKER_SECRET }}
+          CRM_WORKER_BASE_URL: ${{ secrets.CRM_WORKER_BASE_URL }}
+        run: |
+          curl -sS -X POST "$CRM_WORKER_BASE_URL/api/internal/crm/whatsapp-followups" \
+            -H "Authorization: Bearer $CRM_WORKER_SECRET" \
+            --max-time 70 \
             --fail-with-body

@@ -43,11 +43,22 @@ export async function POST(request: Request) {
   try {
     const { error } = await db.rpc("crm_whatsapp_followup_maintenance");
     if (error) throw new Error("Worker migration required");
-    const result = await processWhatsAppFollowUp(
-      cost,
-      (name, args) => db.rpc(name, args),
-      (organization) => tenantSendConfig(undefined, organization),
-    );
+    // A once-a-minute scheduler calls this, so drain a batch per call instead of one job:
+    // stop when nothing is due, after 25 sends, or after ~35 seconds (each send can wait 20s; the route allows 60s).
+    const started = Date.now();
+    const counts: Record<string, number> = {};
+    let processed = 0;
+    while (processed < 25 && Date.now() - started < 35_000) {
+      const { status } = await processWhatsAppFollowUp(
+        cost,
+        (name, args) => db.rpc(name, args),
+        (organization) => tenantSendConfig(undefined, organization),
+      );
+      if (status === "idle") break;
+      counts[status] = (counts[status] ?? 0) + 1;
+      processed++;
+    }
+    const result = processed ? { status: "processed", ...counts } : { status: "idle" };
     await db
       .from("crm_worker_health")
       .update({ last_success: new Date().toISOString(), last_error: null })
