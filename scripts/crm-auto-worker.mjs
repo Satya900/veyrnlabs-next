@@ -14,6 +14,7 @@ if (
 const queues = [
   { name: "auto-replies", url: new URL("/api/internal/crm/auto-replies", base) },
   { name: "follow-ups", url: new URL("/api/internal/crm/follow-ups", base) },
+  { name: "whatsapp-follow-ups", url: new URL("/api/internal/crm/whatsapp-followups", base) },
 ];
 let stopping = false,
   failures = 0;

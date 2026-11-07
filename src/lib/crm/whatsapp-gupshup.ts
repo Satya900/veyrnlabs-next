@@ -66,6 +66,54 @@ export async function sendGupshupText(
   return { status: "unknown", messageId: null };
 }
 
+/** Sends an approved template (allowed outside the 24-hour window) with its {{n}} values. */
+export async function sendGupshupTemplate(
+  apiKey: string,
+  app: string,
+  source: string,
+  recipient: string,
+  templateId: string,
+  params: string[],
+  request: typeof fetch = fetch,
+): Promise<SendResult> {
+  if (
+    !apiKey.trim() ||
+    !/^[A-Za-z0-9_.-]{1,100}$/.test(app) ||
+    !/^\d{8,15}$/.test(source) ||
+    !/^\d{7,15}$/.test(recipient) ||
+    !/^[A-Za-z0-9_.:-]{1,120}$/.test(templateId) ||
+    params.length > 10 ||
+    params.some((p) => typeof p !== "string" || p.length > 500)
+  )
+    throw new Error("Invalid template message");
+  try {
+    const response = await request(`${API}/template/msg`, {
+      method: "POST",
+      headers: {
+        apikey: apiKey,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      signal: AbortSignal.timeout(20000),
+      body: new URLSearchParams({
+        channel: "whatsapp",
+        source,
+        destination: recipient,
+        "src.name": app,
+        template: JSON.stringify({ id: templateId, params }),
+      }),
+    });
+    const data = await response.json().catch(() => ({}));
+    const id = data?.messageId;
+    if (response.ok && data?.status === "submitted" && typeof id === "string" && id.length > 0 && id.length <= 500)
+      return { status: "accepted", messageId: id };
+    if (response.status >= 400 && response.status < 500 && data?.status === "error")
+      return { status: "rejected", messageId: null };
+  } catch {
+    /* A timeout can happen after Gupshup accepts a message. */
+  }
+  return { status: "unknown", messageId: null };
+}
+
 const object = (value: unknown) =>
   value && typeof value === "object" && !Array.isArray(value)
     ? (value as Record<string, unknown>)

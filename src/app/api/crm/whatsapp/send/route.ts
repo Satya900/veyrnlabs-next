@@ -41,7 +41,10 @@ export async function GET(request: Request) {
       { status: 503, headers },
     );
   return Response.json(
-    { attempt: data, configured: Boolean(await tenantSendConfig(auth.member.id)) },
+    {
+      attempt: data,
+      configured: Boolean(await tenantSendConfig(auth.member.id)),
+    },
     { headers },
   );
 }
@@ -62,25 +65,51 @@ export async function POST(request: Request) {
     );
   try {
     const body = await jsonBody(request, 16000);
-    if (
-      typeof body.draft !== "string" ||
-      !/^[0-9a-f-]{36}$/i.test(body.draft) ||
-      typeof body.text !== "string" ||
-      !body.text.trim() ||
-      body.text.length > 3000 ||
-      body.approved !== true
-    )
-      throw new Error("Review and approve a reply of 1–3000 characters.");
     const db = supabase(undefined, true);
-    const { data: job, error } = await db.rpc("crm_prepare_whatsapp_reply", {
-      actor: auth.member.id,
-      draft: body.draft,
-      approved_text: body.text,
-      scoped_org: config.org,
-      scoped_phone: config.phone,
-      scoped_waba: config.waba,
-      cost_paise: config.cost,
-    });
+    let prepared;
+    if (body.action === "manual") {
+      // A reply typed by a person; no AI draft involved.
+      if (
+        typeof body.conversation !== "string" ||
+        !/^[0-9a-f-]{36}$/i.test(body.conversation) ||
+        typeof body.request !== "string" ||
+        !/^[0-9a-f-]{36}$/i.test(body.request) ||
+        typeof body.text !== "string" ||
+        !body.text.trim() ||
+        body.text.length > 3000
+      )
+        throw new Error("Write a reply of 1–3000 characters.");
+      prepared = await db.rpc("crm_prepare_manual_reply", {
+        actor: auth.member.id,
+        conversation: body.conversation,
+        reply_text: body.text,
+        request: body.request,
+        scoped_org: config.org,
+        scoped_phone: config.phone,
+        scoped_waba: config.waba,
+        cost_paise: config.cost,
+      });
+    } else {
+      if (
+        typeof body.draft !== "string" ||
+        !/^[0-9a-f-]{36}$/i.test(body.draft) ||
+        typeof body.text !== "string" ||
+        !body.text.trim() ||
+        body.text.length > 3000 ||
+        body.approved !== true
+      )
+        throw new Error("Review and approve a reply of 1–3000 characters.");
+      prepared = await db.rpc("crm_prepare_whatsapp_reply", {
+        actor: auth.member.id,
+        draft: body.draft,
+        approved_text: body.text,
+        scoped_org: config.org,
+        scoped_phone: config.phone,
+        scoped_waba: config.waba,
+        cost_paise: config.cost,
+      });
+    }
+    const { data: job, error } = prepared;
     if (error)
       throw new Error(
         error.code === "P0001"

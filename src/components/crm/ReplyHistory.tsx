@@ -10,6 +10,12 @@ type Attempt = Delivery & {
   body: string;
   created_at: string;
 };
+const originLabel: Record<string, string> = {
+  manual: "Sent by your team",
+  followup: "Automatic follow-up",
+  automatic: "Automatic assistant reply",
+  reviewed: "Approved AI reply",
+};
 export function ReplyHistory({ conversation }: { conversation: string }) {
   const [items, setItems] = useState<Attempt[]>([]),
     [error, setError] = useState(""),
@@ -50,7 +56,7 @@ export function ReplyHistory({ conversation }: { conversation: string }) {
       <ol className="crm-whatsapp-messages">
         {[...items].reverse().map((item) => (
           <li key={item.id}>
-            <small>{item.origin === "automatic" ? "Automatic assistant reply" : "Manually approved reply"}</small>
+            <small>{originLabel[item.origin ?? "reviewed"] ?? "Reply"}</small>
             <strong>{deliveryLabel(item)}</strong>
             {item.delivery_at && (
               <p>
