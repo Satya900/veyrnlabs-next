@@ -145,3 +145,32 @@ test("Gupshup connections store inbound messages and keep the callback token pri
   await save(owner, "919800000009", "b".repeat(64));
   assert.equal((await db.query("select phone_number_id from crm_whatsapp_connections where organization_id=$1", [org])).rows[0].phone_number_id, "919800000009");
 });
+
+test("parseGupshupCallback also reads Meta-format (v3) callbacks", () => {
+  const phone = "916372506476";
+  const parsed = parseGupshupCallback({
+    gs_app_id: "27a3f8ec-4964-431c-b245-458e3255afee",
+    object: "whatsapp_business_account",
+    entry: [{
+      id: "112224184811807",
+      changes: [{
+        field: "messages",
+        value: {
+          messaging_product: "whatsapp",
+          metadata: { display_phone_number: phone, phone_number_id: "740000000000001" },
+          contacts: [{ profile: { name: "Satya" }, wa_id: "919692173004" }],
+          messages: [{ from: "919692173004", id: "wamid.HBg", timestamp: "1762500000", type: "text", text: { body: "hii" } }],
+          statuses: [{ id: "wamid.out", gs_id: "gs-77", status: "read", timestamp: "1762500100", recipient_id: "919692173004" }],
+        },
+      }],
+    }],
+  }, phone);
+  assert.deepEqual(parsed.events, [{
+    waba_id: "0", phone_number_id: phone, message_id: "wamid.HBg", sender: "919692173004",
+    contact_name: "Satya", message_type: "text", body: "hii", sent_at: new Date(1762500000 * 1000).toISOString(),
+  }]);
+  assert.deepEqual(parsed.receipts, [{
+    waba_id: "0", phone_number_id: phone, message_id: "gs-77", recipient: "919692173004", status: "read",
+    occurred_at: new Date(1762500100 * 1000).toISOString(), error_code: null,
+  }]);
+});

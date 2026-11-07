@@ -37,12 +37,19 @@ export async function POST(request: Request, ctx: RouteContext<"/api/webhooks/gu
   } catch {
     return new Response("Invalid payload", { status: 400 });
   }
+  // Logs only the callback's shape, never its content, so deliveries are traceable.
+  const shape = {
+    format: (payload as { object?: unknown })?.object === "whatsapp_business_account" ? "meta" : "gupshup",
+    type: String((payload as { type?: unknown })?.type ?? ""),
+  };
   let parsed;
   try {
     parsed = parseGupshupCallback(payload, target.phone_number_id);
   } catch {
+    console.warn("gupshup webhook: unreadable event", shape);
     return new Response("Invalid event", { status: 400 });
   }
+  console.info("gupshup webhook", { ...shape, messages: parsed.events.length, receipts: parsed.receipts.length });
   const db = supabase(undefined, true);
   if (parsed.receipts.length) {
     const { error } = await db.rpc("crm_receive_whatsapp_receipts", { events: parsed.receipts });

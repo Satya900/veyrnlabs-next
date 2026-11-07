@@ -4,7 +4,11 @@
 // https://docs.gupshup.io/docs/what-is-an-inbound-message (inbound),
 // https://docs.gupshup.io/docs/message-events (delivery events).
 import type { SendResult } from "./whatsapp-send.ts";
-import type { WhatsAppInbound, WhatsAppReceipt } from "./whatsapp-webhook.ts";
+import {
+  parseWhatsAppMessages,
+  type WhatsAppInbound,
+  type WhatsAppReceipt,
+} from "./whatsapp-webhook.ts";
 
 const API = "https://api.gupshup.io/wa/api/v1";
 // Gupshup numbers are stored as connections with this WhatsApp account id (see migration).
@@ -76,14 +80,54 @@ function timestamp(value: unknown) {
 }
 
 /**
- * Converts one Gupshup callback into the events the WhatsApp tables already store. Unknown
- * or informational callbacks (user events, connectivity checks, "enqueued") yield nothing.
+ * Gupshup apps hosted on Meta's cloud can deliver callbacks in Meta's own webhook format
+ * ("v3") instead of Gupshup's v2. Messages parse exactly like Meta's; they're re-keyed to
+ * the connection, and statuses use Gupshup's message id (gs_id) when present, which is the
+ * id stored when sending.
+ */
+function parseMetaFormat(payload: unknown, phone: string) {
+  const events = parseWhatsAppMessages(payload).map((event) => ({
+    ...event,
+    waba_id: GUPSHUP_WABA_ID,
+    phone_number_id: phone,
+  }));
+  const receipts: WhatsAppReceipt[] = [];
+  for (const entry of Array.isArray(object(payload).entry) ? (object(payload).entry as unknown[]) : [])
+    for (const change of Array.isArray(object(entry).changes) ? (object(entry).changes as unknown[]) : []) {
+      const statuses = object(object(change).value).statuses;
+      for (const raw of Array.isArray(statuses) ? statuses : []) {
+        const status = object(raw);
+        const state = text(status.status, 20);
+        const id = text(status.gs_id ?? status.id, 300);
+        const recipient = text(status.recipient_id, 20);
+        if (!["sent", "delivered", "read", "failed"].includes(state) || !id || !/^\d{5,20}$/.test(recipient))
+          continue;
+        const code = Number(object(Array.isArray(status.errors) ? status.errors[0] : null).code);
+        receipts.push({
+          waba_id: GUPSHUP_WABA_ID,
+          phone_number_id: phone,
+          message_id: id,
+          recipient,
+          status: state as WhatsAppReceipt["status"],
+          occurred_at: timestamp(status.timestamp),
+          error_code: Number.isInteger(code) && code >= 0 ? code : null,
+        });
+      }
+    }
+  return { events, receipts };
+}
+
+/**
+ * Converts one Gupshup callback (v2 or Meta-format v3) into the events the WhatsApp tables
+ * already store. Informational callbacks (user events, connectivity checks, "enqueued")
+ * yield nothing.
  */
 export function parseGupshupCallback(
   payload: unknown,
   phone: string,
 ): { events: WhatsAppInbound[]; receipts: WhatsAppReceipt[] } {
   const root = object(payload);
+  if (root.object === "whatsapp_business_account") return parseMetaFormat(payload, phone);
   const inner = object(root.payload);
   const events: WhatsAppInbound[] = [];
   const receipts: WhatsAppReceipt[] = [];
