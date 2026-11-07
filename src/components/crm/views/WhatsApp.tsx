@@ -268,6 +268,74 @@ export function WhatsApp({
   );
 }
 
+type AIState = { auto: boolean; paused: boolean; quiet_until: string | null };
+
+/** Whether the AI answers this chat by itself right now, with pause / resume controls. */
+function AIStatusBar({
+  conversation,
+  ai,
+  onChanged,
+}: {
+  conversation: string;
+  ai: AIState;
+  onChanged: (next: AIState, queued: boolean) => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState("");
+  // The server only sends quiet_until while it is still in the future.
+  const quiet = ai.quiet_until;
+  async function act(action: "resume" | "pause") {
+    setBusy(true);
+    setNote("");
+    try {
+      const res = await crmFetch("/api/crm/ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(
+          action === "resume"
+            ? { action: "resume", conversation }
+            : { action: "handover", conversation, paused: true },
+        ),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error);
+      if (action === "resume") {
+        setNote(result.queued ? "AI is answering their last message now." : "AI will answer their next message.");
+        onChanged({ ...ai, paused: false, quiet_until: null }, Boolean(result.queued));
+      } else {
+        onChanged({ ...ai, paused: true }, false);
+      }
+    } catch (err) {
+      setNote(err instanceof Error ? err.message : "Couldn't change AI replies.");
+    } finally {
+      setBusy(false);
+    }
+  }
+  const state = ai.paused ? "paused" : quiet ? "quiet" : "on";
+  return (
+    <div className={`crm-ai-status ${state}`} role="status">
+      <span className="crm-dot" aria-hidden="true" />
+      <p>
+        {state === "paused"
+          ? "AI replies are paused for this chat. Your team is handling it."
+          : state === "quiet"
+            ? `AI replies paused until ${new Date(quiet!).toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" })} because your team replied.`
+            : "AI replies to this customer automatically."}
+        {note && <small>{note}</small>}
+      </p>
+      {state === "on" ? (
+        <button type="button" disabled={busy} aria-busy={busy} onClick={() => void act("pause")}>
+          Pause AI
+        </button>
+      ) : (
+        <button type="button" className="crm-primary" disabled={busy} aria-busy={busy} onClick={() => void act("resume")}>
+          {busy ? "Resuming…" : "Resume AI now"}
+        </button>
+      )}
+    </div>
+  );
+}
+
 export type Insight = {
   lead_id: string;
   score: "hot" | "warm" | "cold";
@@ -372,6 +440,7 @@ function Conversation({
   const [items, setItems] = useState<WhatsAppMessage[]>([]);
   const [replies, setReplies] = useState<Outgoing[]>([]);
   const [optedOut, setOptedOut] = useState(Boolean(conversation.opted_out));
+  const [ai, setAi] = useState<AIState | null>(null);
   const [cursor, setCursor] = useState("");
   const [more, setMore] = useState(false);
   const [busy, setBusy] = useState(true);
@@ -445,7 +514,10 @@ function Conversation({
             : result.messages,
         );
         setMore(result.has_more);
-        if (!cursor) setOptedOut(Boolean(result.opted_out));
+        if (!cursor) {
+          setOptedOut(Boolean(result.opted_out));
+          setAi(result.ai ?? null);
+        }
         setError("");
       })
       .catch((err) => {
@@ -604,6 +676,17 @@ function Conversation({
           ),
         )}
       </ol>
+      {canReply && !optedOut && ai?.auto && (
+        <AIStatusBar
+          conversation={conversation.id}
+          ai={ai}
+          onChanged={(next, queued) => {
+            setAi(next);
+            // A queued reply goes out after the 6-second burst window plus the AI call.
+            if (queued) setTimeout(() => setRetry((value) => value + 1), 15000);
+          }}
+        />
+      )}
       {optedOut ? (
         <p className="crm-whatsapp-notice">
           This contact sent STOP, so nothing can be sent to them. If they

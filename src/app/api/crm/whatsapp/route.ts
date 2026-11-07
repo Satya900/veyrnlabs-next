@@ -1,5 +1,34 @@
-import { session } from "@/lib/crm/server";
+import { session, supabase } from "@/lib/crm/server";
 import { whatsappReceiverConfigured } from "@/lib/crm/whatsapp-config";
+
+/**
+ * Whether automatic replies answer this chat right now: off for the workspace, paused for this
+ * chat, quiet until a time (a teammate replied by hand in the last 30 minutes), or on.
+ * Read with the service role because team members can't read AI settings; the caller has
+ * already been shown the conversation through their own access.
+ */
+async function aiStatus(organizationId: string, conversation: string) {
+  const db = supabase(undefined, true);
+  const [settings, chat, manual] = await Promise.all([
+    db.from("crm_ai_settings").select("auto_enabled,drafts_enabled").eq("organization_id", organizationId).maybeSingle(),
+    db.from("crm_whatsapp_conversations").select("ai_paused,ai_resumed_at").eq("id", conversation).maybeSingle(),
+    db
+      .from("crm_whatsapp_outbox")
+      .select("created_at")
+      .eq("conversation_id", conversation)
+      .eq("origin", "manual")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
+  // Before the resume migration ai_resumed_at doesn't exist; report automation as unknown.
+  if (settings.error || chat.error || !chat.data) return null;
+  const auto = Boolean(settings.data?.auto_enabled && settings.data.drafts_enabled);
+  const typed = manual.data?.created_at ? Date.parse(manual.data.created_at) : 0;
+  const resumed = chat.data.ai_resumed_at ? Date.parse(chat.data.ai_resumed_at) : 0;
+  const quietUntil = typed > resumed && typed + 30 * 60_000 > Date.now() ? new Date(typed + 30 * 60_000).toISOString() : null;
+  return { auto, paused: Boolean(chat.data.ai_paused), quiet_until: quietUntil };
+}
 
 export async function GET(request: Request) {
   const auth = await session();
@@ -48,9 +77,10 @@ export async function GET(request: Request) {
       query = query.or(
         `sent_at.lt.${time},and(sent_at.eq.${time},id.lt.${id})`,
       );
-    const [{ data, error }, optedOut] = await Promise.all([
+    const [{ data, error }, optedOut, ai] = await Promise.all([
       query,
       auth.db.rpc("crm_whatsapp_opted_out", { conversation }),
+      aiStatus(auth.organizationId, conversation),
     ]);
     if (error)
       return Response.json(
@@ -63,6 +93,7 @@ export async function GET(request: Request) {
         has_more: data.length > 50,
         // Unknown until the opt-in migration is applied; sending still checks it server-side.
         opted_out: optedOut.error ? false : Boolean(optedOut.data),
+        ai,
       },
       { headers },
     );
