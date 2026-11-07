@@ -222,8 +222,10 @@ export function WhatsApp({
                         ? `+${item.sender}`
                         : "Unknown contact"}
                     </small>
-                    {item.opted_out && (
+                    {item.opted_out ? (
                       <span className="crm-badge lost">Opted out</span>
+                    ) : (
+                      item.ai_disabled && <span className="crm-badge">AI off</span>
                     )}
                   </span>
                 </span>
@@ -252,6 +254,11 @@ export function WhatsApp({
             conversation={selected}
             openLead={() => openLead(selected.lead_id)}
             replyOwner={replyOwner(selected.lead_id)}
+            onAiChange={(disabled) =>
+              setItems((current) =>
+                current.map((item) => (item.id === selected.id ? { ...item, ai_disabled: disabled } : item)),
+              )
+            }
           />
         ) : (
           <section className="crm-panel crm-whatsapp-placeholder">
@@ -268,7 +275,7 @@ export function WhatsApp({
   );
 }
 
-type AIState = { auto: boolean; paused: boolean; quiet_until: string | null };
+type AIState = { auto: boolean; paused: boolean; quiet_until: string | null; disabled?: boolean };
 
 /** Whether the AI answers this chat by itself right now, with pause / resume controls. */
 function AIStatusBar({
@@ -431,16 +438,21 @@ function Conversation({
   conversation,
   openLead,
   replyOwner,
+  onAiChange,
 }: {
   conversation: WhatsAppConversation;
   openLead: () => Promise<void>;
   /** Null when the viewer may reply; otherwise who handles replies for this lead. */
   replyOwner: string | null;
+  onAiChange: (disabled: boolean) => void;
 }) {
   const [items, setItems] = useState<WhatsAppMessage[]>([]);
   const [replies, setReplies] = useState<Outgoing[]>([]);
   const [optedOut, setOptedOut] = useState(Boolean(conversation.opted_out));
   const [ai, setAi] = useState<AIState | null>(null);
+  // AI off for this contact: no insights, suggestions, drafts or automatic replies.
+  const [aiOff, setAiOff] = useState(Boolean(conversation.ai_disabled));
+  const [switching, setSwitching] = useState(false);
   const [cursor, setCursor] = useState("");
   const [more, setMore] = useState(false);
   const [busy, setBusy] = useState(true);
@@ -469,6 +481,27 @@ function Conversation({
       setInsightError(err instanceof Error ? err.message : "AI insights failed.");
     } finally {
       setThinking(false);
+    }
+  }
+  async function switchAi(enabled: boolean) {
+    setSwitching(true);
+    setInsightError("");
+    try {
+      const res = await crmFetch("/api/crm/ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "chatAi", conversation: conversation.id, enabled }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error);
+      setAiOff(!enabled);
+      onAiChange(!enabled);
+      // Back on: bring the insight and suggestions up to date (one AI action).
+      if (enabled) void analyse();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't change AI for this contact.");
+    } finally {
+      setSwitching(false);
     }
   }
   // Show the saved insight, and refresh it automatically when the customer has written
@@ -517,6 +550,7 @@ function Conversation({
         if (!cursor) {
           setOptedOut(Boolean(result.opted_out));
           setAi(result.ai ?? null);
+          if (result.ai) setAiOff(Boolean(result.ai.disabled));
         }
         setError("");
       })
@@ -586,6 +620,22 @@ function Conversation({
             {optedOut && <span className="crm-badge lost">Opted out</span>}
           </small>
         </div>
+        {canReply && (
+          <button
+            type="button"
+            className={aiOff ? "crm-ai-toggle off" : "crm-ai-toggle"}
+            disabled={switching}
+            aria-pressed={!aiOff}
+            title={
+              aiOff
+                ? "Turn AI on for this contact"
+                : "Turn AI off for this contact: no insights, suggestions or automatic replies, and no AI cost"
+            }
+            onClick={() => void switchAi(aiOff)}
+          >
+            {switching ? "…" : aiOff ? "AI off" : "AI on"}
+          </button>
+        )}
         <button
           disabled={opening}
           onClick={async () => {
@@ -604,11 +654,25 @@ function Conversation({
           {opening ? "Opening…" : "Open lead ↗"}
         </button>
       </div>
+      {aiOff && (
+        <div className="crm-ai-status paused" role="status">
+          <span className="crm-dot" aria-hidden="true" />
+          <p>
+            AI is off for this contact. It won&apos;t read this chat, suggest replies or answer
+            automatically, and it uses none of your AI allowance.
+          </p>
+          {canReply && (
+            <button type="button" className="crm-primary" disabled={switching} onClick={() => void switchAi(true)}>
+              Turn AI on
+            </button>
+          )}
+        </div>
+      )}
       <InsightCard
-        insight={insight}
+        insight={aiOff ? null : insight}
         thinking={thinking}
-        error={insightError}
-        onRefresh={canReply ? () => void analyse(true) : undefined}
+        error={aiOff ? "" : insightError}
+        onRefresh={canReply && !aiOff ? () => void analyse(true) : undefined}
       />
       {error && (
         <div role="alert" className="crm-whatsapp-alert">
@@ -676,7 +740,7 @@ function Conversation({
           ),
         )}
       </ol>
-      {canReply && !optedOut && ai?.auto && (
+      {canReply && !optedOut && !aiOff && ai?.auto && (
         <AIStatusBar
           conversation={conversation.id}
           ai={ai}
@@ -695,7 +759,7 @@ function Conversation({
       ) : replyOwner === null ? (
         <ReplyComposer
           conversation={conversation.id}
-          suggestions={insight?.suggestions ?? []}
+          suggestions={aiOff ? [] : (insight?.suggestions ?? [])}
           onSent={() => setSent((n) => n + 1)}
           onBlocked={() => setOptedOut(true)}
         />
@@ -705,7 +769,7 @@ function Conversation({
           conversation and add notes on the lead.
         </p>
       )}
-      {replyOwner === null && !optedOut && (
+      {replyOwner === null && !optedOut && !aiOff && (
         <details className="crm-whatsapp-ai">
           <summary>AI reply assistant</summary>
           <AIDraft
