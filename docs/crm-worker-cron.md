@@ -10,7 +10,7 @@ never sent twice.
 |---|---|---|
 | WhatsApp follow-ups | `POST /api/internal/crm/whatsapp-followups` | Sends due template follow-ups (a batch per call) |
 | Email follow-ups | `POST /api/internal/crm/follow-ups` | AI-drafted follow-up emails (needs AI enabled) |
-| AI auto-replies | `POST /api/internal/crm/auto-replies` | Automatic WhatsApp replies (needs AI enabled) |
+| AI auto-replies | `POST /api/internal/crm/auto-replies` | Automatic WhatsApp replies, up to 10 per call (needs AI and `CRM_AUTO_REPLIES_ENABLED=true`). The WhatsApp webhooks also start this worker about 7 seconds after each incoming message, so the cron run is the safety net. |
 
 Each request needs `Authorization: Bearer <CRM_WORKER_SECRET>`, the same value as in Vercel.
 
@@ -44,7 +44,25 @@ Each request needs `Authorization: Bearer <CRM_WORKER_SECRET>`, the same value a
      $$
    );
    ```
-   When AI features are switched on, schedule `follow-ups` and `auto-replies` the same way
+4. **Schedule automatic replies every minute** (the safety net behind the webhook kick):
+   ```sql
+   select cron.schedule(
+     'crm-auto-replies',
+     '* * * * *',
+     $$
+     select net.http_post(
+       url := 'https://crm.veyrnlabs.com/api/internal/crm/auto-replies',
+       headers := jsonb_build_object(
+         'Authorization', 'Bearer ' || (select decrypted_secret from vault.decrypted_secrets where name = 'crm_worker_secret'),
+         'Content-Type', 'application/json'
+       ),
+       body := '{}'::jsonb,
+       timeout_milliseconds := 90000
+     );
+     $$
+   );
+   ```
+   When AI email follow-ups are switched on, schedule `follow-ups` the same way
    with their own job names.
 
 ## Checking it

@@ -3,6 +3,14 @@ import assert from "node:assert/strict";
 import { readFile, readdir } from "node:fs/promises";
 import { PGlite } from "@electric-sql/pglite";
 import { processAutoReply } from "../src/lib/crm/auto-worker.ts";
+// Jobs become claimable 6 seconds after the message; age queued ones as real time would.
+const ageQueued = async (db) => {
+  const role = (await db.query("select current_user u")).rows[0].u;
+  await db.exec("reset role");
+  await db.query("update crm_auto_jobs set created_at=created_at-interval '10 seconds' where status='queued'");
+  await db.exec(`set role ${role}`);
+};
+
 test("worker never sends uncertain or human-required replies and never retries Meta", async () => {
   const env = {
     CRM_AUTO_REPLIES_ENABLED: "true",
@@ -342,8 +350,10 @@ test("crm_prepare_auto_booking and crm_finish_auto_booking enforce entitlement, 
   );
   await db.query("select crm_set_auto_replies(true)");
   await login("", "service_role");
-  const claim = async () =>
-    (await db.query("select crm_claim_auto_reply($1) j", [org])).rows[0].j;
+  const claim = async () => {
+    await ageQueued(db);
+    return (await db.query("select crm_claim_auto_reply($1) j", [org])).rows[0].j;
+  };
   const start = async (j) =>
     (
       await db.query("select crm_start_auto_reply($1,$2,'model',100) j", [
@@ -549,8 +559,10 @@ test("automatic jobs require opt-in and revalidate takeover, knowledge, ownershi
     ).rows[0].n,
     1,
   );
-  const claim = async (o = org) =>
-    (await db.query("select crm_claim_auto_reply($1) j", [o])).rows[0].j;
+  const claim = async (o = org) => {
+    await ageQueued(db);
+    return (await db.query("select crm_claim_auto_reply($1) j", [o])).rows[0].j;
+  };
   const start = async (j) =>
     (
       await db.query("select crm_start_auto_reply($1,$2,'model',100) j", [
@@ -630,7 +642,7 @@ test("automatic jobs require opt-in and revalidate takeover, knowledge, ownershi
   await incoming();
   j = await claim();
   const d4 = await start(j);
-  assert.ok(d4.history.some((m) => m.text.startsWith("Assistant:")));
+  assert.ok(d4.history.some((m) => m.text.startsWith("Business:")));
   await end(j, "failed");
   await login(owner);
   await db.query("select crm_set_ai_handover($1,false)", [chat]);
@@ -668,4 +680,29 @@ test("automatic jobs require opt-in and revalidate takeover, knowledge, ownershi
     ).rows[0].ai_paused,
     true,
   );
+  // Back on: photos and voice notes aren't answered but don't switch the AI off for good.
+  await login(owner);
+  await db.query("select crm_set_ai_handover($1,false)", [chat]);
+  await db.query("select crm_set_auto_replies(true)");
+  await db.exec("reset role");
+  const queued = async () =>
+    (await db.query("select count(*)::int n from crm_auto_jobs where status='queued'")).rows[0].n;
+  await db.query("select crm_receive_whatsapp($1::jsonb)", [
+    JSON.stringify([{ waba_id: "111", phone_number_id: "222", message_id: "m-photo", sender: "919111111111",
+      contact_name: "Test", message_type: "image", body: "", sent_at: new Date(Date.now() + ++seq * 1000).toISOString() }]),
+  ]);
+  assert.equal(await queued(), 0);
+  assert.equal((await db.query("select ai_paused from crm_whatsapp_conversations where id=$1", [chat])).rows[0].ai_paused, false);
+  // A fresh job waits out the 6-second burst window before it can be claimed.
+  await incoming("Is parking included?");
+  assert.equal(await queued(), 1);
+  assert.equal((await db.query("select crm_claim_auto_reply($1) j", [org])).rows[0].j, null);
+  // While an agent is replying by hand, the AI stays quiet; after 30 minutes it answers again.
+  const typed = (await db.query("select id from crm_whatsapp_outbox where conversation_id=$1 limit 1", [chat])).rows[0].id;
+  await db.query("update crm_whatsapp_outbox set origin='manual', created_at=now() where id=$1", [typed]);
+  await incoming("And the maintenance charges?");
+  assert.equal(await queued(), 0);
+  await db.query("update crm_whatsapp_outbox set created_at=now()-interval '31 minutes' where id=$1", [typed]);
+  await incoming("Hello?");
+  assert.equal(await queued(), 1);
 });

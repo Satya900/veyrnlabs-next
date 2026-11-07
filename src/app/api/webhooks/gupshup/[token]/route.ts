@@ -1,7 +1,10 @@
 import { supabase } from "@/lib/crm/server";
+import { replySoon } from "@/lib/crm/auto-replies-runner";
 import { parseGupshupCallback } from "@/lib/crm/whatsapp-gupshup";
 
 export const runtime = "nodejs";
+// Room for the automatic reply that runs after the response (see after() below).
+export const maxDuration = 60;
 
 // Gupshup doesn't sign callbacks, so the unguessable per-connection token in this URL is
 // what ties a delivery to one workspace. It's checked before anything is parsed or stored.
@@ -59,6 +62,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/webhooks/gu
     // Same storage as Meta deliveries: one transaction, duplicates ignored in SQL.
     const { error } = await db.rpc("crm_receive_whatsapp", { events: parsed.events });
     if (error) return new Response("Please retry delivery", { status: 503 });
+    replySoon();
   }
   return Response.json({ received: true });
 }

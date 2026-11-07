@@ -2224,6 +2224,13 @@
 .crm-reply-composer > div { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .crm-reply-composer .crm-error { margin: 0; }
 
+/* Settings: automatic replies */
+.crm-auto-replies { display: grid; gap: 12px; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--crm-border); }
+.crm-auto-replies-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.crm-auto-replies-head > div { display: grid; gap: 4px; }
+.crm-auto-replies-head small { color: var(--crm-muted); font-size: 12px; line-height: 1.6; max-width: 640px; }
+.crm-root .crm-auto-replies-head button { flex-shrink: 0; }
+
 /* Settings: WhatsApp follow-ups */
 .crm-template-actions { display: flex; gap: 8px; }
 .crm-template-test { display: grid; gap: 8px; flex-basis: 100%; padding: 12px; border-radius: 8px; background: var(--color-paper); }
