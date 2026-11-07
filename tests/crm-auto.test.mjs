@@ -513,6 +513,8 @@ test("automatic jobs require opt-in and revalidate takeover, knowledge, ownershi
   );
   await db.query("select crm_open_ai_trial($1)", [org]);
   await db.query("select crm_enable_trial_replies($1)", [org]);
+  // AI auto-replies are a Pro Plus feature.
+  await db.query("insert into crm_subscriptions(organization_id,plan,billing_months,active) values($1,'pro_plus',1,true)", [org]);
   const login = async (id) => {
     await db.exec("reset role");
     await db.query("select set_config('request.jwt.claim.sub',$1,false)", [id]);

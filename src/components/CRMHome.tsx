@@ -210,7 +210,7 @@ export function CRMHome() {
             ],
             [
               "What is the difference between Pro and Pro Plus?",
-              `Pro is for a solo agent: one user, ${CRM_PLANS.pro.aiActions.toLocaleString("en-IN")} AI actions a month (reply suggestions, lead details and Hot / Warm / Cold scores from every WhatsApp chat), automatic WhatsApp follow-ups and manual site-visit scheduling. Pro Plus is for teams: three users, ${CRM_PLANS.pro_plus.aiActions.toLocaleString("en-IN")} shared AI actions a month, automatic site-visit booking and lead-source reports.`,
+              `Pro is for a solo agent: one user, ${CRM_PLANS.pro.aiActions.toLocaleString("en-IN")} AI actions a month (reply suggestions, lead details and Hot / Warm / Cold scores from every WhatsApp chat), automatic WhatsApp follow-ups and manual site-visit scheduling. Pro Plus is the autopilot for busy agents and teams: three users, ${CRM_PLANS.pro_plus.aiActions.toLocaleString("en-IN")} shared AI actions a month, AI that replies to customers 24/7 in their language, automatic site-visit booking and lead-source reports. Pro includes a 14-day free trial of AI auto-replies.`,
             ],
             [
               "Will this replace my messaging tools?",

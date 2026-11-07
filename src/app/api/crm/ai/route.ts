@@ -100,8 +100,11 @@ export async function GET(request: Request) {
       { error: "Automatic reply setup requires its migration." },
       { status: 503, headers },
     );
+  // Before the plan-features migration this returns an error; treat access as unknown.
+  const access = await supabase(undefined, true).rpc("crm_auto_reply_access", { org: auth.organizationId });
   return Response.json(
     {
+      auto_access: access.error ? null : access.data,
       jobs: jobs.data,
       worker_healthy: await workerHealthy(),
       settings: data ?? { knowledge: "", drafts_enabled: false },

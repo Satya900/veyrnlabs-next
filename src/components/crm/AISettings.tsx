@@ -1,6 +1,12 @@
 "use client";
 import { crmFetch } from "./activity";
 import { useState } from "react";
+type AutoAccess = {
+  plan: "pro" | "pro_plus" | null;
+  allowed: boolean;
+  can_start_trial: boolean;
+  trial_ends_at: string | null;
+};
 type AutoJob = { id: string; status: string; reason: string; created_at: string };
 const JOB_STATUS: Record<string, string> = {
   queued: "Waiting",
@@ -21,6 +27,7 @@ export function AISettings({ role, demo }: { role: string; demo: boolean }) {
   const [auto, setAuto] = useState(false);
   const [autoReady, setAutoReady] = useState(false);
   const [jobs, setJobs] = useState<AutoJob[]>([]);
+  const [access, setAccess] = useState<AutoAccess | null>(null);
   if (role === "team")
     return (
       <section className="crm-panel crm-plan-usage">
@@ -48,6 +55,8 @@ export function AISettings({ role, demo }: { role: string; demo: boolean }) {
       const result = await response.json();
       if (!response.ok) throw new Error(result.error);
       setAuto(next);
+      // Turning it on may have started the Pro trial; reload to show its end date.
+      if (next) void load();
       setMessage(
         next
           ? "Automatic replies are on. New customer messages get an answer within seconds."
@@ -72,6 +81,7 @@ export function AISettings({ role, demo }: { role: string; demo: boolean }) {
       setAuto(Boolean(result.settings.auto_enabled));
       setAutoReady(Boolean(result.automation_ready));
       setJobs(result.jobs ?? []);
+      setAccess(result.auto_access ?? null);
       setLoaded(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to load settings.");
@@ -177,13 +187,26 @@ export function AISettings({ role, demo }: { role: string; demo: boolean }) {
               <button
                 type="button"
                 className={auto ? undefined : "crm-primary"}
-                disabled={busy || role !== "owner" && role !== "admin" || (!auto && (!autoReady || !enabled))}
+                disabled={
+                  busy ||
+                  (role !== "owner" && role !== "admin") ||
+                  (!auto && (!autoReady || !enabled || (access !== null && !access.allowed && !access.can_start_trial)))
+                }
                 aria-busy={busy}
                 onClick={() => void automate(!auto)}
               >
                 {auto ? "Turn off" : "Turn on"}
               </button>
             </div>
+            {access?.plan === "pro" && (
+              <p className="crm-plan-notice">
+                {access.can_start_trial
+                  ? "AI auto-replies are a Pro Plus feature. Try them free for 14 days on Pro: the trial starts when you turn them on."
+                  : access.allowed && access.trial_ends_at
+                    ? `Free trial: AI auto-replies are on until ${new Date(access.trial_ends_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}. Upgrade to Pro Plus to keep them.`
+                    : "Your 14-day trial of AI auto-replies has ended. Upgrade to Pro Plus to keep the AI replying to customers 24/7."}
+              </p>
+            )}
             {!auto && !enabled && (
               <small className="crm-muted">Save your knowledge with reply drafts allowed first.</small>
             )}
