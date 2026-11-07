@@ -2128,6 +2128,9 @@
 .crm-ai-status.quiet, .crm-ai-status.paused { background: color-mix(in srgb, #d08a12 7%, var(--color-canvas)); }
 .crm-root .crm-ai-status button { flex-shrink: 0; padding: 6px 12px; font-size: 12px; }
 
+.crm-root button.crm-ai-toggle { padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; border-color: color-mix(in srgb, var(--crm-success) 40%, transparent); background: var(--crm-success-soft); color: var(--crm-success); }
+.crm-root button.crm-ai-toggle.off { border-color: var(--color-hairline-strong); background: transparent; color: var(--color-mute); }
+
 /* AI insights: score badge, summary card, suggested replies */
 .crm-score { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; line-height: 18px; white-space: nowrap; vertical-align: middle; }
 .crm-score::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }

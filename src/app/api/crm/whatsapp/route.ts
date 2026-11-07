@@ -11,7 +11,7 @@ async function aiStatus(organizationId: string, conversation: string) {
   const db = supabase(undefined, true);
   const [settings, chat, manual, access] = await Promise.all([
     db.from("crm_ai_settings").select("auto_enabled,drafts_enabled").eq("organization_id", organizationId).maybeSingle(),
-    db.from("crm_whatsapp_conversations").select("ai_paused,ai_resumed_at").eq("id", conversation).maybeSingle(),
+    db.from("crm_whatsapp_conversations").select("ai_paused,ai_resumed_at,ai_disabled").eq("id", conversation).maybeSingle(),
     db
       .from("crm_whatsapp_outbox")
       .select("created_at")
@@ -31,7 +31,13 @@ async function aiStatus(organizationId: string, conversation: string) {
   const typed = manual.data?.created_at ? Date.parse(manual.data.created_at) : 0;
   const resumed = chat.data.ai_resumed_at ? Date.parse(chat.data.ai_resumed_at) : 0;
   const quietUntil = typed > resumed && typed + 30 * 60_000 > Date.now() ? new Date(typed + 30 * 60_000).toISOString() : null;
-  return { auto, paused: Boolean(chat.data.ai_paused), quiet_until: quietUntil };
+  return {
+    auto,
+    paused: Boolean(chat.data.ai_paused),
+    quiet_until: quietUntil,
+    // AI off for this contact: no replies, insights, suggestions or drafts.
+    disabled: Boolean(chat.data.ai_disabled),
+  };
 }
 
 export async function GET(request: Request) {
@@ -104,7 +110,7 @@ export async function GET(request: Request) {
   }
   let query = auth.db
     .from("crm_whatsapp_conversations")
-    .select("id,lead_id,sender,contact_name,last_message_at")
+    .select("id,lead_id,sender,contact_name,last_message_at,ai_disabled")
     .order("last_message_at", { ascending: false })
     .order("id", { ascending: false })
     .limit(51);

@@ -28,6 +28,7 @@ export function AISettings({ role, demo }: { role: string; demo: boolean }) {
   const [autoReady, setAutoReady] = useState(false);
   const [jobs, setJobs] = useState<AutoJob[]>([]);
   const [access, setAccess] = useState<AutoAccess | null>(null);
+  const [newChats, setNewChats] = useState(true);
   if (role === "team")
     return (
       <section className="crm-panel crm-plan-usage">
@@ -68,6 +69,30 @@ export function AISettings({ role, demo }: { role: string; demo: boolean }) {
       setBusy(false);
     }
   }
+  async function changeNewChats(next: boolean) {
+    setBusy(true);
+    setError("");
+    setMessage("");
+    try {
+      const response = await crmFetch("/api/crm/ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "newChats", enabled: next }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error);
+      setNewChats(next);
+      setMessage(
+        next
+          ? "New chats from unknown numbers start with AI on."
+          : "New chats from unknown numbers start with AI off. Turn it on per chat for real leads.",
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to change the setting.");
+    } finally {
+      setBusy(false);
+    }
+  }
   async function load() {
     setBusy(true);
     setError("");
@@ -82,6 +107,7 @@ export function AISettings({ role, demo }: { role: string; demo: boolean }) {
       setAutoReady(Boolean(result.automation_ready));
       setJobs(result.jobs ?? []);
       setAccess(result.auto_access ?? null);
+      setNewChats(result.settings.ai_new_chats ?? true);
       setLoaded(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to load settings.");
@@ -216,6 +242,20 @@ export function AISettings({ role, demo }: { role: string; demo: boolean }) {
                 on for the server.
               </small>
             )}
+            <label className="crm-ai-check">
+              <input
+                type="checkbox"
+                checked={newChats}
+                disabled={busy}
+                onChange={(e) => void changeNewChats(e.target.checked)}
+              />{" "}
+              Turn AI on for new chats from unknown numbers
+            </label>
+            <small className="crm-muted">
+              Using one number for personal and business chats? Untick this so new contacts start
+              with AI off, then switch AI on in the chats that are real leads. Leads you add
+              yourself always keep AI on. Each chat also has its own AI on/off switch in the inbox.
+            </small>
             {jobs.length > 0 && (
               <ul className="crm-team-list">
                 {jobs.map((job) => (

@@ -83,7 +83,7 @@ export async function GET(request: Request) {
     return Response.json({ error: "Admin access required." }, { status: 403 });
   const { data, error } = await auth.db
     .from("crm_ai_settings")
-    .select("organization_id,knowledge,drafts_enabled,auto_enabled")
+    .select("organization_id,knowledge,drafts_enabled,auto_enabled,ai_new_chats")
     .maybeSingle();
   if (error)
     return Response.json(
@@ -188,8 +188,24 @@ export async function POST(request: Request) {
       if (error) throw new Error("Unable to save AI settings.");
       return Response.json({ ok: true }, { headers });
     }
+    if (body.action === "newChats") {
+      if (auth.member.role === "team" || typeof body.enabled !== "boolean")
+        throw new Error("Admin access and a valid setting are required.");
+      const { error } = await auth.db.rpc("crm_set_ai_new_chats", { enabled: body.enabled });
+      if (error) throw new Error("Unable to change the setting for new chats.");
+      return Response.json({ ok: true }, { headers });
+    }
     if (typeof body.conversation !== "string" || !uuid.test(body.conversation))
       throw new Error("Invalid conversation.");
+    if (body.action === "chatAi") {
+      if (typeof body.enabled !== "boolean") throw new Error("Invalid setting.");
+      const { error } = await auth.db.rpc("crm_set_chat_ai", {
+        conversation: body.conversation,
+        enabled: body.enabled,
+      });
+      if (error) throw new Error("Unable to change AI for this contact.");
+      return Response.json({ ok: true }, { headers });
+    }
     if (body.action === "resume") {
       const { data: queued, error } = await auth.db.rpc("crm_resume_ai", {
         conversation: body.conversation,

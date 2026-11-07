@@ -5,6 +5,7 @@ export type WhatsAppConversation = {
   contact_name: string;
   last_message_at: string;
   opted_out?: boolean;
+  ai_disabled?: boolean;
 };
 export type WhatsAppMessage = {
   id: string;

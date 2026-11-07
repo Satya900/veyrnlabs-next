@@ -12,7 +12,7 @@ const columns = "lead_id,score,score_reason,summary,details,suggestions,based_on
 async function visible(auth: NonNullable<Awaited<ReturnType<typeof session>>>, conversation: string) {
   const { data: chat } = await auth.db
     .from("crm_whatsapp_conversations")
-    .select("id,lead_id,last_message_at")
+    .select("id,lead_id,last_message_at,ai_disabled")
     .eq("id", conversation)
     .maybeSingle();
   if (!chat) return null;
@@ -37,7 +37,12 @@ export async function GET(request: Request) {
   const found = await visible(auth, conversation);
   if (!found) return Response.json({ error: "Conversation unavailable." }, { status: 404 });
   return Response.json(
-    { insight: found.insight, stale: found.stale, available: Boolean(aiConfig(process.env)) },
+    {
+      insight: found.chat.ai_disabled ? null : found.insight,
+      stale: found.stale,
+      disabled: Boolean(found.chat.ai_disabled),
+      available: Boolean(aiConfig(process.env)) && !found.chat.ai_disabled,
+    },
     { headers },
   );
 }
@@ -61,6 +66,7 @@ export async function POST(request: Request) {
     if (!uuid.test(conversation)) throw new Error("Invalid conversation.");
     const found = await visible(auth, conversation);
     if (!found) throw new Error("Conversation unavailable.");
+    if (found.chat.ai_disabled) throw new Error("AI is off for this contact.");
     // Nothing new since the last analysis: return it without spending an AI action.
     if (!found.stale && body.force !== true)
       return Response.json({ insight: found.insight, stale: false }, { headers });
