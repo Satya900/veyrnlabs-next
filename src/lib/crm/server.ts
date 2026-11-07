@@ -89,6 +89,27 @@ export async function session(organization?: string) {
   };
 }
 
+/**
+ * The product owner, for the platform admin page: a signed-in login whose verified email is
+ * listed in CRM_PLATFORM_ADMIN_EMAILS (comma-separated). Independent of any workspace role.
+ */
+export async function platformAdmin() {
+  const allowed = (process.env.CRM_PLATFORM_ADMIN_EMAILS ?? "")
+    .split(",")
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean);
+  if (!allowed.length || !configured()) return null;
+  const token = (await cookies()).get(cookieName)?.value;
+  if (!token) return null;
+  const {
+    data: { user },
+    error,
+  } = await supabase(token).auth.getUser(token);
+  const email = user?.email?.toLowerCase();
+  if (error || !user?.email_confirmed_at || !email || !allowed.includes(email)) return null;
+  return { email };
+}
+
 type Auth = {
   db: ReturnType<typeof supabase>;
   member: Member;

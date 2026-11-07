@@ -2186,3 +2186,46 @@
 .crm-followup-recent { display: grid; gap: 8px; }
 .crm-followup-recent > strong { font-size: 13px; font-weight: 500; }
 .crm-followups .crm-team-name small { overflow-wrap: anywhere; }
+
+/* Platform admin */
+.crm-admin { display: grid; gap: 24px; max-width: 1400px; margin: 0 auto; padding: 32px 40px 48px; }
+.crm-admin-top { display: flex; align-items: center; gap: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--color-hairline); }
+.crm-admin-top > div { display: grid; gap: 2px; }
+.crm-admin-top small { font-size: 12px; color: var(--color-mute); }
+.crm-admin-link { margin-left: auto; font-size: 13px; color: var(--color-body); }
+.crm-admin-link:hover { color: var(--color-primary); }
+.crm-admin-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+.crm-admin-stats article { display: grid; gap: 6px; padding: 18px; border: 1px solid var(--color-hairline); border-radius: 12px; background: var(--color-canvas); box-shadow: var(--crm-shadow-sm); }
+.crm-admin-stats small { font-size: 12px; color: var(--color-mute); }
+.crm-admin-stats strong { font-size: 26px; font-weight: 600; letter-spacing: -0.02em; color: var(--color-ink); font-variant-numeric: tabular-nums; }
+.crm-admin-stats span { font-size: 12px; color: var(--color-body); }
+.crm-admin-health { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+.crm-admin-health > div { padding: 18px 20px; border: 1px solid var(--color-hairline); border-radius: 12px; background: var(--color-canvas); }
+.crm-admin-health h2 { margin-bottom: 12px; font-size: 15px; font-weight: 500; }
+.crm-admin-health ul { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; font-size: 13px; }
+.crm-admin-health li { display: flex; align-items: center; gap: 10px; }
+.crm-admin-health li small { margin-left: auto; color: var(--color-mute); font-size: 12px; }
+.crm-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.crm-dot.ok { background: var(--crm-success); }
+.crm-dot.bad { background: var(--crm-danger); }
+.crm-admin-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.crm-root .crm-admin-tools input { width: 220px; height: 36px; padding: 0 12px; font-size: 12px; }
+.crm-root .crm-admin-tools > button { height: 36px; padding: 0 12px; font-size: 12px; }
+.crm-admin-table .crm-panel-heading { flex-wrap: wrap; }
+.crm-admin-scroll { overflow-x: auto; }
+.crm-admin-scroll table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.crm-admin-scroll th { padding: 10px 16px; text-align: left; font-size: 11px; font-weight: 500; color: var(--color-mute); background: var(--color-canvas-card); border-top: 1px solid var(--color-hairline); border-bottom: 1px solid var(--color-hairline); white-space: nowrap; }
+.crm-admin-scroll td { padding: 12px 16px; border-bottom: 1px solid var(--color-hairline); white-space: nowrap; color: var(--color-body); }
+.crm-admin-scroll .num { text-align: right; font-variant-numeric: tabular-nums; }
+.crm-admin-scroll td small { color: var(--crm-success); font-size: 11px; }
+.crm-admin-scroll tbody tr:not(.crm-admin-detail) { cursor: pointer; }
+.crm-admin-scroll tbody tr:not(.crm-admin-detail):hover, .crm-admin-scroll tr.is-open { background: var(--color-canvas-card); }
+.crm-root button.crm-admin-name { display: grid; justify-items: start; gap: 2px; padding: 0; border: 0; background: none; text-align: left; }
+.crm-admin-name strong { font-weight: 500; color: var(--color-ink); }
+.crm-admin-name small { color: var(--color-mute) !important; font-size: 12px !important; }
+.crm-admin-detail td { background: var(--color-canvas-card); white-space: normal; }
+.crm-admin-detail dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px 24px; margin: 0; }
+.crm-admin-detail dt { font-size: 11px; color: var(--color-mute); }
+.crm-admin-detail dd { margin: 2px 0 0; color: var(--color-ink); overflow-wrap: anywhere; }
+.crm-admin-detail code { font-size: 12px; }
+@media (max-width: 760px) { .crm-admin { padding: 20px 16px 40px; } .crm-root .crm-admin-tools input { width: 100%; } }
