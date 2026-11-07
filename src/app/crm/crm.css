@@ -1031,34 +1031,38 @@
 }
 .crm-client-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
   padding: 0 24px 24px;
 }
-.crm-client-grid article {
-  padding: 24px;
+.crm-client-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
   border: 1px solid var(--color-hairline);
   border-radius: 10px;
+  background: var(--color-canvas);
 }
-.crm-client-grid h3 {
-  margin: 20px 0 12px;
-}
-.crm-client-grid p {
-  font-size: 13px;
-  color: var(--color-body);
-  overflow-wrap: anywhere;
-}
-.crm-client-grid small {
-  display: block;
-  font-size: 11px;
-  color: var(--color-mute);
-  margin-top: 24px;
-}
-.crm-client-grid button {
-  display: block;
-  margin-top: 20px;
-  font-size: 12px;
-}
+.crm-client-card header { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.crm-client-card header > div { min-width: 0; }
+.crm-client-card h3 { margin: 0; font-size: 15px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.crm-client-card header p { margin: 2px 0 0; font-size: 12px; color: var(--color-mute); }
+.crm-client-card dl { display: grid; gap: 8px; margin: 0; }
+.crm-client-card dl > div { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 8px; font-size: 13px; }
+.crm-client-card dt { color: var(--color-mute); }
+.crm-client-card dd { margin: 0; color: var(--color-ink); overflow-wrap: anywhere; }
+.crm-client-card dd span { color: var(--color-mute); }
+.crm-client-card dd a { color: inherit; text-decoration: underline; text-decoration-color: var(--color-hairline-strong); text-underline-offset: 3px; }
+.crm-client-card dd a:hover { color: var(--color-primary); }
+.crm-client-card footer { display: grid; gap: 10px; margin-top: auto; padding-top: 14px; border-top: 1px solid var(--color-hairline); }
+.crm-client-card footer small { font-size: 11px; color: var(--color-mute); }
+.crm-client-deals { display: flex; flex-wrap: wrap; gap: 6px; }
+.crm-root .crm-client-deals button { padding: 4px 10px; border-radius: 999px; font-size: 12px; }
+.crm-clients-heading { flex-wrap: wrap; }
+.crm-clients-tools { display: flex; gap: 8px; align-items: center; }
+.crm-root .crm-clients-tools input { width: 220px; height: 36px; padding: 0 12px; font-size: 12px; }
+.crm-root .crm-clients-tools button { height: 36px; padding: 0 12px; font-size: 12px; }
 .crm-root .crm-follow-row {
   display: flex;
   align-items: center;
@@ -1772,9 +1776,6 @@
   .crm-overview-grid {
     grid-template-columns: 1fr;
   }
-  .crm-client-grid {
-    grid-template-columns: 1fr 1fr;
-  }
   .crm-page-heading h1 {
     font-size: 34px;
   }
@@ -2186,6 +2187,10 @@
 .crm-followup-recent { display: grid; gap: 8px; }
 .crm-followup-recent > strong { font-size: 13px; font-weight: 500; }
 .crm-followups .crm-team-name small { overflow-wrap: anywhere; }
+@media (max-width: 640px) {
+  .crm-clients-tools { width: 100%; }
+  .crm-root .crm-clients-tools input { flex: 1; width: auto; }
+}
 
 /* Platform admin */
 .crm-admin { display: grid; gap: 24px; max-width: 1400px; margin: 0 auto; padding: 32px 40px 48px; }
