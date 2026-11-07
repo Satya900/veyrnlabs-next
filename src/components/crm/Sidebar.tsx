@@ -28,7 +28,7 @@ function Icon({ name }: { name: keyof typeof icons }) {
     </svg>
   );
 }
-const navigation: View[] = ["Overview", "Leads", "Clients", "Follow-ups", "Reports", "Settings"];
+const navigation: View[] = ["Overview", "Leads", "Clients", "WhatsApp", "Follow-ups", "Reports", "Settings"];
 const roleLabel: Record<string, string> = { owner: "Owner", admin: "Admin", team: "Team member" };
 
 export function Sidebar({
