@@ -2,6 +2,7 @@ import { Section } from "./Section";
 import { ButtonLink } from "./ui/Button";
 import { Pricing } from "@/app/product/real-estate-crm-software/Pricing";
 import { site } from "@/lib/site";
+import { CRM_PLANS } from "@/lib/crm/plans";
 
 export function CRMHome() {
   return (
@@ -209,7 +210,7 @@ export function CRMHome() {
             ],
             [
               "What is the difference between Pro and Pro Plus?",
-              "Pro covers everyday lead management, AI-drafted follow-up emails, and manual site-visit scheduling with one included user. Pro Plus adds automatic scheduling, lead-source performance reporting, and two extra team seats.",
+              `Pro is for a solo agent: one user, ${CRM_PLANS.pro.aiActions.toLocaleString("en-IN")} AI actions a month (reply suggestions, lead details and Hot / Warm / Cold scores from every WhatsApp chat), automatic WhatsApp follow-ups and manual site-visit scheduling. Pro Plus is for teams: three users, ${CRM_PLANS.pro_plus.aiActions.toLocaleString("en-IN")} shared AI actions a month, automatic site-visit booking and lead-source reports.`,
             ],
             [
               "Will this replace my messaging tools?",

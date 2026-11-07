@@ -2,15 +2,28 @@ import { CRM_PLANS, EXTRA_SEAT_PAISE, type PlanId } from "@/lib/crm/plans";
 
 const rupees = (paise: number) => `₹${(paise / 100).toLocaleString("en-IN")}`;
 
+const count = (n: number) => n.toLocaleString("en-IN");
 export const PLAN_HIGHLIGHTS: Record<PlanId, string[]> = {
-  pro: ["1 included user", "Manually book, cancel and reschedule site visits", "Lead and pipeline overview"],
-  pro_plus: ["3 included users: owner + 2 teammates", "AI books eligible site visits from WhatsApp after checking availability", "Lead-source performance reports to see what converts"],
+  pro: [
+    "1 user",
+    `${count(CRM_PLANS.pro.aiActions)} AI actions a month (${count(CRM_PLANS.pro.firstMonthAiActions)} in your first month)`,
+    "AI reply suggestions, lead details and Hot / Warm / Cold scores",
+    "WhatsApp inbox with automatic follow-ups",
+    "Book, cancel and reschedule site visits yourself",
+  ],
+  pro_plus: [
+    "3 users: owner + 2 teammates",
+    `${count(CRM_PLANS.pro_plus.aiActions)} AI actions a month, shared (${count(CRM_PLANS.pro_plus.firstMonthAiActions)} in your first month)`,
+    "Everything in Pro",
+    "AI books eligible site visits from WhatsApp after checking availability",
+    "Lead-source reports to see what converts",
+  ],
 };
 
 export function PlanComparison({ plan, active, role }: { plan: PlanId | null; active: boolean; role: string }) {
   const current = active ? plan : null;
   return <section className="crm-panel">
-    <div className="crm-panel-heading"><div><h2>Choose how your team works</h2><p>Both plans include your pipeline, AI reply drafts, WhatsApp tools and automatic email follow-ups within defined usage allowances.</p></div></div>
+    <div className="crm-panel-heading"><div><h2>Choose how your team works</h2><p>Both plans include your pipeline, WhatsApp inbox and follow-ups, and AI that reads every chat for you. One AI action is one insight refresh, reply draft or follow-up email.</p></div></div>
     <div className="crm-settings-body">
       <div className="crm-plan-comparison">
         {(["pro", "pro_plus"] as const).map((id) => <article key={id} className={current === id ? "crm-plan-card is-current" : "crm-plan-card"}>
@@ -19,8 +32,8 @@ export function PlanComparison({ plan, active, role }: { plan: PlanId | null; ac
           <ul>{PLAN_HIGHLIGHTS[id].map((feature) => <li key={feature}>{feature}</li>)}</ul>
         </article>)}
       </div>
-      <p className="crm-plan-example">For a three-person team on monthly billing: Pro with two extra seats costs {rupees(CRM_PLANS.pro.monthlyPaise + 2 * EXTRA_SEAT_PAISE)}/month. Pro Plus costs {rupees(CRM_PLANS.pro_plus.monthlyPaise)}/month and adds automatic site-visit booking and source reports.</p>
-      <p className="crm-muted">Base plans save 10% quarterly or 20% annually, paid upfront. Extra seats are {rupees(EXTRA_SEAT_PAISE)}/user/month. AI and messaging are never unlimited.</p>
+      <p className="crm-plan-example">For a three-person team on monthly billing: Pro with two extra seats costs {rupees(CRM_PLANS.pro.monthlyPaise + 2 * EXTRA_SEAT_PAISE)}/month. Pro Plus costs {rupees(CRM_PLANS.pro_plus.monthlyPaise)}/month and adds three times the AI actions, automatic site-visit booking and source reports.</p>
+      <p className="crm-muted">Base plans save 10% quarterly or 20% annually, paid upfront. Extra seats are {rupees(EXTRA_SEAT_PAISE)}/user/month. AI actions reset each month; unused ones don&apos;t carry over.</p>
       {current === "pro" && <p>{role === "owner" ? <>Want Pro Plus? <a href="mailto:satyabrata@veyrnlabs.com?subject=Pro%20Plus%20plan%20change">Request a plan change</a>. We’ll confirm the timing and charges before changing your subscription.</> : "Ask your workspace owner about Pro Plus."}</p>}
     </div>
   </section>;

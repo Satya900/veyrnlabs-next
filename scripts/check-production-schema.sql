@@ -13,7 +13,7 @@ with expected_fn(sig, h) as (values
   ('public.crm_access(assigned uuid)', '032c56e50b7fa1c267d088c06cce29c5'),
   ('public.crm_apply_billing_webhook(event_id text, subscription_id text, new_status text, open_period boolean, overhead bigint, ai_allowance integer, whatsapp_allowance integer)', 'd1780663466029acaa197ccba317d72c'),
   ('public.crm_apply_delivery_receipt()', '49419bfe37b3f5b311dfca41f06eaf5c'),
-  ('public.crm_apply_paid_event(event_key text, subscription_id text, provider_plan text, new_status text, occurred_at timestamp with time zone, payment_id text, cycle_start timestamp with time zone, cycle_end timestamp with time zone, paid_amount bigint, currency text, overhead bigint, ai_allowance integer, whatsapp_allowance integer)', '547fd364cfbe9bc6d17c64e675e5b4fa'),
+  ('public.crm_apply_paid_event(event_key text, subscription_id text, provider_plan text, new_status text, occurred_at timestamp with time zone, payment_id text, cycle_start timestamp with time zone, cycle_end timestamp with time zone, paid_amount bigint, currency text, overhead bigint, ai_allowance integer, whatsapp_allowance integer, first_ai_allowance integer)', 'caf67be761a8d6a461e9b94756bdf9b6'),
   ('public.crm_begin_checkout(checkout_kind text, selected_plan text, months integer, seats integer)', 'ffb3a2e404e1b9448f11b045192e6d0a'),
   ('public.crm_calendar_connection_for_lead(lead uuid)', 'a87bc6b017b728ae5eb5b6da85aaf5fe'),
   ('public.crm_calendar_entitlement()', 'b8b3994d892f7f539461c744ea00b2cc'),

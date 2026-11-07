@@ -23,6 +23,7 @@ const periods = [
   { name: "Quarterly", months: 3, discount: 10, interval: "quarter" },
   { name: "Annually", months: 12, discount: 20, interval: "year" },
 ] as const;
+const count = (n: number) => n.toLocaleString("en-IN");
 const plans = [
   {
     id: "pro" as const,
@@ -31,14 +32,12 @@ const plans = [
     description: "Bring your leads, conversations, and follow-ups together.",
     features: [
       "1 included user: your company admin",
-      "Lead records and sales pipeline",
-      "Manual lead capture and CSV import",
+      `${count(CRM_PLANS.pro.aiActions)} AI actions a month, ${count(CRM_PLANS.pro.firstMonthAiActions)} in your first month`,
+      "AI reads every WhatsApp chat: one-tap reply suggestions, lead details and Hot / Warm / Cold scores",
+      "WhatsApp inbox with automatic follow-ups from your own number",
       "AI-drafted follow-up emails for leads that go quiet",
-      "Manually scheduled follow-ups and reminders",
-      "Manual lead assignment and human handover",
+      "Lead records, sales pipeline and CSV import",
       "Manual site-visit scheduling",
-      "Defined AI and messaging allowances; no unlimited usage",
-      "Lead and pipeline overview",
       "Self-serve setup with email support",
     ],
   },
@@ -50,6 +49,7 @@ const plans = [
     features: [
       "Everything in Pro",
       "3 included users: admin plus 2 teammates",
+      `${count(CRM_PLANS.pro_plus.aiActions)} AI actions a month shared by the team, ${count(CRM_PLANS.pro_plus.firstMonthAiActions)} in your first month`,
       "AI books eligible site visits straight from WhatsApp, no back-and-forth",
       "Lead-source performance reporting to see what's converting",
       "Self-serve setup with priority email support",
@@ -215,8 +215,8 @@ export function Pricing() {
       </div>
       <p className={styles.terms}>
         Prices in INR, exclusive of 18% GST. Additional users cost{" "}
-        {rupees(EXTRA_SEAT_PAISE / 100)} each per month. AI and messaging usage are limited by plan; allowances reset
-        each billing period and never trigger automatic overage charges.
+        {rupees(EXTRA_SEAT_PAISE / 100)} each per month. AI actions and messaging are limited by plan; allowances reset
+        each month and never trigger automatic overage charges.
         Subscribing opens secure checkout with Razorpay and starts billing
         immediately.
       </p>

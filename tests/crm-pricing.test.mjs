@@ -81,3 +81,48 @@ test("subscriptions sold at the old price keep renewing at that price", async (t
     /Invalid allowances/,
   );
 });
+
+test("a workspace's first paid month gets the AI bonus; renewals and prepaid months don't", async (t) => {
+  const db = new PGlite();
+  t.after(() => db.close());
+  await db.exec(
+    "create role anon;create role authenticated;create role service_role bypassrls;create schema auth;create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz);create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;grant usage on schema public,auth to anon,authenticated,service_role;",
+  );
+  for (const file of (await readdir(new URL("../supabase/migrations/", import.meta.url))).filter((f) => f.endsWith(".sql")).sort())
+    await db.exec(await readFile(new URL("../supabase/migrations/" + file, import.meta.url), "utf8"));
+  const owners = [crypto.randomUUID(), crypto.randomUUID()];
+  for (const id of owners) await db.query("insert into auth.users values($1,$2,now())", [id, id + "@test.invalid"]);
+  const login = async (id = "", role = "authenticated") => {
+    await db.exec("reset role");
+    await db.query("select set_config('request.jwt.claim.sub',$1,false)", [id]);
+    await db.exec(`set role ${role}`);
+  };
+  await login("", "service_role");
+  const orgs = [];
+  for (const [i, owner] of owners.entries())
+    orgs.push((await db.query("select crm_provision_organization($1,$2,'Owner') id", [owner, "Agency " + i])).rows[0].id);
+  const checkout = async (owner, sub, months) => {
+    await login(owner);
+    const attempt = (await db.query("select crm_begin_checkout('base','pro',$1,1) j", [months])).rows[0].j;
+    await login("", "service_role");
+    await db.query("select crm_finish_checkout($1,$2,$3)", [attempt.id, sub, "plan_" + sub]);
+  };
+  let n = 0;
+  const pay = (sub, months, amount, startOffset) =>
+    db.query(
+      `select crm_apply_paid_event($1,$2,$3,'active',now(),$4,now()+interval '${startOffset}',now()+interval '${startOffset}'+make_interval(months=>$5),$6,'INR',20000,1000,50,2500)`,
+      [createHash("sha256").update("bonus" + ++n).digest("hex"), sub, "plan_" + sub, "pay_b" + n, months, amount],
+    );
+  const limits = async (org) =>
+    (await db.query("select ai_limit from crm_usage_periods where organization_id=$1 and trial_budget_paise is null order by starts_at", [org])).rows.map((r) => r.ai_limit);
+
+  // Monthly: first month 2,500, the renewal 1,000.
+  await checkout(owners[0], "monthly", 1);
+  await pay("monthly", 1, 49900, "-1 day");
+  await pay("monthly", 1, 49900, "-1 day +1 month");
+  assert.deepEqual(await limits(orgs[0]), [2500, 1000]);
+  // Quarterly prepay: only the first of the three months gets the bonus.
+  await checkout(owners[1], "quarterly", 3);
+  await pay("quarterly", 3, 44900 * 3, "-1 day");
+  assert.deepEqual(await limits(orgs[1]), [2500, 1000, 1000]);
+});
