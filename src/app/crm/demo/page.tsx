@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Workspace from "@/components/crm/Workspace";
 import type { View } from "@/components/crm/types";
 
-const views: Record<string, View> = { leads: "Leads", settings: "Settings", whatsapp: "WhatsApp" };
+const views: Record<string, View> = { leads: "Leads", clients: "Clients", settings: "Settings", whatsapp: "WhatsApp" };
 
 export default async function DemoPage({
   searchParams,
