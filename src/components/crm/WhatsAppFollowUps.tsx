@@ -40,6 +40,7 @@ export function WhatsAppFollowUps({ role, demo }: { role: string; demo: boolean 
   const [message, setMessage] = useState("");
   const [body, setBody] = useState(SUGGESTED.body);
   const [params, setParams] = useState<string[]>(SUGGESTED.params);
+  const [testing, setTesting] = useState<string | null>(null);
   if (role === "team") return null;
   const variables = Math.max(0, ...[...body.matchAll(/\{\{(\d+)\}\}/g)].map((m) => Number(m[1])));
 
@@ -180,18 +181,60 @@ export function WhatsAppFollowUps({ role, demo }: { role: string; demo: boolean 
             {state.templates.length > 0 && (
               <ul className="crm-team-list">
                 {state.templates.map((t) => (
-                  <li key={t.id} className="crm-team-row">
+                  <li key={t.id} className="crm-team-row crm-template-row">
                     <span className="crm-team-name">
                       <strong>{t.label}</strong>
                       <small>{t.body}</small>
                     </span>
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => void post({ action: "deleteTemplate", id: t.id }, "Template removed.")}
-                    >
-                      Remove
-                    </button>
+                    <span className="crm-template-actions">
+                      <button
+                        type="button"
+                        disabled={busy || !state.gupshupConnected}
+                        aria-expanded={testing === t.id}
+                        onClick={() => setTesting(testing === t.id ? null : t.id)}
+                      >
+                        Send test
+                      </button>
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => void post({ action: "deleteTemplate", id: t.id }, "Template removed.")}
+                      >
+                        Remove
+                      </button>
+                    </span>
+                    {testing === t.id && (
+                      <form
+                        className="crm-template-test"
+                        onSubmit={async (e) => {
+                          e.preventDefault();
+                          const to = new FormData(e.currentTarget).get("to");
+                          const ok = await post(
+                            { action: "testTemplate", id: t.id, to },
+                            "Test sent. It should arrive on that WhatsApp within a minute.",
+                          );
+                          if (ok) setTesting(null);
+                        }}
+                      >
+                        <small>
+                          Sends this template once, filled with sample details (&quot;Test&quot;, your
+                          name, your business). It works even if that number has never messaged you.
+                        </small>
+                        <div className="crm-copy-field">
+                          <input
+                            name="to"
+                            inputMode="tel"
+                            autoComplete="off"
+                            placeholder="Your WhatsApp number, e.g. 9876543210"
+                            aria-label="WhatsApp number for the test"
+                            required
+                          />
+                          <button className="crm-primary" disabled={busy} aria-busy={busy}>
+                            {busy ? "Sending…" : "Send"}
+                          </button>
+                        </div>
+                      </form>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -218,7 +261,7 @@ export function WhatsAppFollowUps({ role, demo }: { role: string; demo: boolean 
                 <strong>Turn on automatic follow-ups</strong>
                 <small>
                   One message per follow-up date, only for follow-ups due in the last 7 days, never to
-                  anyone who replied &quot;stop&quot;, and within your plan&apos;s WhatsApp allowance.
+                  anyone who sent STOP (unless they later sent START), and within your plan&apos;s WhatsApp allowance.
                 </small>
                 <label>
                   Template to send

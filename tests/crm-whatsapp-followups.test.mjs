@@ -61,6 +61,17 @@ test("typed replies follow the 24-hour window, access and opt-out rules", async 
   assert.equal((await prepare(owner, "Hi from the owner")).run, true);
   await message("Please STOP messaging me");
   await assert.rejects(prepare(agent, "Sorry"), /requested no messages/);
+  // Ordinary replies don't undo an opt-out; a later START does, and a new STOP blocks again.
+  await message("No, yes interested now", "now()+interval '1 second'");
+  await assert.rejects(prepare(agent, "Sorry"), /requested no messages/);
+  await message("Start!", "now()+interval '2 seconds'");
+  assert.equal((await prepare(agent, "Welcome back")).run, true);
+  const listed = () =>
+    db.query("select crm_whatsapp_opted_out_conversations(array[$1]::uuid[]) id", [conversation]).then((r) => r.rows.length);
+  assert.equal(await listed(), 0);
+  await message("unsubscribe", "now()+interval '3 seconds'");
+  await assert.rejects(prepare(agent, "Sorry"), /requested no messages/);
+  assert.equal(await listed(), 1);
 });
 
 test("automatic follow-ups send once per due date and respect every guard", async (t) => {
@@ -104,9 +115,15 @@ test("automatic follow-ups send once per due date and respect every guard", asyn
   await db.query("update crm_leads set follow_up=now()-interval '1 minute' where id=$1", [due]);
   await db.query("insert into crm_whatsapp_messages(organization_id,conversation_id,message_id,message_type,body,sent_at) select $1,id,'m-stop','text','stop',now()-interval '1 day' from crm_whatsapp_conversations where sender='919876543210'", [org]);
   assert.equal(await claim(), null);
+  // "START" after the stop makes them reachable again. The conversation's last message time
+  // stays before the follow-up, as it would for a START sent before the new follow-up date.
+  await db.query("insert into crm_whatsapp_messages(organization_id,conversation_id,message_id,message_type,body,sent_at) select $1,id,'m-start','text','START',now()-interval '23 hours' from crm_whatsapp_conversations where sender='919876543210'", [org]);
+  await db.exec("reset role");
+  assert.equal((await db.query("select crm_whatsapp_followup_due($1,$2) d", [org, due])).rows[0].d, true);
+  await db.exec("set role service_role");
 
   // When the WhatsApp allowance is used up, the job is parked for a person instead of retrying.
-  await db.query("delete from crm_whatsapp_messages where message_id='m-stop'");
+  await db.query("delete from crm_whatsapp_messages where message_id in ('m-stop','m-start')");
   await db.query("update crm_usage_periods set whatsapp_limit=1 where organization_id=$1", [org]);
   const parked = await claim();
   assert.equal(parked.run, false);

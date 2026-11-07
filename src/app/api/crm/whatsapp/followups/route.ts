@@ -1,4 +1,6 @@
 import { jsonBody, sameOrigin, session, supabase } from "@/lib/crm/server";
+import { sendGupshupTemplate } from "@/lib/crm/whatsapp-gupshup";
+import { tenantSendConfig } from "@/lib/crm/whatsapp-tenant";
 
 const headers = { "Cache-Control": "private, no-store" };
 const SOURCES = ["lead_first_name", "lead_name", "agent_name", "business_name", "service", "follow_up_date"];
@@ -79,6 +81,51 @@ export async function POST(request: Request) {
         .eq("id", body.id);
       if (error) throw new Error("Templates that have already been sent can't be removed.");
       return Response.json({ ok: true }, { headers });
+    }
+    if (body.action === "testTemplate") {
+      // Sends the template once to a number the admin types, filled with sample lead details.
+      // Templates may start a conversation, so no prior "hi" from that number is needed.
+      if (typeof body.id !== "string") throw new Error("Choose a template.");
+      let to = typeof body.to === "string" ? body.to.replace(/\D/g, "") : "";
+      const [{ data: template }, { data: settings }, { data: org_ }] = await Promise.all([
+        db
+          .from("crm_whatsapp_templates")
+          .select("provider_template_id,params")
+          .eq("organization_id", org)
+          .eq("id", body.id)
+          .maybeSingle(),
+        db.from("crm_whatsapp_followup_settings").select("country_code").eq("organization_id", org).maybeSingle(),
+        db.from("crm_organizations").select("name").eq("id", org).maybeSingle(),
+      ]);
+      if (!template) throw new Error("Choose one of your templates.");
+      if (/^\d{10}$/.test(to)) to = (settings?.country_code ?? "91") + to;
+      if (!/^\d{11,15}$/.test(to)) throw new Error("Enter the WhatsApp number to send the test to.");
+      const config = await tenantSendConfig(auth.member.id);
+      if (!config || config.provider !== "gupshup")
+        throw new Error("Connect WhatsApp through Gupshup first.");
+      const sample: Record<string, string> = {
+        lead_first_name: "Test",
+        lead_name: "Test Customer",
+        agent_name: auth.member.name,
+        business_name: org_?.name ?? "your business",
+        service: "your enquiry",
+        follow_up_date: new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", timeZone: "Asia/Kolkata" }),
+      };
+      const result = await sendGupshupTemplate(
+        config.token,
+        config.app,
+        config.phone,
+        to,
+        template.provider_template_id,
+        (template.params as string[]).map((p) => sample[p] ?? ""),
+      );
+      if (result.status === "accepted")
+        return Response.json({ ok: true }, { headers });
+      throw new Error(
+        result.status === "rejected"
+          ? "Gupshup rejected the template. Check that it's approved and the template ID and text match exactly."
+          : "Gupshup didn't confirm the message. Check WhatsApp before trying again.",
+      );
     }
     if (body.action === "saveSettings") {
       if (auth.member.role !== "owner") throw new Error("Only the owner turns follow-ups on or off.");

@@ -1,10 +1,10 @@
 "use client";
 import { crmFetch } from "../activity";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { SkeletonRows } from "../Skeleton";
 import { useWorkspaceContext } from "../context";
 import { AIDraft } from "../AIDraft";
-import { ReplyHistory } from "../ReplyHistory";
+import { deliveryLabel, type Delivery } from "@/lib/crm/delivery";
 import type {
   WhatsAppConversation,
   WhatsAppMessage,
@@ -12,6 +12,20 @@ import type {
   WhatsAppSetup,
 } from "@/lib/crm/whatsapp-types";
 
+const initials = (name: string) =>
+  name
+    .split(/\s+/)
+    .filter((w) => /^[\p{L}]/u.test(w))
+    .slice(0, 2)
+    .map((w) => w[0].toUpperCase())
+    .join("");
+/** List time: clock time for today, otherwise the date. */
+function short(value: string) {
+  const d = new Date(value);
+  return d.toDateString() === new Date().toDateString()
+    ? d.toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" })
+    : d.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+}
 const date = (value: string) =>
   new Date(value).toLocaleString("en-IN", {
     dateStyle: "medium",
@@ -43,6 +57,7 @@ export function WhatsApp({
   const [error, setError] = useState("");
   const [more, setMore] = useState(false);
   const [cursor, setCursor] = useState("");
+  const [query, setQuery] = useState("");
   useEffect(() => {
     if (demo) return;
     const controller = new AbortController();
@@ -99,44 +114,52 @@ export function WhatsApp({
     // Lead ownership decides who may reply, so pick up any reassignment as well.
     void reloadWorkspace();
   }
+  const sending = connection?.active
+    ? `Connected through ${connection.provider === "gupshup" ? "Gupshup" : "Meta"} · sending and receiving`
+    : connection
+      ? "Connection paused. New messages aren't being received."
+      : data.user.role === "team"
+        ? data.organization?.team_sees_all_leads === false
+          ? "Conversations for your assigned leads"
+          : "Conversations for your workspace's leads"
+        : "Connect your business number in Settings → WhatsApp connection.";
+  const q = query.trim().toLowerCase();
+  const shown = q
+    ? items.filter((item) =>
+        [item.contact_name, item.sender].some((v) =>
+          v?.toLowerCase().includes(q.replace(/^\+/, "")),
+        ),
+      )
+    : items;
   return (
     <>
       <section className="crm-panel crm-whatsapp-status">
-        <div>
-          <h2>{connection ? connection.display_phone : "WhatsApp inbox"}</h2>
-          <p>
-            {connection
-              ? connection.active
-                ? "Business number mapped for incoming messages"
-                : "Inbound connection paused"
-              : data.user.role === "team"
-                ? data.organization?.team_sees_all_leads === false
-                  ? "Conversations for your assigned leads"
-                  : "Conversations for your workspace's leads"
-                : "Your business number has not been connected yet."}
-          </p>
-          {setup && (
-            <ul>
-              <li>Business number: {connection ? "mapped" : "setup needed"}</li>
-              <li>
-                Message receiver:{" "}
-                {setup.receiver_ready ? "configured" : "setup needed"}
-              </li>
-              <li>
-                {setup.last_received_at
-                  ? `Last message received: ${date(setup.last_received_at)}`
-                  : "Waiting for the first incoming message"}
-              </li>
-            </ul>
-          )}
-          <p>
-            Receive-only setup. Sending messages and AI replies are not enabled
-            yet.
-          </p>
+        <div className="crm-whatsapp-status-main">
+          <span
+            className={connection?.active ? "crm-dot ok" : "crm-dot bad"}
+            aria-hidden="true"
+          />
+          <div>
+            <strong>
+              {connection ? connection.display_phone : "WhatsApp"}
+            </strong>
+            <small>{sending}</small>
+          </div>
         </div>
-        <button aria-busy={busy} disabled={busy} onClick={reload}>
-          {busy ? "Loading…" : "Refresh inbox"}
-        </button>
+        <div className="crm-whatsapp-status-meta">
+          {setup && (
+            <small>
+              {!setup.receiver_ready
+                ? "Message receiver isn't configured on the server"
+                : setup.last_received_at
+                  ? `Last message ${date(setup.last_received_at)}`
+                  : "Waiting for the first message"}
+            </small>
+          )}
+          <button aria-busy={busy} disabled={busy} onClick={reload}>
+            {busy ? "Loading…" : "Refresh"}
+          </button>
+        </div>
       </section>
       {error && (
         <p className="crm-error" role="alert">
@@ -148,29 +171,68 @@ export function WhatsApp({
           className="crm-panel crm-whatsapp-list"
           aria-label="WhatsApp conversations"
         >
+          <div className="crm-whatsapp-search">
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search name or number…"
+              aria-label="Search conversations"
+            />
+          </div>
           {busy && !items.length && (
-            <SkeletonRows rows={4} variant="card" className="is-padded" label="Loading conversations" />
+            <SkeletonRows
+              rows={4}
+              variant="card"
+              className="is-padded"
+              label="Loading conversations"
+            />
           )}
           {!busy && !items.length && (
-            <p className="crm-settings-body">
-              No conversations yet. Incoming messages will appear here after
-              setup.
+            <p className="crm-whatsapp-empty">
+              No conversations yet. Messages to your business number appear
+              here.
             </p>
           )}
-          {items.map((item) => (
+          {!!items.length && !shown.length && (
+            <p className="crm-whatsapp-empty">No conversations match.</p>
+          )}
+          {shown.map((item) => {
+            const name = item.contact_name || `+${item.sender}`;
+            return (
+              <button
+                key={item.id}
+                className="crm-whatsapp-contact"
+                aria-pressed={selected?.id === item.id}
+                onClick={() => select(item)}
+              >
+                <span className="crm-whatsapp-avatar" aria-hidden="true">
+                  {initials(item.contact_name) || "#"}
+                </span>
+                <span className="crm-whatsapp-contact-text">
+                  <span className="crm-whatsapp-contact-top">
+                    <strong>{name}</strong>
+                    <time dateTime={item.last_message_at}>
+                      {short(item.last_message_at)}
+                    </time>
+                  </span>
+                  <span className="crm-whatsapp-contact-bottom">
+                    <small>
+                      {item.contact_name
+                        ? `+${item.sender}`
+                        : "Unknown contact"}
+                    </small>
+                    {item.opted_out && (
+                      <span className="crm-badge lost">Opted out</span>
+                    )}
+                  </span>
+                </span>
+              </button>
+            );
+          })}
+          {more && !q && (
             <button
-              key={item.id}
-              className="crm-whatsapp-contact"
-              aria-pressed={selected?.id === item.id}
-              onClick={() => select(item)}
-            >
-              <strong>{item.contact_name || `+${item.sender}`}</strong>
-              <span>+{item.sender}</span>
-              <small>{date(item.last_message_at)}</small>
-            </button>
-          ))}
-          {more && (
-            <button
+              className="crm-whatsapp-more"
               disabled={busy}
               onClick={() => {
                 const last = items[items.length - 1];
@@ -192,17 +254,43 @@ export function WhatsApp({
             replyOwner={replyOwner(selected.lead_id)}
           />
         ) : (
-          <section className="crm-panel crm-settings-body">
+          <section className="crm-panel crm-whatsapp-placeholder">
             <h2>Select a conversation</h2>
             <p>
-              Each conversation is linked to a CRM lead. New contacts create an
-              unassigned lead that an admin can assign or a teammate can claim.
+              Every conversation is linked to a lead. Messages from new numbers
+              create an unassigned lead that an admin can assign or a teammate
+              can claim.
             </p>
           </section>
         )}
       </div>
     </>
   );
+}
+
+type Outgoing = Delivery & {
+  id: string;
+  origin?: string;
+  body: string;
+  created_at: string;
+};
+type Entry =
+  | { side: "in"; id: string; at: string; message: WhatsAppMessage }
+  | { side: "out"; id: string; at: string; reply: Outgoing };
+const ORIGIN: Record<string, string> = {
+  manual: "You",
+  followup: "Automatic follow-up",
+  automatic: "Auto-reply",
+  reviewed: "AI reply",
+};
+function tick(item: Delivery) {
+  if (item.delivery_status === "read") return "Read";
+  if (item.delivery_status === "delivered") return "Delivered";
+  if (item.delivery_status === "failed" || item.status === "rejected")
+    return "Not delivered";
+  if (item.delivery_status === "sent" || item.status === "accepted")
+    return "Sent";
+  return "Unconfirmed";
 }
 
 function Conversation({
@@ -216,6 +304,8 @@ function Conversation({
   replyOwner: string | null;
 }) {
   const [items, setItems] = useState<WhatsAppMessage[]>([]);
+  const [replies, setReplies] = useState<Outgoing[]>([]);
+  const [optedOut, setOptedOut] = useState(Boolean(conversation.opted_out));
   const [cursor, setCursor] = useState("");
   const [more, setMore] = useState(false);
   const [busy, setBusy] = useState(true);
@@ -223,6 +313,7 @@ function Conversation({
   const [retry, setRetry] = useState(0);
   const [opening, setOpening] = useState(false);
   const [sent, setSent] = useState(0);
+  const end = useRef<HTMLOListElement>(null);
   useEffect(() => {
     const controller = new AbortController();
     crmFetch(`/api/crm/whatsapp?conversation=${conversation.id}${cursor}`, {
@@ -245,6 +336,7 @@ function Conversation({
             : result.messages,
         );
         setMore(result.has_more);
+        if (!cursor) setOptedOut(Boolean(result.opted_out));
         setError("");
       })
       .catch((err) => {
@@ -258,15 +350,60 @@ function Conversation({
       });
     return () => controller.abort();
   }, [conversation.id, cursor, retry]);
+  useEffect(() => {
+    const controller = new AbortController();
+    crmFetch(`/api/crm/whatsapp/send?conversation=${conversation.id}`, {
+      signal: controller.signal,
+      cache: "no-store",
+    })
+      .then(async (response) => {
+        const result = await response.json();
+        if (response.ok && !controller.signal.aborted)
+          setReplies(result.attempts);
+      })
+      .catch(() => {
+        /* The thread still shows incoming messages without reply history. */
+      });
+    return () => controller.abort();
+  }, [conversation.id, retry, sent]);
+  // While older messages are still unloaded, only show replies from the loaded time range.
+  const oldest = more && items.length ? items[items.length - 1].sent_at : null;
+  const timeline: Entry[] = [
+    ...items.map((message) => ({
+      side: "in" as const,
+      id: message.id,
+      at: message.sent_at,
+      message,
+    })),
+    ...replies
+      .filter((reply) => !oldest || reply.created_at >= oldest)
+      .map((reply) => ({
+        side: "out" as const,
+        id: reply.id,
+        at: reply.created_at,
+        reply,
+      })),
+  ].sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
+  // Keep the newest message in view, except while paging back through older ones.
+  useEffect(() => {
+    if (!cursor && end.current)
+      end.current.scrollTop = end.current.scrollHeight;
+  }, [timeline.length, cursor]);
   return (
     <section
       className="crm-panel crm-whatsapp-thread"
       aria-label="Conversation messages"
     >
-      <div className="crm-panel-heading">
+      <div className="crm-whatsapp-thread-head">
+        <span className="crm-whatsapp-avatar" aria-hidden="true">
+          {initials(conversation.contact_name) || "#"}
+        </span>
         <div>
           <h2>{conversation.contact_name || `+${conversation.sender}`}</h2>
-          <p>+{conversation.sender}</p>
+          <small>
+            +{conversation.sender}
+            {optedOut && <span className="crm-badge lost">Opted out</span>}
+          </small>
         </div>
         <button
           disabled={opening}
@@ -287,7 +424,7 @@ function Conversation({
         </button>
       </div>
       {error && (
-        <div role="alert" className="crm-settings-body">
+        <div role="alert" className="crm-whatsapp-alert">
           {error}{" "}
           <button
             onClick={() => {
@@ -299,69 +436,100 @@ function Conversation({
           </button>
         </div>
       )}
-      {busy &&
-        (items.length ? (
-          <p className="crm-settings-body" role="status">
-            Loading messages…
-          </p>
-        ) : (
-          <SkeletonRows rows={3} variant="card" className="is-padded" label="Loading messages" />
-        ))}
-      {more && (
-        <button
-          disabled={busy}
-          onClick={() => {
-            const last = items[items.length - 1];
-            setBusy(true);
-            const next = `&${new URLSearchParams({ before_time: last.sent_at, before_id: last.id })}`;
-            if (next === cursor) setRetry((value) => value + 1);
-            else setCursor(next);
-          }}
-        >
-          Load older messages
-        </button>
-      )}
-      <ol className="crm-whatsapp-messages">
-        {[...items].reverse().map((item) => (
-          <li key={item.id}>
-            {item.message_type !== "text" && (
-              <small>
-                {item.message_type} message ·{" "}
-                {item.body
-                  ? "caption or selection below"
-                  : "preview not available"}
-              </small>
-            )}
-            {item.body && <p>{item.body}</p>}
-            <time dateTime={item.sent_at}>{date(item.sent_at)}</time>
+      <ol className="crm-whatsapp-messages" ref={end}>
+        {more && (
+          <li className="crm-whatsapp-older">
+            <button
+              disabled={busy}
+              onClick={() => {
+                const last = items[items.length - 1];
+                setBusy(true);
+                const next = `&${new URLSearchParams({ before_time: last.sent_at, before_id: last.id })}`;
+                if (next === cursor) setRetry((value) => value + 1);
+                else setCursor(next);
+              }}
+            >
+              Load older messages
+            </button>
           </li>
-        ))}
+        )}
+        {busy && !items.length && (
+          <li className="crm-whatsapp-older">
+            <SkeletonRows rows={3} variant="card" label="Loading messages" />
+          </li>
+        )}
+        {!busy && !timeline.length && !error && (
+          <li className="crm-whatsapp-older crm-muted">No messages yet.</li>
+        )}
+        {timeline.map((entry) =>
+          entry.side === "in" ? (
+            <li key={entry.id} className="crm-bubble in">
+              {entry.message.message_type !== "text" && (
+                <small>
+                  {entry.message.message_type} message
+                  {entry.message.body ? "" : " · preview not available"}
+                </small>
+              )}
+              {entry.message.body && <p>{entry.message.body}</p>}
+              <time dateTime={entry.at}>{date(entry.at)}</time>
+            </li>
+          ) : (
+            <li
+              key={entry.id}
+              className={`crm-bubble out${tick(entry.reply) === "Not delivered" ? " failed" : ""}`}
+            >
+              <small>
+                {ORIGIN[entry.reply.origin ?? "reviewed"] ?? "Reply"}
+              </small>
+              <p>{entry.reply.body}</p>
+              <time dateTime={entry.at} title={deliveryLabel(entry.reply)}>
+                {date(entry.at)} · {tick(entry.reply)}
+              </time>
+            </li>
+          ),
+        )}
       </ol>
-      {replyOwner === null ? (
-        <>
-          <ReplyComposer conversation={conversation.id} onSent={() => setSent((n) => n + 1)} />
+      {optedOut ? (
+        <p className="crm-whatsapp-notice">
+          This contact sent STOP, so nothing can be sent to them. If they
+          message START, replies and follow-ups resume.
+        </p>
+      ) : replyOwner === null ? (
+        <ReplyComposer
+          conversation={conversation.id}
+          onSent={() => setSent((n) => n + 1)}
+          onBlocked={() => setOptedOut(true)}
+        />
+      ) : (
+        <p className="crm-whatsapp-notice">
+          Replies to this client are handled by {replyOwner}. You can read the
+          conversation and add notes on the lead.
+        </p>
+      )}
+      {replyOwner === null && !optedOut && (
+        <details className="crm-whatsapp-ai">
+          <summary>AI reply assistant</summary>
           <AIDraft
             key={conversation.id}
             conversation={conversation.id}
             leadId={conversation.lead_id}
           />
-        </>
-      ) : (
-        <p className="crm-plan-notice crm-settings-body">
-          Replies to this client are handled by {replyOwner}. You can read the
-          conversation and add notes on the lead.
-        </p>
+        </details>
       )}
-      <ReplyHistory key={`replies-${conversation.id}-${sent}`} conversation={conversation.id} />
-      <p className="crm-settings-body crm-muted">
-        Every AI reply is a draft. A person reviews and sends it before the customer sees it.
-      </p>
     </section>
   );
 }
 
 /** A reply typed by a person (no AI), sent within WhatsApp's 24-hour customer window. */
-function ReplyComposer({ conversation, onSent }: { conversation: string; onSent: () => void }) {
+function ReplyComposer({
+  conversation,
+  onSent,
+  onBlocked,
+}: {
+  conversation: string;
+  onSent: () => void;
+  onBlocked: () => void;
+}) {
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -377,10 +545,16 @@ function ReplyComposer({ conversation, onSent }: { conversation: string; onSent:
         body: JSON.stringify({ action: "manual", conversation, text, request }),
       });
       const result = await res.json();
-      if (!res.ok) throw new Error(result.error);
-      if (result.status === "rejected") throw new Error("WhatsApp rejected this message. Nothing was sent.");
+      if (!res.ok) {
+        if (/requested no messages/.test(result.error ?? "")) onBlocked();
+        throw new Error(result.error);
+      }
+      if (result.status === "rejected")
+        throw new Error("WhatsApp rejected this message. Nothing was sent.");
       if (result.status === "unknown")
-        throw new Error("Sending couldn't be confirmed. Check WhatsApp before trying again.");
+        throw new Error(
+          "Sending couldn't be confirmed. Check WhatsApp before trying again.",
+        );
       setText("");
       setRequest(crypto.randomUUID());
       onSent();
@@ -392,40 +566,47 @@ function ReplyComposer({ conversation, onSent }: { conversation: string; onSent:
   }
   return (
     <form
-      className="crm-settings-body crm-reply-composer"
+      className="crm-reply-composer"
       onSubmit={(e) => {
         e.preventDefault();
         if (text.trim()) void send();
       }}
     >
-      <label>
-        Reply
-        <textarea
-          value={text}
-          onChange={(e) => {
-            setText(e.target.value);
-            setError("");
-          }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && text.trim()) {
-              e.preventDefault();
-              void send();
-            }
-          }}
-          maxLength={3000}
-          rows={3}
-          placeholder="Type your reply…"
-        />
-      </label>
+      <textarea
+        aria-label="Reply"
+        value={text}
+        onChange={(e) => {
+          setText(e.target.value);
+          setError("");
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && text.trim()) {
+            e.preventDefault();
+            void send();
+          }
+        }}
+        maxLength={3000}
+        rows={3}
+        placeholder="Type your reply…"
+      />
       <div>
         <small className="crm-muted">
-          Free-text replies are allowed within 24 hours of the customer&apos;s last message.
+          Free text works within 24 hours of the customer&apos;s last message.
+          ⌘/Ctrl + Enter sends.
         </small>
-        <button className="crm-primary" disabled={busy || !text.trim()} aria-busy={busy}>
+        <button
+          className="crm-primary"
+          disabled={busy || !text.trim()}
+          aria-busy={busy}
+        >
           {busy ? "Sending…" : "Send"}
         </button>
       </div>
-      {error && <p role="alert" className="crm-error">{error}</p>}
+      {error && (
+        <p role="alert" className="crm-error">
+          {error}
+        </p>
+      )}
     </form>
   );
 }
