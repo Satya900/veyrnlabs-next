@@ -1,5 +1,6 @@
 import { money } from "@/lib/crm/model";
-import type { Lead, Member, Stage } from "@/lib/crm/model";
+import type { Lead, LeadInsightSummary, Member, Stage } from "@/lib/crm/model";
+import { ScoreBadge } from "./ScoreBadge";
 import { datetime, initials, isOverdueFollowUp, stageOf } from "@/lib/crm/workspace";
 
 export type LeadSelection = {
@@ -13,6 +14,7 @@ export function LeadTable({
   stages,
   members,
   now,
+  insights,
   onSelect,
   selection,
 }: {
@@ -20,6 +22,7 @@ export function LeadTable({
   stages: Stage[];
   members: Member[];
   now: number;
+  insights?: Map<string, LeadInsightSummary>;
   onSelect: (id: string) => void;
   selection?: LeadSelection;
 }) {
@@ -68,7 +71,9 @@ export function LeadTable({
                 <button className="crm-contact" onClick={() => onSelect(l.id)}>
                   <span className="crm-avatar">{initials(l.name)}</span>
                   <span>
-                    <strong>{l.name}</strong>
+                    <strong>
+                      {l.name} <ScoreBadge insight={insights?.get(l.id)} />
+                    </strong>
                     <small>{l.company || l.email || "Individual"}</small>
                   </span>
                 </button>

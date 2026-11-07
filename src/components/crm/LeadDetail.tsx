@@ -4,6 +4,7 @@ import type { Lead, Workspace as Data } from "@/lib/crm/model";
 import { datetime } from "@/lib/crm/workspace";
 import type { WorkspaceChanges } from "@/lib/crm/workspace";
 import { ScheduleVisit } from "./ScheduleVisit";
+import { ScoreBadge } from "./ScoreBadge";
 
 export function LeadDetail({
   current,
@@ -27,6 +28,18 @@ export function LeadDetail({
     .sort((a, b) => b.created_at.localeCompare(a.created_at))
     .filter((a) => a.lead_id === current.id);
   const canAct = data.user.role !== "team" || current.owner_id === data.user.id;
+  const insight = data.insights?.find((i) => i.lead_id === current.id);
+  const shared = insight
+    ? (
+        [
+          ["Budget", insight.details?.budget],
+          ["Location", insight.details?.location],
+          ["Looking for", insight.details?.property_type],
+          ["Timeline", insight.details?.timeline],
+          ["Purpose", insight.details?.purpose],
+        ] as const
+      ).filter(([, value]) => value)
+    : [];
   return (
     <>
       {/* Teammates may see a colleague's lead; converting and booking stay with its agent. */}
@@ -35,6 +48,26 @@ export function LeadDetail({
       <p>
         {current.company} {current.service && `· ${current.service}`}
       </p>
+      {insight && (
+        <div className="crm-insight crm-insight-lead">
+          <div className="crm-insight-head">
+            <ScoreBadge insight={insight} />
+            <p>{insight.summary}</p>
+          </div>
+          {insight.score_reason && <small className="crm-insight-reason">{insight.score_reason}</small>}
+          {shared.length > 0 && (
+            <dl className="crm-insight-details">
+              {shared.map(([label, value]) => (
+                <div key={label}>
+                  <dt>{label}</dt>
+                  <dd>{value}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+          <small className="crm-muted">From the WhatsApp chat, by AI. Check before relying on it.</small>
+        </div>
+      )}
       <div className="crm-detail-actions">
         <button onClick={onEdit}>Edit details</button>
         <button
