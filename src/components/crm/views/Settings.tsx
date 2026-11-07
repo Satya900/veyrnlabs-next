@@ -9,6 +9,7 @@ import { PlanComparison } from "../PlanComparison";
 import { AISettings } from "../AISettings";
 import { CalendarSettings } from "../CalendarSettings";
 import { WhatsAppSettings } from "../WhatsAppSettings";
+import { WhatsAppFollowUps } from "../WhatsAppFollowUps";
 import { FollowUpSettings } from "../FollowUpSettings";
 
 export function Settings() {
@@ -97,6 +98,7 @@ export function Settings() {
           <PlanComparison plan={data.plan.plan} active={data.plan.active} role={data.user.role} />
           <CalendarSettings demo={demo} role={data.user.role} />
           <WhatsAppSettings demo={demo} role={data.user.role} />
+          <WhatsAppFollowUps demo={demo} role={data.user.role} />
         </div>
       </div>
       <section className="crm-panel crm-export-panel">

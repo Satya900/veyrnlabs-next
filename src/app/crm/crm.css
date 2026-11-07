@@ -2168,3 +2168,21 @@
 .crm-root .crm-copy-field button { flex-shrink: 0; }
 .crm-provider .crm-success, .crm-provider .crm-error { margin: 0; }
 .crm-provider-alt { margin-top: 8px; font-size: 13px; font-weight: 500; color: var(--color-body); }
+
+/* Inbox: typed reply */
+.crm-reply-composer { display: grid; gap: 8px; padding-top: 16px; }
+.crm-reply-composer > div { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.crm-reply-composer .crm-error { margin: 0; }
+
+/* Settings: WhatsApp follow-ups */
+.crm-followups { display: grid; gap: 20px; }
+.crm-followup-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; flex: 1; min-width: 0; margin: 0; padding: 0; border: 0; }
+.crm-followup-form > strong, .crm-followup-form > small, .crm-followup-wide { grid-column: 1 / -1; }
+.crm-followup-form > strong { font-size: 14px; font-weight: 500; }
+.crm-followup-form > small { font-size: 12px; line-height: 1.6; color: var(--color-mute); }
+.crm-followup-form > button { justify-self: start; }
+.crm-root .crm-followup-toggle { flex-direction: row; align-items: center; gap: 10px; }
+.crm-root .crm-followup-toggle input { width: auto; accent-color: var(--crm-accent); }
+.crm-followup-recent { display: grid; gap: 8px; }
+.crm-followup-recent > strong { font-size: 13px; font-weight: 500; }
+.crm-followups .crm-team-name small { overflow-wrap: anywhere; }

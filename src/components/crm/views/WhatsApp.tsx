@@ -222,6 +222,7 @@ function Conversation({
   const [error, setError] = useState("");
   const [retry, setRetry] = useState(0);
   const [opening, setOpening] = useState(false);
+  const [sent, setSent] = useState(0);
   useEffect(() => {
     const controller = new AbortController();
     crmFetch(`/api/crm/whatsapp?conversation=${conversation.id}${cursor}`, {
@@ -337,21 +338,94 @@ function Conversation({
         ))}
       </ol>
       {replyOwner === null ? (
-        <AIDraft
-          key={conversation.id}
-          conversation={conversation.id}
-          leadId={conversation.lead_id}
-        />
+        <>
+          <ReplyComposer conversation={conversation.id} onSent={() => setSent((n) => n + 1)} />
+          <AIDraft
+            key={conversation.id}
+            conversation={conversation.id}
+            leadId={conversation.lead_id}
+          />
+        </>
       ) : (
         <p className="crm-plan-notice crm-settings-body">
           Replies to this client are handled by {replyOwner}. You can read the
           conversation and add notes on the lead.
         </p>
       )}
-      <ReplyHistory key={`replies-${conversation.id}`} conversation={conversation.id} />
+      <ReplyHistory key={`replies-${conversation.id}-${sent}`} conversation={conversation.id} />
       <p className="crm-settings-body crm-muted">
         Every AI reply is a draft. A person reviews and sends it before the customer sees it.
       </p>
     </section>
+  );
+}
+
+/** A reply typed by a person (no AI), sent within WhatsApp's 24-hour customer window. */
+function ReplyComposer({ conversation, onSent }: { conversation: string; onSent: () => void }) {
+  const [text, setText] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  // One id per message, so a double-clicked Send can't send it twice.
+  const [request, setRequest] = useState(() => crypto.randomUUID());
+  async function send() {
+    setBusy(true);
+    setError("");
+    try {
+      const res = await crmFetch("/api/crm/whatsapp/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "manual", conversation, text, request }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error);
+      if (result.status === "rejected") throw new Error("WhatsApp rejected this message. Nothing was sent.");
+      if (result.status === "unknown")
+        throw new Error("Sending couldn't be confirmed. Check WhatsApp before trying again.");
+      setText("");
+      setRequest(crypto.randomUUID());
+      onSent();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Sending failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <form
+      className="crm-settings-body crm-reply-composer"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (text.trim()) void send();
+      }}
+    >
+      <label>
+        Reply
+        <textarea
+          value={text}
+          onChange={(e) => {
+            setText(e.target.value);
+            setError("");
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && text.trim()) {
+              e.preventDefault();
+              void send();
+            }
+          }}
+          maxLength={3000}
+          rows={3}
+          placeholder="Type your reply…"
+        />
+      </label>
+      <div>
+        <small className="crm-muted">
+          Free-text replies are allowed within 24 hours of the customer&apos;s last message.
+        </small>
+        <button className="crm-primary" disabled={busy || !text.trim()} aria-busy={busy}>
+          {busy ? "Sending…" : "Send"}
+        </button>
+      </div>
+      {error && <p role="alert" className="crm-error">{error}</p>}
+    </form>
   );
 }
