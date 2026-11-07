@@ -1,7 +1,6 @@
 import { workerHealthWindow } from "@/lib/crm/worker-health";
 import { supabase } from "@/lib/crm/server";
-import { processAutoReply } from "@/lib/crm/auto-worker";
-import { tenantSendConfig } from "@/lib/crm/whatsapp-tenant";
+import { runAutoReplies } from "@/lib/crm/auto-replies-runner";
 import { workerAuthorized } from "@/lib/crm/worker-auth";
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -51,63 +50,10 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   if (!workerAuthorized(request))
     return Response.json({ error: "Unauthorized" }, { status: 401 });
-  const db = supabase(undefined, true);
   try {
-    const { error } = await db.rpc("crm_worker_maintenance");
-    if (error) throw new Error("Worker migration required");
-    if (process.env.CRM_AUTO_REPLIES_ENABLED !== "true")
-      return Response.json({ status: "disabled" }, { headers });
-    const { data: pending, error: queueError } = await db
-      .from("crm_auto_jobs")
-      .select("id,organization_id,conversation_id")
-      .eq("status", "queued")
-      .order("created_at")
-      .limit(1)
-      .maybeSingle();
-    if (queueError) throw new Error("Queue unavailable");
-    let result: { status: string } = { status: "idle" };
-    if (pending) {
-      const config = await tenantSendConfig(undefined, pending.organization_id);
-      if (!config) {
-        await db
-          .from("crm_auto_jobs")
-          .update({
-            status: "needs_human",
-            reason:
-              "WhatsApp connection expired or is unavailable. Reconnect in Settings.",
-          })
-          .eq("id", pending.id)
-          .eq("status", "queued");
-        await db
-          .from("crm_whatsapp_conversations")
-          .update({ ai_paused: true })
-          .eq("id", pending.conversation_id);
-        result = { status: "needs_human" };
-      } else {
-        result = await processAutoReply(
-          {
-            ...process.env,
-            WHATSAPP_ACCESS_TOKEN: config.token,
-            WHATSAPP_SEND_ORGANIZATION_ID: config.org,
-            WHATSAPP_SEND_PHONE_ID: config.phone,
-            WHATSAPP_SEND_WABA_ID: config.waba,
-            WHATSAPP_SEND_PROVIDER: config.provider,
-            WHATSAPP_SEND_APP: config.app,
-          },
-          (name, args) => db.rpc(name, args),
-        );
-      }
-    }
-    await db
-      .from("crm_worker_health")
-      .update({ last_success: new Date().toISOString(), last_error: null })
-      .eq("id", "replies");
-    return Response.json(result, { headers });
+    const results = await runAutoReplies({ maxJobs: 10, deadline: Date.now() + 80_000 });
+    return Response.json({ results }, { headers });
   } catch {
-    await db
-      .from("crm_worker_health")
-      .update({ last_error: "Processing failed; review pending attempts" })
-      .eq("id", "replies");
     return Response.json(
       {
         error:

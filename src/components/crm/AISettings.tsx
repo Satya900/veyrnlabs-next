@@ -1,6 +1,15 @@
 "use client";
 import { crmFetch } from "./activity";
 import { useState } from "react";
+type AutoJob = { id: string; status: string; reason: string; created_at: string };
+const JOB_STATUS: Record<string, string> = {
+  queued: "Waiting",
+  processing: "Replying",
+  complete: "Replied",
+  skipped: "Skipped",
+  needs_human: "Handed to team",
+  failed: "Failed",
+};
 export function AISettings({ role, demo }: { role: string; demo: boolean }) {
   const [loaded, setLoaded] = useState(false);
   const [knowledge, setKnowledge] = useState("");
@@ -9,6 +18,9 @@ export function AISettings({ role, demo }: { role: string; demo: boolean }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [auto, setAuto] = useState(false);
+  const [autoReady, setAutoReady] = useState(false);
+  const [jobs, setJobs] = useState<AutoJob[]>([]);
   if (role === "team")
     return (
       <section className="crm-panel crm-plan-usage">
@@ -23,6 +35,30 @@ export function AISettings({ role, demo }: { role: string; demo: boolean }) {
         </div>
       </section>
     );
+  async function automate(next: boolean) {
+    setBusy(true);
+    setError("");
+    setMessage("");
+    try {
+      const response = await crmFetch("/api/crm/ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "automation", enabled: next }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error);
+      setAuto(next);
+      setMessage(
+        next
+          ? "Automatic replies are on. New customer messages get an answer within seconds."
+          : "Automatic replies are off. Customers get replies only from your team.",
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to change automatic replies.");
+    } finally {
+      setBusy(false);
+    }
+  }
   async function load() {
     setBusy(true);
     setError("");
@@ -33,6 +69,9 @@ export function AISettings({ role, demo }: { role: string; demo: boolean }) {
       setKnowledge(result.settings.knowledge);
       setEnabled(result.settings.drafts_enabled);
       setReady(result.provider_ready);
+      setAuto(Boolean(result.settings.auto_enabled));
+      setAutoReady(Boolean(result.automation_ready));
+      setJobs(result.jobs ?? []);
       setLoaded(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to load settings.");
@@ -122,6 +161,61 @@ export function AISettings({ role, demo }: { role: string; demo: boolean }) {
               {busy ? "Saving…" : "Save assistant settings"}
             </button>
           </form>
+        )}
+        {loaded && (
+          <div className="crm-auto-replies">
+            <div className="crm-auto-replies-head">
+              <div>
+                <strong>Reply to customers automatically</strong>
+                <small>
+                  The AI answers new WhatsApp messages within seconds, in the customer&apos;s own
+                  language, using only the knowledge above. It hands the chat to your team when a
+                  customer asks for a person, wants to negotiate, complains or says STOP, and stays
+                  quiet for 30 minutes after anyone on your team replies.
+                </small>
+              </div>
+              <button
+                type="button"
+                className={auto ? undefined : "crm-primary"}
+                disabled={busy || role !== "owner" && role !== "admin" || (!auto && (!autoReady || !enabled))}
+                aria-busy={busy}
+                onClick={() => void automate(!auto)}
+              >
+                {auto ? "Turn off" : "Turn on"}
+              </button>
+            </div>
+            {!auto && !enabled && (
+              <small className="crm-muted">Save your knowledge with reply drafts allowed first.</small>
+            )}
+            {!auto && enabled && !autoReady && (
+              <small className="crm-muted">
+                Not available yet: it needs a connected WhatsApp number and automatic replies switched
+                on for the server.
+              </small>
+            )}
+            {jobs.length > 0 && (
+              <ul className="crm-team-list">
+                {jobs.map((job) => (
+                  <li key={job.id} className="crm-team-row">
+                    <span className="crm-team-name">
+                      <strong>
+                        {new Date(job.created_at).toLocaleString("en-IN", {
+                          day: "numeric",
+                          month: "short",
+                          hour: "numeric",
+                          minute: "2-digit",
+                        })}
+                      </strong>
+                      {job.reason && <small>{job.reason}</small>}
+                    </span>
+                    <span className={job.status === "complete" ? "crm-badge won" : "crm-badge"}>
+                      {JOB_STATUS[job.status] ?? job.status}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         )}
       </div>
     </section>

@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/crm/server";
+import { replySoon } from "@/lib/crm/auto-replies-runner";
 import { whatsappReceiverConfigured } from "@/lib/crm/whatsapp-config";
 import {
   parseWhatsAppMessages,
@@ -9,6 +10,8 @@ import {
 } from "@/lib/crm/whatsapp-webhook";
 
 export const runtime = "nodejs";
+// Room for the automatic reply that runs after the response.
+export const maxDuration = 60;
 
 export async function GET(request: Request) {
   if (!whatsappReceiverConfigured(process.env))
@@ -59,5 +62,6 @@ export async function POST(request: Request) {
   // Single transaction: acknowledge only after storage succeeds. Meta retries are deduplicated in SQL.
   const { error } = await db.rpc("crm_receive_whatsapp", { events });
   if (error) return new Response("Please retry delivery", { status: 503 });
+  if (events.length) replySoon();
   return Response.json({ received: true });
 }
