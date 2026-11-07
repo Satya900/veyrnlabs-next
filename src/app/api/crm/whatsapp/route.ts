@@ -9,7 +9,7 @@ import { whatsappReceiverConfigured } from "@/lib/crm/whatsapp-config";
  */
 async function aiStatus(organizationId: string, conversation: string) {
   const db = supabase(undefined, true);
-  const [settings, chat, manual] = await Promise.all([
+  const [settings, chat, manual, access] = await Promise.all([
     db.from("crm_ai_settings").select("auto_enabled,drafts_enabled").eq("organization_id", organizationId).maybeSingle(),
     db.from("crm_whatsapp_conversations").select("ai_paused,ai_resumed_at").eq("id", conversation).maybeSingle(),
     db
@@ -20,10 +20,14 @@ async function aiStatus(organizationId: string, conversation: string) {
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
+    db.rpc("crm_auto_reply_access", { org: organizationId }),
   ]);
   // Before the resume migration ai_resumed_at doesn't exist; report automation as unknown.
   if (settings.error || chat.error || !chat.data) return null;
-  const auto = Boolean(settings.data?.auto_enabled && settings.data.drafts_enabled);
+  // Off when the plan doesn't include it (Pro after its 14-day trial). Before the
+  // plan-features migration the access check errors and only the setting counts.
+  const allowed = access.error ? true : Boolean((access.data as { allowed?: boolean } | null)?.allowed);
+  const auto = Boolean(settings.data?.auto_enabled && settings.data.drafts_enabled && allowed);
   const typed = manual.data?.created_at ? Date.parse(manual.data.created_at) : 0;
   const resumed = chat.data.ai_resumed_at ? Date.parse(chat.data.ai_resumed_at) : 0;
   const quietUntil = typed > resumed && typed + 30 * 60_000 > Date.now() ? new Date(typed + 30 * 60_000).toISOString() : null;
