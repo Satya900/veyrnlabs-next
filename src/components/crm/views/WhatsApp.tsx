@@ -268,6 +268,72 @@ export function WhatsApp({
   );
 }
 
+export type Insight = {
+  lead_id: string;
+  score: "hot" | "warm" | "cold";
+  score_reason: string;
+  summary: string;
+  details: Partial<Record<"budget" | "location" | "property_type" | "timeline" | "purpose", string>>;
+  suggestions: string[];
+  updated_at: string;
+};
+export const SCORE_LABEL = { hot: "Hot", warm: "Warm", cold: "Cold" } as const;
+const DETAIL_LABEL: [keyof Insight["details"], string][] = [
+  ["budget", "Budget"],
+  ["location", "Location"],
+  ["property_type", "Looking for"],
+  ["timeline", "Timeline"],
+  ["purpose", "Purpose"],
+];
+
+function InsightCard({
+  insight,
+  thinking,
+  error,
+  onRefresh,
+}: {
+  insight: Insight | null;
+  thinking: boolean;
+  error: string;
+  onRefresh?: () => void;
+}) {
+  if (!insight && !thinking && !error) return null;
+  const details = insight ? DETAIL_LABEL.filter(([key]) => insight.details?.[key]) : [];
+  return (
+    <div className="crm-insight" aria-live="polite">
+      <div className="crm-insight-head">
+        {insight && (
+          <span className={`crm-score ${insight.score}`} title={insight.score_reason}>
+            {SCORE_LABEL[insight.score]}
+          </span>
+        )}
+        <p>
+          {thinking && !insight
+            ? "Reading the chat…"
+            : insight?.summary || (error ? "" : "No summary yet.")}
+        </p>
+        {onRefresh && (
+          <button type="button" disabled={thinking} aria-busy={thinking} onClick={onRefresh}>
+            {thinking ? "Updating…" : "Refresh"}
+          </button>
+        )}
+      </div>
+      {insight?.score_reason && <small className="crm-insight-reason">{insight.score_reason}</small>}
+      {details.length > 0 && (
+        <dl className="crm-insight-details">
+          {details.map(([key, label]) => (
+            <div key={key}>
+              <dt>{label}</dt>
+              <dd>{insight!.details[key]}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+      {error && <small className="crm-error">{error}</small>}
+    </div>
+  );
+}
+
 type Outgoing = Delivery & {
   id: string;
   origin?: string;
@@ -313,7 +379,50 @@ function Conversation({
   const [retry, setRetry] = useState(0);
   const [opening, setOpening] = useState(false);
   const [sent, setSent] = useState(0);
+  const [insight, setInsight] = useState<Insight | null>(null);
+  const [thinking, setThinking] = useState(false);
+  const [insightError, setInsightError] = useState("");
   const end = useRef<HTMLOListElement>(null);
+  const canReply = replyOwner === null;
+  async function analyse(force = false) {
+    setThinking(true);
+    setInsightError("");
+    try {
+      const res = await crmFetch("/api/crm/ai/insights", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ conversation: conversation.id, force }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error);
+      setInsight(result.insight);
+    } catch (err) {
+      setInsightError(err instanceof Error ? err.message : "AI insights failed.");
+    } finally {
+      setThinking(false);
+    }
+  }
+  // Show the saved insight, and refresh it automatically when the customer has written
+  // since (one AI action). People who can only read the chat see the last saved one.
+  useEffect(() => {
+    const controller = new AbortController();
+    crmFetch(`/api/crm/ai/insights?conversation=${conversation.id}`, {
+      signal: controller.signal,
+      cache: "no-store",
+    })
+      .then(async (response) => {
+        const result = await response.json();
+        if (!response.ok || controller.signal.aborted) return;
+        setInsight(result.insight);
+        if (result.available && result.stale && canReply) void analyse();
+      })
+      .catch(() => {
+        /* Insights are optional; the chat works without them. */
+      });
+    return () => controller.abort();
+    // analyse is recreated each render; re-run only for a different conversation.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversation.id, canReply]);
   useEffect(() => {
     const controller = new AbortController();
     crmFetch(`/api/crm/whatsapp?conversation=${conversation.id}${cursor}`, {
@@ -423,6 +532,12 @@ function Conversation({
           {opening ? "Opening…" : "Open lead ↗"}
         </button>
       </div>
+      <InsightCard
+        insight={insight}
+        thinking={thinking}
+        error={insightError}
+        onRefresh={canReply ? () => void analyse(true) : undefined}
+      />
       {error && (
         <div role="alert" className="crm-whatsapp-alert">
           {error}{" "}
@@ -497,6 +612,7 @@ function Conversation({
       ) : replyOwner === null ? (
         <ReplyComposer
           conversation={conversation.id}
+          suggestions={insight?.suggestions ?? []}
           onSent={() => setSent((n) => n + 1)}
           onBlocked={() => setOptedOut(true)}
         />
@@ -523,10 +639,12 @@ function Conversation({
 /** A reply typed by a person (no AI), sent within WhatsApp's 24-hour customer window. */
 function ReplyComposer({
   conversation,
+  suggestions,
   onSent,
   onBlocked,
 }: {
   conversation: string;
+  suggestions: string[];
   onSent: () => void;
   onBlocked: () => void;
 }) {
@@ -572,6 +690,23 @@ function ReplyComposer({
         if (text.trim()) void send();
       }}
     >
+      {suggestions.length > 0 && (
+        <div className="crm-suggestions" role="group" aria-label="Suggested replies">
+          {suggestions.map((suggestion) => (
+            <button
+              key={suggestion}
+              type="button"
+              title={suggestion}
+              onClick={() => {
+                setText(suggestion);
+                setError("");
+              }}
+            >
+              {suggestion}
+            </button>
+          ))}
+        </div>
+      )}
       <textarea
         aria-label="Reply"
         value={text}

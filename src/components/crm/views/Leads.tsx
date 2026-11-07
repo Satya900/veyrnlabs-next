@@ -4,6 +4,7 @@ import { csvHeaders, exportCsv, money, parseCsv } from "@/lib/crm/model";
 import { dateLabel, filterLeads, initials, isOverdueFollowUp, sourceOptions } from "@/lib/crm/workspace";
 import { download } from "../download";
 import { useWorkspaceContext } from "../context";
+import { ScoreBadge } from "../ScoreBadge";
 import { LeadTable } from "../LeadTable";
 
 export function Leads({
@@ -42,6 +43,7 @@ export function Leads({
   } = useWorkspaceContext();
   const file = useRef<HTMLInputElement>(null);
   const filtered = filterLeads(data.leads, { search, source, owner });
+  const insights = new Map((data.insights ?? []).map((i) => [i.lead_id, i]));
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkStage, setBulkStage] = useState("");
   const toggleOne = (id: string) =>
@@ -260,6 +262,7 @@ export function Leads({
                       <span>
                         <strong>{l.name}</strong>
                         <small>{l.company || "Individual"}</small>
+                        <ScoreBadge insight={insights.get(l.id)} />
                       </span>
                       <span>↗</span>
                     </button>
@@ -330,6 +333,7 @@ export function Leads({
               stages={stages}
               members={data.members}
               now={now}
+              insights={insights}
               onSelect={setSelected}
               selection={{ selected: selectedIds, onToggle: toggleOne, onToggleAll: toggleAll }}
             />

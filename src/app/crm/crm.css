@@ -2118,6 +2118,25 @@
 .crm-whatsapp-notice { margin: 0; padding: 16px 20px; border-top: 1px solid var(--crm-border); color: var(--color-body); font-size: 13px; }
 .crm-whatsapp-ai { border-top: 1px solid var(--crm-border); }
 .crm-whatsapp-ai summary { padding: 12px 20px; cursor: pointer; color: var(--crm-muted); font-size: 13px; }
+/* AI insights: score badge, summary card, suggested replies */
+.crm-score { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; line-height: 18px; white-space: nowrap; vertical-align: middle; }
+.crm-score::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.crm-score.hot { background: var(--crm-danger-soft); color: var(--crm-danger); }
+.crm-score.warm { background: color-mix(in srgb, #d08a12 16%, transparent); color: #9a6406; }
+.crm-score.cold { background: var(--color-canvas-soft); color: var(--color-mute); }
+.crm-lead-card .card-title .crm-score { margin-top: 4px; justify-self: start; }
+.crm-insight { display: grid; gap: 6px; padding: 12px 20px; border-bottom: 1px solid var(--crm-border); background: color-mix(in srgb, var(--crm-accent-soft) 45%, var(--color-canvas)); }
+.crm-insight-head { display: flex; align-items: flex-start; gap: 10px; }
+.crm-insight-head p { flex: 1; margin: 0; font-size: 13px; line-height: 1.5; color: var(--crm-text); }
+.crm-root .crm-insight-head button { padding: 4px 10px; font-size: 12px; flex-shrink: 0; }
+.crm-insight-reason { color: var(--crm-muted); font-size: 12px; }
+.crm-insight-details { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 0; }
+.crm-insight-details div { display: flex; gap: 4px; padding: 2px 8px; border: 1px solid var(--crm-border); border-radius: 6px; background: var(--color-canvas); font-size: 12px; }
+.crm-insight-details dt { color: var(--crm-muted); }
+.crm-insight-details dd { margin: 0; color: var(--crm-text); }
+.crm-insight-lead { margin: 12px 0 16px; border: 1px solid var(--crm-border); border-radius: 10px; }
+.crm-suggestions { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; }
+.crm-root .crm-suggestions button { flex: 0 0 auto; max-width: 280px; padding: 6px 12px; border-radius: 999px; font-size: 12px; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; background: var(--color-canvas); }
 @media (max-width: 760px) { .crm-whatsapp-grid { grid-template-columns: 1fr; } .crm-whatsapp-list { max-height: 300px; } .crm-bubble { max-width: 90%; } }
 .crm-ai-settings { display: grid; gap: 16px; }
 .crm-ai-settings label { display: grid; gap: 8px; }

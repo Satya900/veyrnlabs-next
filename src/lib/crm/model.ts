@@ -57,6 +57,14 @@ export type SavedView = {
   created_at: string;
 };
 export type PlanTier = { plan: "pro" | "pro_plus" | null; active: boolean };
+export type LeadInsightSummary = {
+  lead_id: string;
+  score: "hot" | "warm" | "cold";
+  score_reason: string;
+  summary: string;
+  details: Partial<Record<"budget" | "location" | "property_type" | "timeline" | "purpose", string>>;
+  updated_at: string;
+};
 export type Workspace = {
   leads: Lead[];
   clients: Client[];
@@ -69,6 +77,7 @@ export type Workspace = {
   plan: PlanTier;
   organization?: { name: string; team_sees_all_leads?: boolean };
   organizationId?: string;
+  insights?: LeadInsightSummary[];
   memberships?: {
     organization_id: string;
     organization_name: string;
