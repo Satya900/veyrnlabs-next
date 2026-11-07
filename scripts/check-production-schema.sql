@@ -59,6 +59,7 @@ with expected_fn(sig, h) as (values
   ('public.crm_paid_seats(org uuid)', '3ed23fbbb094ec4becfcbaf23f3b933a'),
   ('public.crm_plan_monthly_paise(selected_plan text, months integer)', 'b4ffd90fa26459a383991ba01a18d667'),
   ('public.crm_plan_tier()', '4645a24cdde72a1b6cf96099ae30cc78'),
+  ('public.crm_platform_overview()', '0d16ce12fbeea97969ccfda1ebe69fbe'),
   ('public.crm_prepare_auto_booking(job uuid, token uuid, start_iso timestamp with time zone, end_iso timestamp with time zone)', '375129ef53820803f31210f15d33a094'),
   ('public.crm_prepare_auto_reply(job uuid, token uuid, scoped_org uuid, scoped_phone text, scoped_waba text, cost_paise bigint)', '14858658044e5bd9a5e35c0102bb5a61'),
   ('public.crm_prepare_followup_send(job uuid, token uuid, requested_channel text, cost_paise bigint)', '4b8c3ae7edaf1171e2f4228648477c3a'),
