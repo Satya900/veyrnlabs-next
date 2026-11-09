@@ -1,5 +1,6 @@
 "use client";
 import { crmFetch } from "./activity";
+import { aiUsageChanged } from "./AIUsage";
 import { useEffect, useState } from "react";
 import { ReplyEditor } from "./ReplyEditor";
 type Draft = {
@@ -115,6 +116,7 @@ export function AIDraft({
       const result = await response.json();
       if (!response.ok) throw new Error(result.error);
       if (result.draft) setDraft(result.draft);
+      if (action === "generate") aiUsageChanged();
       if (action === "handover") setPaused(!paused);
       setVersion((v) => v + 1);
     } catch (err) {

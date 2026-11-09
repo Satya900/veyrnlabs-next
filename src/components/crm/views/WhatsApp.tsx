@@ -5,6 +5,7 @@ import { SkeletonRows } from "../Skeleton";
 import { useWorkspaceContext } from "../context";
 import { AIDraft } from "../AIDraft";
 import { deliveryLabel, type Delivery } from "@/lib/crm/delivery";
+import { aiUsageChanged } from "../AIUsage";
 import type {
   WhatsAppConversation,
   WhatsAppMessage,
@@ -477,6 +478,7 @@ function Conversation({
       const result = await res.json();
       if (!res.ok) throw new Error(result.error);
       setInsight(result.insight);
+      aiUsageChanged();
     } catch (err) {
       setInsightError(err instanceof Error ? err.message : "AI insights failed.");
     } finally {
