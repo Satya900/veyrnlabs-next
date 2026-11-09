@@ -22,7 +22,7 @@ export async function GET() {
   if (error) return Response.json({ error: "Usage is unavailable." }, { status: 503, headers });
   if (!period) return Response.json({ period: null }, { headers });
 
-  const [events, automatic] = await Promise.all([
+  const [events, automatic, topups] = await Promise.all([
     db
       .from("crm_usage_events")
       .select("event_key,kind,units")
@@ -38,6 +38,8 @@ export async function GET() {
       .not("draft_id", "is", null)
       .gte("created_at", period.starts_at)
       .lt("created_at", period.ends_at),
+    // Paid top-ups already raised ai_limit; reported so the extra is visible.
+    db.from("crm_ai_topups").select("actions").eq("period_id", period.id).eq("status", "paid"),
   ]);
   if (events.error) return Response.json({ error: "Usage is unavailable." }, { status: 503, headers });
 
@@ -60,7 +62,12 @@ export async function GET() {
   return Response.json(
     {
       period: { starts_at: period.starts_at, ends_at: period.ends_at, trial: period.trial_budget_paise !== null },
-      ai: { used: aiUsed, limit: period.ai_limit },
+      ai: {
+        used: aiUsed,
+        limit: period.ai_limit,
+        // Before the top-ups migration this query errors; report none.
+        topup: topups.error ? 0 : topups.data.reduce((sum, t) => sum + t.actions, 0),
+      },
       whatsapp: { used: whatsappUsed, limit: period.whatsapp_limit },
       breakdown: {
         insights,

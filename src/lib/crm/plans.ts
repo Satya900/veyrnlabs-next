@@ -24,6 +24,8 @@ export const CRM_PLANS = {
 // AI actions are counted per workspace per month: one reply suggestion refresh, draft or
 // follow-up email each. A workspace's first paid month gets firstMonthAiActions instead.
 export const EXTRA_SEAT_PAISE = 19_900;
+// One-time AI top-up: extra AI actions for the current month, paid as a Razorpay order.
+export const AI_TOPUP = { actions: 1_000, paise: 9_900 } as const;
 export type PlanId = keyof typeof CRM_PLANS;
 export type BillingMonths = 1 | 3 | 12;
 // Advertised savings for each prepay period; the price table above rounds to whole rupees.

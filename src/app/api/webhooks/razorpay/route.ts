@@ -28,9 +28,17 @@ export async function POST(request: Request) {
     ))
   )
     return new Response("Invalid signature", { status: 401 });
+  let event: unknown;
+  try {
+    event = JSON.parse(Buffer.from(raw).toString("utf8"));
+  } catch {
+    return new Response("Invalid payload", { status: 400 });
+  }
+  // One-time AI top-up orders; everything else on this webhook is a subscription event.
+  if ((event as { event?: unknown })?.event === "order.paid") return creditTopup(event);
   let parsed;
   try {
-    parsed = parsePaidRazorpayEvent(JSON.parse(Buffer.from(raw).toString("utf8")));
+    parsed = parsePaidRazorpayEvent(event);
   } catch (err) {
     console.error("razorpay webhook: invalid event", err);
     return new Response("Invalid event", { status: 400 });
@@ -92,6 +100,32 @@ export async function POST(request: Request) {
       status: parsed.status,
       message: error.message,
     });
+    return new Response("Please retry", { status: 503 });
+  }
+  return Response.json({ received: true });
+}
+
+/**
+ * Backup for AI top-ups when the browser closed before the checkout callback: credits the
+ * captured payment for a top-up order. Orders that aren't top-ups are acknowledged and ignored.
+ */
+async function creditTopup(event: unknown) {
+  const payload = (event as { payload?: { order?: { entity?: Record<string, unknown> }; payment?: { entity?: Record<string, unknown> } } })
+    ?.payload;
+  const order = payload?.order?.entity;
+  const payment = payload?.payment?.entity;
+  const notes = order?.notes as Record<string, unknown> | undefined;
+  if (notes?.kind !== "ai_topup") return Response.json({ received: true });
+  if (typeof order?.id !== "string" || typeof payment?.id !== "string" || payment.status !== "captured")
+    return new Response("Invalid order event", { status: 400 });
+  const { error } = await supabase(undefined, true).rpc("crm_apply_ai_topup", {
+    order_id: order.id,
+    payment_id: payment.id,
+    paid_amount: payment.amount,
+  });
+  if (error) {
+    if (/Unknown top-up/.test(error.message)) return Response.json({ received: true });
+    console.error("razorpay webhook: top-up credit failed", { orderId: order.id, message: error.message });
     return new Response("Please retry", { status: 503 });
   }
   return Response.json({ received: true });

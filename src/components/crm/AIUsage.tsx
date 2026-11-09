@@ -1,10 +1,12 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { crmFetch } from "./activity";
+import { loadRazorpayScript } from "./Billing";
+import { AI_TOPUP } from "@/lib/crm/plans";
 
 export type AIUsageData = {
   period: { starts_at: string; ends_at: string; trial: boolean } | null;
-  ai?: { used: number; limit: number };
+  ai?: { used: number; limit: number; topup?: number };
   whatsapp?: { used: number; limit: number };
   breakdown?: { insights: number; auto_replies: number; drafts: number; emails: number };
 };
@@ -68,7 +70,7 @@ function Bar({ used, limit, label }: { used: number; limit: number; label: strin
 }
 
 /** Compact meter at the bottom of the sidebar; opens Settings for the details. */
-export function AIUsageCard({ demo, onOpen }: { demo: boolean; onOpen: () => void }) {
+export function AIUsageCard({ demo, role, onOpen }: { demo: boolean; role: string; onOpen: () => void }) {
   const { usage } = useAIUsage(demo);
   if (demo || !usage) return null;
   if (!usage.period || !usage.ai)
@@ -100,12 +102,17 @@ export function AIUsageCard({ demo, onOpen }: { demo: boolean; onOpen: () => voi
       <small>
         {left === 0 ? "Allowance used up" : `${count(left)} left`} · resets {day(usage.period.ends_at)}
       </small>
+      {role === "owner" && !usage.period.trial && level(used, limit) !== "ok" && (
+        <span className="crm-ai-usage-cta">
+          + {count(AI_TOPUP.actions)} more for ₹{AI_TOPUP.paise / 100}
+        </span>
+      )}
     </button>
   );
 }
 
 /** Full breakdown at the top of Settings. */
-export function AIUsagePanel({ demo }: { demo: boolean }) {
+export function AIUsagePanel({ demo, role }: { demo: boolean; role: string }) {
   const { usage, failed, reload } = useAIUsage(demo);
   const rows: [string, string, number][] = usage?.breakdown
     ? [
@@ -166,6 +173,9 @@ export function AIUsagePanel({ demo }: { demo: boolean }) {
                 <small>Follow-ups, automatic replies and replies sent from the inbox.</small>
               </div>
             </div>
+            {role === "owner" && !usage.period.trial && (
+              <TopUp ai={usage.ai} endsAt={usage.period.ends_at} onDone={() => void reload()} />
+            )}
             <ul className="crm-ai-usage-breakdown">
               {rows.map(([label, hint, n]) => (
                 <li key={label}>
@@ -181,5 +191,86 @@ export function AIUsagePanel({ demo }: { demo: boolean }) {
         )}
       </div>
     </section>
+  );
+}
+
+/** Buy one AI top-up pack with a one-time Razorpay payment; credited to this month. */
+function TopUp({
+  ai,
+  endsAt,
+  onDone,
+}: {
+  ai: { used: number; limit: number; topup?: number };
+  endsAt: string;
+  onDone: () => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  async function post(body: Record<string, unknown>) {
+    const res = await crmFetch("/api/crm/billing/topup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error);
+    return result;
+  }
+  async function buy() {
+    setBusy(true);
+    setError("");
+    setMessage("");
+    try {
+      const order = await post({ action: "create" });
+      await loadRazorpayScript();
+      if (!window.Razorpay) throw new Error("Payment form unavailable.");
+      new window.Razorpay({
+        key: order.keyId,
+        order_id: order.orderId,
+        amount: order.amount,
+        currency: "INR",
+        name: "Veyrn CRM",
+        description: `${count(order.actions)} AI actions`,
+        handler: async (paid: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) => {
+          try {
+            const result = await post({
+              action: "verify",
+              orderId: paid.razorpay_order_id,
+              paymentId: paid.razorpay_payment_id,
+              signature: paid.razorpay_signature,
+            });
+            setMessage(`${count(result.actions)} AI actions added. They're yours until ${day(endsAt)}.`);
+            aiUsageChanged();
+            onDone();
+          } catch (err) {
+            setError(err instanceof Error ? err.message : "The payment couldn't be confirmed.");
+          } finally {
+            setBusy(false);
+          }
+        },
+        modal: { ondismiss: () => setBusy(false) },
+      }).open();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Top-up failed.");
+      setBusy(false);
+    }
+  }
+  return (
+    <div className="crm-ai-topup">
+      <div>
+        <strong>Need more AI this month?</strong>
+        <small>
+          Add {count(AI_TOPUP.actions)} AI actions for ₹{AI_TOPUP.paise / 100}, a one-time payment. They
+          last until your allowance resets on {day(endsAt)}.
+          {ai.topup ? ` Top-ups this month: +${count(ai.topup)}.` : ""}
+        </small>
+      </div>
+      <button type="button" className="crm-primary" disabled={busy} aria-busy={busy} onClick={() => void buy()}>
+        {busy ? "Opening payment…" : `Buy ${count(AI_TOPUP.actions)} for ₹${AI_TOPUP.paise / 100}`}
+      </button>
+      {message && <p role="status" className="crm-success">{message}</p>}
+      {error && <p role="alert" className="crm-error">{error}</p>}
+    </div>
   );
 }

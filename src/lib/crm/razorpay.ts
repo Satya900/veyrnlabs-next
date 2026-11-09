@@ -296,3 +296,60 @@ export async function cancelRazorpaySubscription(
     request,
   );
 }
+
+/** One-time Razorpay order (used for AI top-ups). Paid with Checkout using the order id. */
+export async function createRazorpayOrder(
+  env: Env,
+  amountPaise: number,
+  receipt: string,
+  notes: Record<string, string>,
+  fetchImpl: typeof fetch = fetch,
+) {
+  const body = await razorpayFetch(
+    env,
+    "/orders",
+    {
+      method: "POST",
+      body: JSON.stringify({ amount: amountPaise, currency: "INR", receipt, notes }),
+    },
+    fetchImpl,
+  );
+  if (typeof body.id !== "string" || !/^order_[A-Za-z0-9]+$/.test(body.id))
+    throw new Error("Razorpay did not return an order id.");
+  return body.id;
+}
+
+/** Checkout's success signature: HMAC-SHA256 of "order_id|payment_id" with the key secret. */
+export function verifyCheckoutSignature(env: Env, orderId: string, paymentId: string, signature: unknown) {
+  const secret = env.RAZORPAY_KEY_SECRET;
+  if (!secret || typeof signature !== "string" || !/^[a-f0-9]{64}$/.test(signature)) return false;
+  const expected = createHmac("sha256", secret).update(`${orderId}|${paymentId}`).digest();
+  const given = Buffer.from(signature, "hex");
+  return expected.length === given.length && timingSafeEqual(expected, given);
+}
+
+/**
+ * The payment's real state from Razorpay. An authorized (not yet captured) payment is
+ * captured here, so a top-up is only ever credited for money actually collected.
+ */
+export async function capturedRazorpayPayment(
+  env: Env,
+  paymentId: string,
+  fetchImpl: typeof fetch = fetch,
+) {
+  if (!/^pay_[A-Za-z0-9]+$/.test(paymentId)) throw new RazorpayRejected("Invalid payment.");
+  let payment = await razorpayFetch(env, `/payments/${paymentId}`, { method: "GET" }, fetchImpl);
+  if (payment.status === "authorized")
+    payment = await razorpayFetch(
+      env,
+      `/payments/${paymentId}/capture`,
+      { method: "POST", body: JSON.stringify({ amount: payment.amount, currency: payment.currency }) },
+      fetchImpl,
+    );
+  return {
+    captured: payment.status === "captured",
+    orderId: typeof payment.order_id === "string" ? payment.order_id : null,
+    amount: Number(payment.amount),
+    currency: payment.currency,
+  };
+}
