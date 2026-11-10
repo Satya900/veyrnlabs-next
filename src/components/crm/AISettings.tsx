@@ -29,6 +29,8 @@ export function AISettings({ role, demo }: { role: string; demo: boolean }) {
   const [jobs, setJobs] = useState<AutoJob[]>([]);
   const [access, setAccess] = useState<AutoAccess | null>(null);
   const [newChats, setNewChats] = useState(true);
+  // Two-step confirm for the bulk switch (no browser dialogs).
+  const [confirmAll, setConfirmAll] = useState<"off" | "on" | null>(null);
   if (role === "team")
     return (
       <section className="crm-panel crm-plan-usage">
@@ -67,6 +69,30 @@ export function AISettings({ role, demo }: { role: string; demo: boolean }) {
       setError(err instanceof Error ? err.message : "Unable to change automatic replies.");
     } finally {
       setBusy(false);
+    }
+  }
+  async function switchAllChats(enabled: boolean) {
+    setBusy(true);
+    setError("");
+    setMessage("");
+    try {
+      const response = await crmFetch("/api/crm/ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "allChats", enabled }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error);
+      setMessage(
+        enabled
+          ? `AI is on for ${result.changed} more chat${result.changed === 1 ? "" : "s"}.`
+          : `AI is off for ${result.changed} more chat${result.changed === 1 ? "" : "s"}. Switch it on in the inbox for chats that are real leads.`,
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to change AI for all chats.");
+    } finally {
+      setBusy(false);
+      setConfirmAll(null);
     }
   }
   async function changeNewChats(next: boolean) {
@@ -256,6 +282,39 @@ export function AISettings({ role, demo }: { role: string; demo: boolean }) {
               with AI off, then switch AI on in the chats that are real leads. Leads you add
               yourself always keep AI on. Each chat also has its own AI on/off switch in the inbox.
             </small>
+            <div className="crm-ai-bulk">
+              {confirmAll ? (
+                <>
+                  <span>
+                    {confirmAll === "off"
+                      ? "Turn AI off for every existing chat? No insights, suggestions or automatic replies until you switch chats back on."
+                      : "Turn AI on for every existing chat? Insights and automatic replies will run on all of them."}
+                  </span>
+                  <button
+                    type="button"
+                    className="crm-primary"
+                    disabled={busy}
+                    aria-busy={busy}
+                    onClick={() => void switchAllChats(confirmAll === "on")}
+                  >
+                    {confirmAll === "off" ? "Yes, turn AI off" : "Yes, turn AI on"}
+                  </button>
+                  <button type="button" disabled={busy} onClick={() => setConfirmAll(null)}>
+                    Cancel
+                  </button>
+                </>
+              ) : (
+                <>
+                  <span>All existing chats:</span>
+                  <button type="button" disabled={busy} onClick={() => setConfirmAll("off")}>
+                    Turn AI off for all chats
+                  </button>
+                  <button type="button" disabled={busy} onClick={() => setConfirmAll("on")}>
+                    Turn AI on for all chats
+                  </button>
+                </>
+              )}
+            </div>
             {jobs.length > 0 && (
               <ul className="crm-team-list">
                 {jobs.map((job) => (
