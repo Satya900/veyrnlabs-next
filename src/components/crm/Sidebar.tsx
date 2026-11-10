@@ -1,5 +1,6 @@
 "use client";
 import { crmFetch } from "./activity";
+import { AIUsageCard } from "./AIUsage";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Logo } from "@/components/Logo";
@@ -197,6 +198,7 @@ export function Sidebar({
           ))}
       </nav>
       <div className="crm-sidebar-bottom">
+        <AIUsageCard demo={demo} onOpen={() => changeView("Settings")} />
         <div className="crm-sidebar-tip">
           <p>Every deal starts with a conversation.</p>
           <button onClick={onAddLead}>+ Add a lead</button>

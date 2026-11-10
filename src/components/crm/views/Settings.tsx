@@ -7,6 +7,7 @@ import { TeamMembers } from "../TeamMembers";
 import { PlanUsage } from "../PlanUsage";
 import { PlanComparison } from "../PlanComparison";
 import { AISettings } from "../AISettings";
+import { AIUsagePanel } from "../AIUsage";
 import { CalendarSettings } from "../CalendarSettings";
 import { WhatsAppSettings } from "../WhatsAppSettings";
 import { WhatsAppFollowUps } from "../WhatsAppFollowUps";
@@ -17,6 +18,7 @@ export function Settings() {
   const teamSeesAll = data.organization?.team_sees_all_leads !== false;
   return (
     <div className="crm-settings-stack">
+      <AIUsagePanel demo={demo} />
       <AISettings demo={demo} role={data.user.role} />
       <FollowUpSettings demo={demo} role={data.user.role} />
       <div className="crm-overview-grid">

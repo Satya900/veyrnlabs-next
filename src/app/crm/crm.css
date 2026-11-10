@@ -2118,6 +2118,33 @@
 .crm-whatsapp-notice { margin: 0; padding: 16px 20px; border-top: 1px solid var(--crm-border); color: var(--color-body); font-size: 13px; }
 .crm-whatsapp-ai { border-top: 1px solid var(--crm-border); }
 .crm-whatsapp-ai summary { padding: 12px 20px; cursor: pointer; color: var(--crm-muted); font-size: 13px; }
+/* AI usage: sidebar card and Settings panel */
+.crm-root button.crm-ai-usage-card { display: grid; gap: 6px; width: 100%; padding: 12px 14px; margin-bottom: 12px; text-align: left; justify-content: stretch; border: 1px solid var(--color-hairline); border-radius: 10px; background: var(--color-canvas); }
+.crm-ai-usage-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; font-size: 12px; }
+.crm-ai-usage-top strong { font-weight: 600; color: var(--crm-text); }
+.crm-ai-usage-top span { color: var(--color-body); font-variant-numeric: tabular-nums; }
+.crm-ai-usage-card small, .crm-ai-usage-meters small { color: var(--crm-muted); font-size: 11px; }
+.crm-ai-bar progress { display: block; width: 100%; height: 6px; border: 0; border-radius: 999px; overflow: hidden; appearance: none; background: var(--color-canvas-soft); }
+.crm-ai-bar progress::-webkit-progress-bar { background: var(--color-canvas-soft); border-radius: 999px; }
+.crm-ai-bar progress::-webkit-progress-value { background: var(--crm-success); border-radius: 999px; }
+.crm-ai-bar progress::-moz-progress-bar { background: var(--crm-success); border-radius: 999px; }
+.crm-ai-bar.high progress::-webkit-progress-value { background: #d08a12; }
+.crm-ai-bar.high progress::-moz-progress-bar { background: #d08a12; }
+.crm-ai-bar.full progress::-webkit-progress-value { background: var(--crm-danger); }
+.crm-ai-bar.full progress::-moz-progress-bar { background: var(--crm-danger); }
+.crm-ai-usage-panel { display: grid; gap: 20px; }
+.crm-ai-usage-meters { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; }
+.crm-ai-usage-meters > div { display: grid; gap: 8px; }
+.crm-ai-usage-meters .crm-ai-usage-top { font-size: 14px; }
+.crm-ai-usage-meters .crm-ai-bar progress { height: 10px; }
+.crm-ai-usage-breakdown { display: grid; margin: 0; padding: 0; list-style: none; border: 1px solid var(--crm-border); border-radius: 10px; }
+.crm-ai-usage-breakdown li { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 16px; }
+.crm-ai-usage-breakdown li + li { border-top: 1px solid var(--crm-border); }
+.crm-ai-usage-breakdown span { display: grid; gap: 2px; }
+.crm-ai-usage-breakdown strong { font-size: 13px; font-weight: 500; }
+.crm-ai-usage-breakdown small { color: var(--crm-muted); font-size: 12px; }
+.crm-ai-usage-breakdown b { font-variant-numeric: tabular-nums; font-size: 15px; }
+
 /* Inbox: automatic-reply status for one chat */
 .crm-ai-status { display: flex; align-items: center; gap: 10px; padding: 10px 20px; border-top: 1px solid var(--crm-border); font-size: 13px; }
 .crm-ai-status p { flex: 1; margin: 0; display: grid; gap: 2px; color: var(--crm-text); }
