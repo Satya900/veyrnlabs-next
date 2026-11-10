@@ -2133,6 +2133,11 @@
 .crm-ai-bar.full progress::-webkit-progress-value { background: var(--crm-danger); }
 .crm-ai-bar.full progress::-moz-progress-bar { background: var(--crm-danger); }
 .crm-ai-usage-panel { display: grid; gap: 20px; }
+.crm-ai-usage-cta { font-size: 11px; font-weight: 600; color: var(--crm-accent); }
+.crm-ai-topup { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 20px; padding: 14px 16px; border: 1px dashed color-mix(in srgb, var(--crm-accent) 35%, transparent); border-radius: 10px; background: color-mix(in srgb, var(--crm-accent-soft) 50%, var(--color-canvas)); }
+.crm-ai-topup > div { display: grid; gap: 4px; flex: 1; min-width: 220px; }
+.crm-ai-topup small { color: var(--color-body); font-size: 12px; line-height: 1.5; }
+.crm-ai-topup .crm-success, .crm-ai-topup .crm-error { flex-basis: 100%; margin: 0; }
 .crm-ai-usage-meters { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; }
 .crm-ai-usage-meters > div { display: grid; gap: 8px; }
 .crm-ai-usage-meters .crm-ai-usage-top { font-size: 14px; }

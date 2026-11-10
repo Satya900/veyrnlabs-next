@@ -18,7 +18,7 @@ export function Settings() {
   const teamSeesAll = data.organization?.team_sees_all_leads !== false;
   return (
     <div className="crm-settings-stack">
-      <AIUsagePanel demo={demo} />
+      <AIUsagePanel demo={demo} role={data.user.role} />
       <AISettings demo={demo} role={data.user.role} />
       <FollowUpSettings demo={demo} role={data.user.role} />
       <div className="crm-overview-grid">

@@ -39,14 +39,11 @@ export async function POST(request: Request) {
         },
       });
       // Never return user/session data or reveal whether the address already exists.
-      if (error)
-        return Response.json(
-          {
-            error:
-              "Registration could not be completed. Try again later or sign in if you already have an account.",
-          },
-          { status: 400 },
-        );
+      if (error) {
+        // The reason, without the address, so failed sign-ups can be diagnosed from the logs.
+        console.error("signup failed", { status: error.status, code: error.code, message: error.message });
+        return Response.json({ error: signupError(error) }, { status: 400 });
+      }
       return Response.json({
         ok: true,
         message:
@@ -148,4 +145,23 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
+}
+
+/**
+ * A clear message for sign-up failures that say nothing about whether the address already has
+ * an account (sending limits, email delivery, password rules, invalid address). Anything else
+ * keeps the generic message.
+ */
+function signupError(error: { status?: number; code?: string; message: string }) {
+  const code = error.code ?? "";
+  if (error.status === 429 || code === "over_email_send_rate_limit" || code === "over_request_rate_limit")
+    return "Too many sign-ups right now. Please try again in an hour.";
+  // Supabase's own wording names the rule that failed (character types, leaked password).
+  if (code === "weak_password") return `Choose a stronger password. ${error.message}`.slice(0, 300);
+  if (code === "email_address_invalid" || code === "validation_failed")
+    return "Enter a valid email address.";
+  if (code === "email_address_not_authorized" || /sending .*email|smtp/i.test(error.message))
+    return "We couldn't send the verification email just now. Please try again in a few minutes, or contact support.";
+  if (code === "signup_disabled") return "New sign-ups are paused. Please contact us for onboarding.";
+  return "Registration could not be completed. Try again later or sign in if you already have an account.";
 }
