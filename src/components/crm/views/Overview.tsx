@@ -2,6 +2,7 @@
 import { dateLabel, dueFollowUps, attentionItems, overdueTasks } from "@/lib/crm/workspace";
 import { useWorkspaceContext } from "../context";
 import { LeadTable } from "../LeadTable";
+import { Briefing } from "../Briefing";
 
 export function Overview() {
   const { data, stages, now, changeView, setSelected } = useWorkspaceContext();
@@ -15,6 +16,7 @@ export function Overview() {
   );
   return (
     <>
+      <Briefing />
       <div className="crm-overview-grid">
         <section className="crm-panel">
           <div className="crm-panel-heading">
