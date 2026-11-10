@@ -188,6 +188,27 @@ export async function POST(request: Request) {
       if (error) throw new Error("Unable to save AI settings.");
       return Response.json({ ok: true }, { headers });
     }
+    if (body.action === "allChats") {
+      // Owners and admins switch AI on or off for every existing chat at once, e.g. after
+      // linking a number that also has personal chats. Scoped to the caller's workspace.
+      if (auth.member.role === "team" || typeof body.enabled !== "boolean")
+        throw new Error("Admin access and a valid setting are required.");
+      const service = supabase(undefined, true);
+      const { data: changed, error } = await service
+        .from("crm_whatsapp_conversations")
+        .update({ ai_disabled: !body.enabled })
+        .eq("organization_id", auth.organizationId)
+        .eq("ai_disabled", body.enabled)
+        .select("id");
+      if (error) throw new Error("Unable to change AI for all chats.");
+      if (!body.enabled)
+        await service
+          .from("crm_auto_jobs")
+          .update({ status: "skipped", reason: "AI turned off for this contact" })
+          .eq("organization_id", auth.organizationId)
+          .eq("status", "queued");
+      return Response.json({ ok: true, changed: changed.length }, { headers });
+    }
     if (body.action === "newChats") {
       if (auth.member.role === "team" || typeof body.enabled !== "boolean")
         throw new Error("Admin access and a valid setting are required.");
