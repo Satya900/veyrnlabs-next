@@ -1,6 +1,7 @@
 import { jsonBody, platformAdmin, sameOrigin, supabase } from "@/lib/crm/server";
 import { CRM_PLANS, type PlanId } from "@/lib/crm/plans";
 import { billingAllowances } from "@/lib/crm/razorpay";
+import { requirePasswordLength } from "@/lib/crm/account-validation";
 
 export const runtime = "nodejs";
 const headers = { "Cache-Control": "private, no-store" };
@@ -37,7 +38,7 @@ async function grantPlan(admin: string, organizationId: string, body: Record<str
 
 /**
  * Platform admin only (CRM_PLATFORM_ADMIN_EMAILS); everyone else gets a 404 like the page.
- * create: a new login (email already verified) with its own workspace and a granted plan.
+ * create: a new login (email already verified, password set here) with its own workspace and a granted plan.
  * grant:  a plan for an existing workspace.
  * revoke: ends a grant now.
  */
@@ -68,17 +69,21 @@ export async function POST(request: Request) {
       const business = text(body.business, 150);
       if (!EMAIL.test(email)) throw new Error("Enter a valid email.");
       if (!name || !business) throw new Error("Enter the person's name and business name.");
+      // Not trimmed: spaces are allowed in passwords.
+      const password = typeof body.password === "string" ? body.password : "";
+      requirePasswordLength(password);
       if (!Object.hasOwn(CRM_PLANS, body.plan as string)) throw new Error("Choose Pro or Pro Plus.");
       billingAllowances(process.env, body.plan as PlanId); // fail before creating anything
-      // No password: they set one through "Forgot password", which proves they own the inbox.
       const { data: created, error } = await db.auth.admin.createUser({
         email,
+        password,
         email_confirm: true,
         user_metadata: { name, organization: business, crm_signup: true },
       });
       if (error || !created.user) {
         if (error?.code === "email_exists" || error?.status === 422)
           throw new Error("That email already has an account. Find their workspace below and use Grant plan.");
+        if (error?.code === "weak_password") throw new Error("That password is too weak. Choose a longer one.");
         console.error("admin create user failed", { status: error?.status, code: error?.code });
         throw new Error("The account couldn't be created. Try again.");
       }

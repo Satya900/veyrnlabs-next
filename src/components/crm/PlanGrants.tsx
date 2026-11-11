@@ -141,10 +141,11 @@ export function CreateCustomer() {
   const [done, setDone] = useState<{ email: string; plan: PlanId; ends: string } | null>(null);
   const [copied, setCopied] = useState(false);
   const [formKey, setFormKey] = useState(0);
+  // The password isn't included: send it separately, ideally by a different channel.
   const message = done
     ? `Your Veyrn CRM account is ready with ${CRM_PLANS[done.plan].name} until ${day(done.ends)}.\n\n` +
-      `1. Open https://crm.veyrnlabs.com/crm/reset\n2. Enter ${done.email} and tap "Send reset code"\n` +
-      `3. Enter the code from your email and choose a password. You'll be signed straight in.`
+      `Sign in at https://crm.veyrnlabs.com/crm with ${done.email} and the password I'll send you separately.\n` +
+      `You can change it any time with "Forgot password" on the sign-in page.`
     : "";
   return (
     <section className="crm-panel crm-grant-panel">
@@ -152,7 +153,7 @@ export function CreateCustomer() {
         <div>
           <h2>Give a plan to a new customer</h2>
           <p>
-            Creates their login and workspace with Pro or Pro Plus for the period you choose. No payment is
+            Creates their login (with the password you set) and workspace with Pro or Pro Plus for the period you choose. No payment is
             taken and it isn&apos;t counted as revenue. For an existing customer, open their row below.
           </p>
         </div>
@@ -174,6 +175,7 @@ export function CreateCustomer() {
               name: form.get("name"),
               email: form.get("email"),
               business: form.get("business"),
+              password: form.get("password"),
               ...values,
             });
             setDone({ email: String(form.get("email")).trim().toLowerCase(), plan: result.grant.plan, ends: result.grant.ends_at });
@@ -198,6 +200,10 @@ export function CreateCustomer() {
           <label>
             Business name
             <input name="business" maxLength={150} required autoComplete="off" />
+          </label>
+          <label>
+            Password <small>(12+ characters)</small>
+            <input type="password" name="password" minLength={12} maxLength={128} required autoComplete="new-password" />
           </label>
         </PlanFields>
       </form>
