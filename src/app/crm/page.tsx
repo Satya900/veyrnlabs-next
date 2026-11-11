@@ -20,7 +20,7 @@ export default async function CrmPage({
     <Workspace
       demo={false}
       initialData={initialData}
-      initialView={view === "settings" ? "Settings" : view === "whatsapp" ? "WhatsApp" : "Overview"}
+      initialView={view === "settings" ? "Settings" : view === "whatsapp" ? "WhatsApp" : view === "projects" ? "Projects" : "Overview"}
     />
   );
 }

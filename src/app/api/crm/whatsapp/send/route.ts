@@ -1,5 +1,6 @@
 import { jsonBody, sameOrigin, session, supabase } from "@/lib/crm/server";
-import { sendReply } from "@/lib/crm/whatsapp-send";
+import { sendMedia, sendReply } from "@/lib/crm/whatsapp-send";
+import { publicFileUrl } from "@/lib/crm/projects";
 import { tenantSendConfig } from "@/lib/crm/whatsapp-tenant";
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -67,7 +68,47 @@ export async function POST(request: Request) {
     const body = await jsonBody(request, 16000);
     const db = supabase(undefined, true);
     let prepared;
-    if (body.action === "manual") {
+    // A project file (brochure, floor plan, photo) sent by link, inside the 24-hour window.
+    let media: { url: string; filename: string; caption: string; image: boolean } | null = null;
+    if (body.action === "file") {
+      if (
+        typeof body.conversation !== "string" ||
+        !/^[0-9a-f-]{36}$/i.test(body.conversation) ||
+        typeof body.request !== "string" ||
+        !/^[0-9a-f-]{36}$/i.test(body.request) ||
+        typeof body.file !== "string" ||
+        !/^[0-9a-f-]{36}$/i.test(body.file)
+      )
+        throw new Error("Choose a file to send.");
+      const { data: file } = await db
+        .from("crm_project_files")
+        .select("name,mime,storage_path,crm_projects(name)")
+        .eq("organization_id", config.org)
+        .eq("id", body.file)
+        .maybeSingle();
+      if (!file) throw new Error("That file is no longer available.");
+      const project = file.crm_projects as { name?: string } | { name?: string }[] | null;
+      const projectName = (Array.isArray(project) ? project[0]?.name : project?.name) ?? "";
+      const extension = file.storage_path.split(".").pop() ?? "pdf";
+      const caption = typeof body.caption === "string" ? body.caption.trim().slice(0, 1000) : "";
+      media = {
+        url: publicFileUrl(process.env.SUPABASE_URL ?? "", file.storage_path),
+        filename: `${[projectName, file.name].filter(Boolean).join(" - ").replace(/[\\/:*?"<>|]/g, "").slice(0, 150)}.${extension}`,
+        caption,
+        image: file.mime.startsWith("image/"),
+      };
+      // Recorded in the chat as a line of text, with the same window, opt-out and access checks.
+      prepared = await db.rpc("crm_prepare_manual_reply", {
+        actor: auth.member.id,
+        conversation: body.conversation,
+        reply_text: `📎 ${projectName ? `${projectName}: ` : ""}${file.name}${caption ? `\n${caption}` : ""}`.slice(0, 3000),
+        request: body.request,
+        scoped_org: config.org,
+        scoped_phone: config.phone,
+        scoped_waba: config.waba,
+        cost_paise: config.cost,
+      });
+    } else if (body.action === "manual") {
       // A reply typed by a person; no AI draft involved.
       if (
         typeof body.conversation !== "string" ||
@@ -117,7 +158,9 @@ export async function POST(request: Request) {
           : "Unable to prepare this reply.",
       );
     if (!job.run) return Response.json({ status: job.status }, { headers });
-    const result = await sendReply(config, job.phone, job.recipient, job.body);
+    const result = media
+      ? await sendMedia(config, job.phone, job.recipient, media)
+      : await sendReply(config, job.phone, job.recipient, job.body);
     const finished = await db.rpc("crm_finish_whatsapp_reply", {
       job: job.id,
       outcome: result.status,

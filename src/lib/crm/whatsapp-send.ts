@@ -1,4 +1,4 @@
-import { sendGupshupText } from "./whatsapp-gupshup.ts";
+import { sendGupshupMedia, sendGupshupText, type MediaMessage } from "./whatsapp-gupshup.ts";
 
 export type SendConfig = NonNullable<ReturnType<typeof sendConfig>>;
 export function sendConfig(env: Record<string, string | undefined>) {
@@ -42,6 +42,18 @@ export function sendReply(
   return send.provider === "gupshup"
     ? sendGupshupText(send.token, send.app, phone, recipient, body, request)
     : sendWhatsAppReply(send.token, phone, recipient, body, request);
+}
+/** Sends a brochure or image by link through whichever provider the workspace connected. */
+export function sendMedia(
+  send: Pick<SendConfig, "provider" | "token" | "app">,
+  phone: string,
+  recipient: string,
+  media: MediaMessage,
+  request: typeof fetch = fetch,
+) {
+  return send.provider === "gupshup"
+    ? sendGupshupMedia(send.token, send.app, phone, recipient, media, request)
+    : sendWhatsAppMedia(send.token, phone, recipient, media, request);
 }
 export type SendResult = {
   status: "accepted" | "rejected" | "unknown";
@@ -96,6 +108,41 @@ export async function sendWhatsAppReply(
       response.status < 500 &&
       Number.isInteger(data.error?.code)
     )
+      return { status: "rejected", messageId: null };
+  } catch {
+    /* A timeout can happen after Meta accepts a message. */
+  }
+  return { status: "unknown", messageId: null };
+}
+
+export async function sendWhatsAppMedia(
+  token: string,
+  phone: string,
+  recipient: string,
+  media: MediaMessage,
+  request: typeof fetch = fetch,
+): Promise<SendResult> {
+  if (!/^\d+$/.test(phone) || !/^\d{7,15}$/.test(recipient) || !/^https:\/\/\S{1,1000}$/.test(media.url))
+    throw new Error("Invalid file message");
+  try {
+    const response = await request(`https://graph.facebook.com/v25.0/${phone}/messages`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      signal: AbortSignal.timeout(20000),
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        recipient_type: "individual",
+        to: recipient,
+        ...(media.image
+          ? { type: "image", image: { link: media.url, caption: media.caption } }
+          : { type: "document", document: { link: media.url, filename: media.filename, caption: media.caption } }),
+      }),
+    });
+    const data = await response.json();
+    const id = data.messages?.[0]?.id;
+    if (response.ok && typeof id === "string" && id.length > 0 && id.length <= 500 && !data.error)
+      return { status: "accepted", messageId: id };
+    if (response.status >= 400 && response.status < 500 && Number.isInteger(data.error?.code))
       return { status: "rejected", messageId: null };
   } catch {
     /* A timeout can happen after Meta accepts a message. */

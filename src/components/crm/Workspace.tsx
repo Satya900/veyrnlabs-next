@@ -21,6 +21,7 @@ import { Clients } from "./views/Clients";
 import { FollowUps } from "./views/FollowUps";
 import { Reports } from "./views/Reports";
 import { Settings } from "./views/Settings";
+import { Projects } from "./views/Projects";
 import { WhatsApp } from "./views/WhatsApp";
 
 const pageCopy: Record<View, { eyebrow: string; heading: string; body: string }> = {
@@ -43,6 +44,11 @@ const pageCopy: Record<View, { eyebrow: string; heading: string; body: string }>
     eyebrow: "YOUR BUSINESS, ORGANIZED",
     heading: "Clients",
     body: "The relationships you’re building something great with.",
+  },
+  Projects: {
+    eyebrow: "YOUR INVENTORY",
+    heading: "Projects",
+    body: "Prices, availability and brochures your team and your AI share with buyers.",
   },
   "Follow-ups": {
     eyebrow: "YOUR BUSINESS, ORGANIZED",
@@ -227,6 +233,7 @@ export default function Workspace({
                 />
               )}
               {effectiveView === "Clients" && <Clients />}
+              {effectiveView === "Projects" && <Projects />}
               {effectiveView === "Follow-ups" && <FollowUps />}
               {effectiveView === "Reports" && showReports && <Reports from={from} to={to} />}
               {effectiveView === "Settings" && <Settings />}

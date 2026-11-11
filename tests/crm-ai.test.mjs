@@ -139,7 +139,7 @@ test("provider sends bounded untrusted context, disables storage and validates s
   assert.equal(result.needs_human, false);
   assert.deepEqual(result.booking_request, { requested: false, date: "", time: "" });
   await assert.rejects(
-    generateAIDraft(config, "x".repeat(12001), [], async () => {
+    generateAIDraft(config, "x".repeat(20001), [], async () => {
       throw new Error("Must not call");
     }),
     /context exceeds/,

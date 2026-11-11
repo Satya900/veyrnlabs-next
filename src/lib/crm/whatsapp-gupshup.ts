@@ -66,6 +66,59 @@ export async function sendGupshupText(
   return { status: "unknown", messageId: null };
 }
 
+export type MediaMessage = { url: string; filename: string; caption: string; image: boolean };
+
+/**
+ * Sends a document (PDF) or image by link inside the 24-hour window. WhatsApp fetches the file
+ * from the URL, so it must be publicly reachable over HTTPS.
+ */
+export async function sendGupshupMedia(
+  apiKey: string,
+  app: string,
+  source: string,
+  recipient: string,
+  media: MediaMessage,
+  request: typeof fetch = fetch,
+): Promise<SendResult> {
+  if (
+    !apiKey.trim() ||
+    !/^[A-Za-z0-9_.-]{1,100}$/.test(app) ||
+    !/^\d{8,15}$/.test(source) ||
+    !/^\d{7,15}$/.test(recipient) ||
+    !/^https:\/\/\S{1,1000}$/.test(media.url) ||
+    !media.filename.trim() ||
+    media.filename.length > 200 ||
+    media.caption.length > 1000
+  )
+    throw new Error("Invalid file message");
+  const message = media.image
+    ? { type: "image", originalUrl: media.url, previewUrl: media.url, caption: media.caption }
+    : { type: "file", url: media.url, filename: media.filename };
+  try {
+    const response = await request(`${API}/msg`, {
+      method: "POST",
+      headers: { apikey: apiKey, "Content-Type": "application/x-www-form-urlencoded" },
+      signal: AbortSignal.timeout(20000),
+      body: new URLSearchParams({
+        channel: "whatsapp",
+        source,
+        destination: recipient,
+        "src.name": app,
+        message: JSON.stringify(message),
+      }),
+    });
+    const data = await response.json().catch(() => ({}));
+    const id = data?.messageId;
+    if (response.ok && data?.status === "submitted" && typeof id === "string" && id.length > 0 && id.length <= 500)
+      return { status: "accepted", messageId: id };
+    if (response.status >= 400 && response.status < 500 && data?.status === "error")
+      return { status: "rejected", messageId: null };
+  } catch {
+    /* A timeout can happen after Gupshup accepts a message. */
+  }
+  return { status: "unknown", messageId: null };
+}
+
 /** Sends an approved template (allowed outside the 24-hour window) with its {{n}} values. */
 export async function sendGupshupTemplate(
   apiKey: string,

@@ -14,6 +14,7 @@ const icons: Record<View | "signOut" | "chevron" | "check", React.ReactNode> = {
   Overview: <><rect x="3.5" y="3.5" width="7" height="7" rx="1.5" /><rect x="13.5" y="3.5" width="7" height="7" rx="1.5" /><rect x="3.5" y="13.5" width="7" height="7" rx="1.5" /><rect x="13.5" y="13.5" width="7" height="7" rx="1.5" /></>,
   Leads: <><rect x="3.5" y="4" width="5" height="16" rx="1.5" /><rect x="10.5" y="4" width="5" height="11" rx="1.5" /><rect x="17.5" y="4" width="3" height="7" rx="1.5" /></>,
   Clients: <><circle cx="9" cy="8.5" r="3.5" /><path d="M2.5 20c.6-3.4 3.2-5.5 6.5-5.5s5.9 2.1 6.5 5.5" /><path d="M16 5.2a3.5 3.5 0 0 1 0 6.6M18 14.8c1.9.8 3.1 2.6 3.5 5.2" /></>,
+  Projects: <><path d="M4 20.5V9l6-4.5V20.5" /><path d="M10 20.5V11l10 3.5v6" /><path d="M2.5 20.5h19" /><path d="M6.5 11.5h1M6.5 14.5h1M6.5 17.5h1M13.5 15.5h1M16.5 16.5h1" /></>,
   "Follow-ups": <><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></>,
   WhatsApp: <path d="M20.5 11.6a8.5 8.5 0 0 1-12.6 7.4L3.5 20.5l1.5-4.3a8.5 8.5 0 1 1 15.5-4.6Z" />,
   Reports: <><path d="M4 20h16" /><rect x="5.5" y="11" width="3" height="6" rx="1" /><rect x="10.5" y="6" width="3" height="11" rx="1" /><rect x="15.5" y="13" width="3" height="4" rx="1" /></>,
@@ -29,7 +30,7 @@ function Icon({ name }: { name: keyof typeof icons }) {
     </svg>
   );
 }
-const navigation: View[] = ["Overview", "Leads", "Clients", "WhatsApp", "Follow-ups", "Reports", "Settings"];
+const navigation: View[] = ["Overview", "Leads", "Clients", "Projects", "WhatsApp", "Follow-ups", "Reports", "Settings"];
 const roleLabel: Record<string, string> = { owner: "Owner", admin: "Admin", team: "Team member" };
 
 export function Sidebar({
