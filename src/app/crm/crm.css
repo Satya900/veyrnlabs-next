@@ -2394,3 +2394,41 @@
 .crm-root button.crm-danger { color: var(--crm-danger); border-color: color-mix(in srgb, var(--crm-danger) 30%, transparent); }
 @media (max-width: 760px) { .crm-grant-form { grid-template-columns: 1fr; padding: 16px; } .crm-grant-form .crm-grant-wide { grid-column: auto; } .crm-grant-row li { flex-direction: column; align-items: stretch; } }
 @media (max-width: 760px) { .crm-admin { padding: 20px 16px 40px; } .crm-root .crm-admin-tools input { width: 100%; } }
+
+/* Lead capture settings */
+.crm-capture { display: grid; gap: 20px; }
+.crm-capture small { font-size: 12px; color: var(--color-mute); line-height: 1.5; }
+.crm-capture code { padding: 1px 4px; border-radius: 4px; background: var(--color-canvas-card); font-size: 11px; overflow-wrap: anywhere; }
+.crm-capture-off { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.crm-capture-off p { margin: 0; font-size: 13px; color: var(--color-body); }
+.crm-capture-stats { margin: 0; font-size: 13px; color: var(--color-body); }
+.crm-capture-stats strong { color: var(--color-ink); font-weight: 600; }
+.crm-capture-open { justify-self: start; font-size: 12px; color: var(--color-primary); }
+.crm-capture form.crm-provider-step > div > button { justify-self: start; }
+.crm-capture-recent { display: grid; gap: 8px; }
+.crm-capture-recent > strong { font-size: 13px; font-weight: 500; color: var(--color-ink); }
+.crm-capture-recent ul { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.crm-capture-recent li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; padding: 8px 10px; border: 1px solid var(--color-hairline); border-radius: 8px; font-size: 13px; color: var(--color-ink); }
+.crm-capture-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* Public enquiry form (/f/…) */
+.crm-enquiry-root { min-height: 100vh; background: var(--crm-app-bg, var(--color-canvas-card)); }
+.crm-enquiry { display: grid; justify-items: center; gap: 16px; padding: 40px 16px; }
+.crm-enquiry.is-embedded { padding: 0; background: transparent; }
+.crm-enquiry-card { display: grid; gap: 20px; width: 100%; max-width: 480px; padding: 28px 24px; border: 1px solid var(--color-hairline); border-radius: 16px; background: var(--color-canvas); box-shadow: var(--crm-shadow-sm); }
+.crm-enquiry.is-embedded .crm-enquiry-card { max-width: none; box-shadow: none; }
+.crm-enquiry-card header { display: grid; gap: 6px; }
+.crm-enquiry-card h1 { margin: 0; font-size: 24px; font-weight: 600; letter-spacing: -0.02em; color: var(--color-ink); }
+.crm-enquiry-card header p { margin: 0; font-size: 14px; color: var(--color-body); }
+.crm-enquiry-card form { display: grid; gap: 14px; }
+.crm-enquiry-card label small { color: var(--color-mute); font-size: 12px; }
+.crm-root .crm-enquiry-card :is(input, textarea) { font-size: 16px; }
+.crm-root .crm-enquiry-card input { height: 44px; padding: 0 12px; }
+.crm-root .crm-enquiry-card textarea { padding: 10px 12px; }
+.crm-root .crm-enquiry-card button.crm-primary { height: 46px; font-size: 15px; }
+.crm-enquiry-card .crm-error { padding: 10px 12px; border: 1px solid; border-radius: 8px; font-size: 13px; margin: 0; }
+.crm-enquiry-trap { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+.crm-enquiry-consent { font-size: 12px; color: var(--color-mute); line-height: 1.5; }
+.crm-enquiry-done { display: grid; gap: 6px; padding: 16px; border-radius: 12px; background: var(--crm-success-soft); color: var(--color-ink); }
+.crm-enquiry-done p { margin: 0; font-size: 14px; color: var(--color-body); }
+.crm-enquiry-brand { font-size: 12px; color: var(--color-mute); }

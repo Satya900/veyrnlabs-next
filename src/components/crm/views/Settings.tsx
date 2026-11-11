@@ -12,6 +12,7 @@ import { CalendarSettings } from "../CalendarSettings";
 import { WhatsAppSettings } from "../WhatsAppSettings";
 import { WhatsAppFollowUps } from "../WhatsAppFollowUps";
 import { FollowUpSettings } from "../FollowUpSettings";
+import { LeadCapture } from "../LeadCapture";
 
 export function Settings() {
   const { data, stages, busy, mutate, demo, now, reload } = useWorkspaceContext();
@@ -20,6 +21,7 @@ export function Settings() {
     <div className="crm-settings-stack">
       <AIUsagePanel demo={demo} role={data.user.role} />
       <AISettings demo={demo} role={data.user.role} />
+      <LeadCapture demo={demo} role={data.user.role} />
       <FollowUpSettings demo={demo} role={data.user.role} />
       <div className="crm-overview-grid">
         <div>

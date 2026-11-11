@@ -6,7 +6,7 @@ type RPC = (
   args: Record<string, unknown>,
 ) => PromiseLike<{ data: unknown; error: { message: string } | null }>;
 type Claim =
-  | { job: string; run: false }
+  | { job: string; run: false; skipped?: boolean }
   | {
       job: string;
       token: string;
@@ -20,7 +20,8 @@ type Claim =
     };
 
 /**
- * Sends at most one due WhatsApp follow-up. The database decides what is due and renders the
+ * Sends at most one due WhatsApp follow-up, or with crm_claim_lead_welcome one welcome
+ * message to a newly captured lead. The database decides what is due and renders the
  * template; this sends it from the workspace's own connection and records the outcome. An
  * uncertain provider outcome is never retried automatically.
  */
@@ -29,15 +30,16 @@ export async function processWhatsAppFollowUp(
   rpc: RPC,
   sendConfigFor: (organization: string) => Promise<SendConfig | null>,
   request: typeof fetch = fetch,
+  claimFunction: "crm_claim_whatsapp_followup" | "crm_claim_lead_welcome" = "crm_claim_whatsapp_followup",
 ) {
   async function call(name: string, args: Record<string, unknown>) {
     const result = await rpc(name, args);
     if (result.error) throw new Error(result.error.message);
     return result.data;
   }
-  const claim = (await call("crm_claim_whatsapp_followup", { cost_paise: costPaise })) as Claim | null;
+  const claim = (await call(claimFunction, { cost_paise: costPaise })) as Claim | null;
   if (!claim) return { status: "idle" };
-  if (!claim.run) return { status: "needs_human" };
+  if (!claim.run) return { status: claim.skipped ? "skipped" : "needs_human" };
   const end = (outcome: string, explanation: string) =>
     call("crm_end_whatsapp_followup", { job: claim.job, token: claim.token, outcome, explanation });
 

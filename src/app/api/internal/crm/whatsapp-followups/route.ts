@@ -48,15 +48,20 @@ export async function POST(request: Request) {
     const started = Date.now();
     const counts: Record<string, number> = {};
     let processed = 0;
-    while (processed < 25 && Date.now() - started < 35_000) {
-      const { status } = await processWhatsAppFollowUp(
-        cost,
-        (name, args) => db.rpc(name, args),
-        (organization) => tenantSendConfig(undefined, organization),
-      );
-      if (status === "idle") break;
-      counts[status] = (counts[status] ?? 0) + 1;
-      processed++;
+    // Welcomes to new leads first (they're time-sensitive), then follow-ups.
+    for (const claim of ["crm_claim_lead_welcome", "crm_claim_whatsapp_followup"] as const) {
+      while (processed < 25 && Date.now() - started < 35_000) {
+        const { status } = await processWhatsAppFollowUp(
+          cost,
+          (name, args) => db.rpc(name, args),
+          (organization) => tenantSendConfig(undefined, organization),
+          fetch,
+          claim,
+        );
+        if (status === "idle") break;
+        counts[status] = (counts[status] ?? 0) + 1;
+        processed++;
+      }
     }
     const result = processed ? { status: "processed", ...counts } : { status: "idle" };
     await db
