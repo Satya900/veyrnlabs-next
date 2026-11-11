@@ -90,6 +90,13 @@ test("captured enquiries become assigned leads, repeats merge, and floods are ca
   await capture({ phone: "9876543210" });
   assert.equal((await capture({ phone: "9876543210" })).status, "ignored"); // 4th in an hour
 
+  // A different number with the same email is a new person, not a repeat.
+  const sharedEmail = await capture({ name: "Anil", phone: "9123456789", email: "priya@example.com" });
+  assert.equal(sharedEmail.status, "created");
+  assert.notEqual(sharedEmail.lead, first.lead);
+  // Without a number, the email still finds the (most recent) lead with it.
+  assert.deepEqual(await capture({ name: "Priya", email: "PRIYA@example.com" }), { status: "existing", lead: sharedEmail.lead });
+
   // Email-only enquiries work (no welcome without a number); a missing contact is refused.
   const mailOnly = await capture({ name: "Ravi", email: "ravi@example.com" });
   assert.equal(mailOnly.status, "created");
