@@ -109,7 +109,7 @@ with expected_fn(sig, h) as (values
   ('public.crm_usage_summary_before_cycles()', 'dc8b7fddfb700d761c50ab664fba47e5'),
   ('public.crm_whatsapp_followup_due(org uuid, lead uuid)', 'a007fb84dd90e9993d823aec790f8a4d'),
   ('public.crm_whatsapp_followup_maintenance()', '705c08ff62b8f566616324eb8d800675'),
-  ('public.crm_whatsapp_number(phone text, country_code text)', '0bacf61f6699ab425a670d7f38f5106d'),
+  ('public.crm_whatsapp_number(phone text, country_code text)', '27849aa69f4faec9a4166285bbf880a6'),
   ('public.crm_whatsapp_opted_out(conversation uuid)', '307e6d7cbe6bc6fde58b0a78d07d4124'),
   ('public.crm_whatsapp_opted_out_conversations(ids uuid[])', '64623f1dd346b9c34efc1ce0cdeb3418'),
   ('public.crm_worker_maintenance()', 'e6dea1cf20618f735262bbd206d70819')
