@@ -2,6 +2,7 @@
 import { Fragment, useMemo, useState } from "react";
 import { Logo } from "@/components/Logo";
 import { download } from "./download";
+import { CreateCustomer, WorkspaceGrants, type Grant } from "./PlanGrants";
 
 type Workspace = {
   id: string;
@@ -16,6 +17,8 @@ type Workspace = {
   paying: boolean;
   paid_until: string | null;
   billing_status: string | null;
+  // Missing until the plan grants migration is applied.
+  grants?: Grant[];
   monthly_paise: number;
   leads: number;
   leads_7d: number;
@@ -71,13 +74,17 @@ function ago(iso: string | null, now: number) {
   if (hours < 48) return `${hours} h ago`;
   return `${Math.round(hours / 24)} days ago`;
 }
+// The grant giving access right now, if any.
+const liveGrant = (w: Workspace, now: number) =>
+  w.grants?.find((g) => Date.parse(g.starts_at) <= now && Date.parse(g.ends_at) > now);
 const date = (iso: string | null) =>
   iso ? new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata" }) : "—";
 
-type Filter = "all" | "paying" | "free" | "whatsapp" | "inactive";
+type Filter = "all" | "paying" | "granted" | "free" | "whatsapp" | "inactive";
 const FILTERS: { id: Filter; label: string }[] = [
   { id: "all", label: "All" },
   { id: "paying", label: "Paying" },
+  { id: "granted", label: "Granted" },
   { id: "free", label: "Free" },
   { id: "whatsapp", label: "WhatsApp" },
   { id: "inactive", label: "Quiet 14+ days" },
@@ -94,7 +101,8 @@ export function PlatformAdmin({ overview, email }: { overview: Overview; email: 
     return overview.workspaces.filter((w) => {
       if (q && ![w.name, w.owner_name, w.owner_email].some((v) => v?.toLowerCase().includes(q))) return false;
       if (filter === "paying") return w.paying;
-      if (filter === "free") return !w.paying;
+      if (filter === "granted") return !!liveGrant(w, now);
+      if (filter === "free") return !w.paying && !liveGrant(w, now);
       if (filter === "whatsapp") return w.whatsapp_active;
       if (filter === "inactive")
         return !w.last_activity || now - Date.parse(w.last_activity) > 14 * 86400e3;
@@ -174,6 +182,8 @@ export function PlatformAdmin({ overview, email }: { overview: Overview; email: 
         </div>
       </section>
 
+      <CreateCustomer />
+
       <section className="crm-panel crm-admin-table">
         <div className="crm-panel-heading">
           <div>
@@ -245,6 +255,10 @@ export function PlatformAdmin({ overview, email }: { overview: Overview; email: 
                     <td>
                       {w.paying ? (
                         <span className="crm-badge won">{PLAN[w.plan ?? ""] ?? "Paid"}</span>
+                      ) : liveGrant(w, now) ? (
+                        <span className="crm-badge" title={`Granted until ${date(liveGrant(w, now)!.ends_at)}`}>
+                          {PLAN[liveGrant(w, now)!.plan]} · granted
+                        </span>
                       ) : (
                         <span className="crm-badge">Free</span>
                       )}
@@ -265,12 +279,13 @@ export function PlatformAdmin({ overview, email }: { overview: Overview; email: 
                         <dl>
                           <div><dt>Owner</dt><dd>{w.owner_name ?? "—"} · {w.owner_email ?? "—"}</dd></div>
                           <div><dt>Plan</dt><dd>{w.plan ? `${PLAN[w.plan]} · ${PERIOD[w.billing_months ?? 1] ?? ""}` : "None"}{w.billing_status ? ` · billing ${w.billing_status}` : ""}</dd></div>
-                          <div><dt>Paid until</dt><dd>{date(w.paid_until)}</dd></div>
+                          <div><dt>Access until</dt><dd>{date(w.paid_until)}</dd></div>
                           <div><dt>Seats</dt><dd>{w.members} members · {w.purchased_seats} extra seats</dd></div>
                           <div><dt>Leads</dt><dd>{number(w.leads)} total · {w.leads_7d} this week · {w.clients} clients</dd></div>
                           <div><dt>WhatsApp (30 days)</dt><dd>{w.messages_in_30d} in · {w.messages_out_30d} out · {w.followups_30d} automatic follow-ups</dd></div>
                           <div><dt>Workspace ID</dt><dd><code>{w.id}</code></dd></div>
                         </dl>
+                        {w.grants && <WorkspaceGrants organizationId={w.id} grants={w.grants} paidUntil={w.paid_until} />}
                       </td>
                     </tr>
                   )}
