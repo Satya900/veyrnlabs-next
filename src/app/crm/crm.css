@@ -2373,4 +2373,24 @@
 .crm-admin-detail dt { font-size: 11px; color: var(--color-mute); }
 .crm-admin-detail dd { margin: 2px 0 0; color: var(--color-ink); overflow-wrap: anywhere; }
 .crm-admin-detail code { font-size: 12px; }
+/* Plans granted by the platform admin */
+.crm-grant-form { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px 16px; align-items: end; padding: 20px; }
+.crm-grant-form label small { color: var(--color-mute); font-size: 11px; }
+.crm-grant-form .crm-grant-wide { grid-column: span 2; }
+.crm-root .crm-grant-form :is(input, select) { height: 38px; padding: 0 10px; font-size: 13px; }
+.crm-root .crm-grant-form button { height: 38px; }
+.crm-grant-msg { margin: 0 20px 20px; padding: 10px 12px; border: 1px solid; border-radius: 8px; font-size: 13px; }
+.crm-grant-done { display: grid; gap: 10px; justify-items: start; margin: 0 20px 20px; padding: 14px 16px; border: 1px solid color-mix(in srgb, var(--crm-success) 25%, transparent); border-radius: 10px; background: var(--crm-success-soft); color: var(--color-ink); font-size: 13px; }
+.crm-grant-done pre { margin: 0; white-space: pre-wrap; font: 13px/1.5 inherit; color: var(--color-body); }
+.crm-grant-row { display: grid; gap: 10px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--color-hairline); }
+.crm-grant-row-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.crm-grant-row-head strong { font-size: 13px; font-weight: 500; color: var(--color-ink); }
+.crm-grant-row ul { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.crm-grant-row li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border: 1px solid var(--color-hairline); border-radius: 8px; background: var(--color-canvas); }
+.crm-grant-row li > span { display: grid; gap: 2px; color: var(--color-ink); }
+.crm-grant-row li small { color: var(--color-mute) !important; font-size: 12px !important; }
+.crm-grant-row .crm-grant-form { padding: 0; }
+.crm-grant-row .crm-error { padding: 8px 12px; border: 1px solid; border-radius: 8px; font-size: 13px; }
+.crm-root button.crm-danger { color: var(--crm-danger); border-color: color-mix(in srgb, var(--crm-danger) 30%, transparent); }
+@media (max-width: 760px) { .crm-grant-form { grid-template-columns: 1fr; padding: 16px; } .crm-grant-form .crm-grant-wide { grid-column: auto; } .crm-grant-row li { flex-direction: column; align-items: stretch; } }
 @media (max-width: 760px) { .crm-admin { padding: 20px 16px 40px; } .crm-root .crm-admin-tools input { width: 100%; } }
