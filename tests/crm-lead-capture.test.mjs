@@ -72,6 +72,41 @@ async function workspace(t) {
   return { db, org, owner, agent, token, template, capture };
 }
 
+test("every way of typing a phone number gives one WhatsApp number", async (t) => {
+  const { db } = await workspace(t);
+  await db.exec("reset role"); // internal helper: only the database's own functions call it
+  const cases = {
+    "8127158503": "918127158503",
+    "+918127158503": "918127158503",
+    "918127158503": "918127158503",
+    "+91 81271 58503": "918127158503",
+    "08127158503": "918127158503",
+    "(+91) 81271-58503": "918127158503",
+    "+91-0-8127158503": "918127158503",
+    "0091 8127158503": "918127158503",
+    "+8127158503": "918127158503",
+    // A local number that starts with 91 is never cut short.
+    "9127158503": "919127158503",
+    "+91 9127158503": "919127158503",
+    "9198765432": "919198765432",
+    // Several numbers in one field, or words around it: the first number.
+    "98765 43210 / 91234 56789": "919876543210",
+    "9876543210, 9123456789": "919876543210",
+    "Call 98765-43210 after 6": "919876543210",
+    // Other countries, written with + or 00.
+    "+1 415 555 0100": "14155550100",
+    "001 415 555 0100": "14155550100",
+    "+44 7911 123456": "447911123456",
+    // Can't be right: never messaged.
+    "91987654321": null,
+    "+91 51234 56789": null,
+    "12345": null,
+    "": null,
+  };
+  for (const [typed, expected] of Object.entries(cases))
+    assert.equal((await db.query("select crm_whatsapp_number($1,'91') n", [typed])).rows[0].n, expected, typed);
+});
+
 test("captured enquiries become assigned leads, repeats merge, and floods are capped", async (t) => {
   const { db, org, agent, capture } = await workspace(t);
   const first = await capture({ name: "Priya Shah", phone: "+91 98765 43210", lookingFor: "3BHK in Sarjapur", budget: 8000000, source: "Instagram" });
