@@ -94,8 +94,13 @@ test("captured enquiries become assigned leads, repeats merge, and floods are ca
   const sharedEmail = await capture({ name: "Anil", phone: "9123456789", email: "priya@example.com" });
   assert.equal(sharedEmail.status, "created");
   assert.notEqual(sharedEmail.lead, first.lead);
-  // Without a number, the email still finds the (most recent) lead with it.
-  assert.deepEqual(await capture({ name: "Priya", email: "PRIYA@example.com" }), { status: "existing", lead: sharedEmail.lead });
+  // Email never links enquiries: without a number it's always a new lead.
+  const byEmail = await capture({ name: "Priya", email: "PRIYA@example.com" });
+  assert.equal(byEmail.status, "created");
+  assert.ok(![first.lead, sharedEmail.lead].includes(byEmail.lead));
+  // Any way of writing the same number is the same person.
+  for (const phone of ["+91 91234 56789", "091234-56789"])
+    assert.deepEqual(await capture({ name: "Anil", phone }), { status: "existing", lead: sharedEmail.lead });
 
   // Email-only enquiries work (no welcome without a number); a missing contact is refused.
   const mailOnly = await capture({ name: "Ravi", email: "ravi@example.com" });
