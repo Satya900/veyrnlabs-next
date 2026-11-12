@@ -91,6 +91,21 @@ export function LeadForm({
               ))}
             </datalist>
           </label>
+          {!!data.projects?.length && (
+            <label>
+              Project
+              <select name="project_id" defaultValue={lead?.project_id ?? ""}>
+                <option value="">Not decided</option>
+                {data.projects
+                  .filter((p) => !p.archived || p.id === lead?.project_id)
+                  .map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+              </select>
+            </label>
+          )}
           <label>
             Owner
             <select

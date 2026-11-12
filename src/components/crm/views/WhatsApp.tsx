@@ -761,6 +761,7 @@ function Conversation({
       ) : replyOwner === null ? (
         <ReplyComposer
           conversation={conversation.id}
+          leadId={conversation.lead_id}
           suggestions={aiOff ? [] : (insight?.suggestions ?? [])}
           onSent={() => setSent((n) => n + 1)}
           onBlocked={() => setOptedOut(true)}
@@ -786,13 +787,17 @@ function Conversation({
 }
 
 /** A reply typed by a person (no AI), sent within WhatsApp's 24-hour customer window. */
+type SendableFile = { id: string; project_id: string; kind: string; name: string; mime: string; url: string };
+
 function ReplyComposer({
   conversation,
+  leadId,
   suggestions,
   onSent,
   onBlocked,
 }: {
   conversation: string;
+  leadId: string;
   suggestions: string[];
   onSent: () => void;
   onBlocked: () => void;
@@ -802,14 +807,36 @@ function ReplyComposer({
   const [error, setError] = useState("");
   // One id per message, so a double-clicked Send can't send it twice.
   const [request, setRequest] = useState(() => crypto.randomUUID());
-  async function send() {
+  const { data } = useWorkspaceContext();
+  const leadProject = data.leads.find((l) => l.id === leadId)?.project_id ?? null;
+  const [files, setFiles] = useState<{ projects: { id: string; name: string; archived: boolean }[]; files: SendableFile[] } | null>(null);
+  const [picking, setPicking] = useState(false);
+  async function openFiles() {
+    setPicking(!picking);
+    if (files || picking) return;
+    try {
+      const res = await crmFetch("/api/crm/projects", { cache: "no-store" });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error);
+      setFiles({ projects: result.projects, files: result.files });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Files couldn't load.");
+      setPicking(false);
+    }
+  }
+  /** Sends typed text, or a project file with any typed text as its caption. */
+  async function send(file?: string) {
     setBusy(true);
     setError("");
     try {
       const res = await crmFetch("/api/crm/whatsapp/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "manual", conversation, text, request }),
+        body: JSON.stringify(
+          file
+            ? { action: "file", conversation, file, caption: text, request }
+            : { action: "manual", conversation, text, request },
+        ),
       });
       const result = await res.json();
       if (!res.ok) {
@@ -824,6 +851,7 @@ function ReplyComposer({
         );
       setText("");
       setRequest(crypto.randomUUID());
+      setPicking(false);
       onSent();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sending failed.");
@@ -873,11 +901,54 @@ function ReplyComposer({
         rows={3}
         placeholder="Type your reply…"
       />
+      {picking && (
+        <div className="crm-file-picker" role="group" aria-label="Project files">
+          {!files && <small className="crm-muted">Loading files…</small>}
+          {files && !files.files.length && (
+            <small className="crm-muted">
+              No brochures yet. Add projects and upload files in Projects.
+            </small>
+          )}
+          {files &&
+            [...files.projects]
+              .filter((p) => !p.archived && files.files.some((f) => f.project_id === p.id))
+              // The lead's own project first.
+              .sort((a, b) => Number(b.id === leadProject) - Number(a.id === leadProject))
+              .map((p) => (
+                <div key={p.id}>
+                  <strong>
+                    {p.name}
+                    {p.id === leadProject && <small> · this lead&apos;s project</small>}
+                  </strong>
+                  <ul>
+                    {files.files
+                      .filter((f) => f.project_id === p.id)
+                      .map((f) => (
+                        <li key={f.id}>
+                          <a href={f.url} target="_blank" rel="noopener" title="Preview">
+                            {f.mime.startsWith("image/") ? "🖼" : "📄"} {f.name}
+                          </a>
+                          <button type="button" disabled={busy} onClick={() => void send(f.id)}>
+                            Send
+                          </button>
+                        </li>
+                      ))}
+                  </ul>
+                </div>
+              ))}
+          {files && files.files.length > 0 && (
+            <small className="crm-muted">Anything typed above is sent as the file&apos;s caption.</small>
+          )}
+        </div>
+      )}
       <div>
         <small className="crm-muted">
           Free text works within 24 hours of the customer&apos;s last message.
           ⌘/Ctrl + Enter sends.
         </small>
+        <button type="button" className="crm-attach" aria-expanded={picking} disabled={busy} onClick={() => void openFiles()}>
+          📎 Brochure
+        </button>
         <button
           className="crm-primary"
           disabled={busy || !text.trim()}

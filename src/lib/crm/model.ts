@@ -22,6 +22,7 @@ export type Lead = {
   created_at: string;
   closed_at: string | null;
   client_id: string | null;
+  project_id?: string | null;
 };
 export type Client = {
   id: string;
@@ -78,6 +79,8 @@ export type Workspace = {
   organization?: { name: string; team_sees_all_leads?: boolean };
   organizationId?: string;
   insights?: LeadInsightSummary[];
+  /** Missing until the projects migration is applied. */
+  projects?: { id: string; name: string; archived: boolean }[];
   memberships?: {
     organization_id: string;
     organization_name: string;
@@ -132,7 +135,7 @@ export function validateLead(input: Record<string, unknown>) {
   if (!Number.isFinite(value) || value < 0 || value > 1e12)
     throw new Error("Deal value must be between 0 and 1 trillion.");
   result.value = value;
-  for (const key of ["stage_id", "owner_id"]) {
+  for (const key of ["stage_id", "owner_id", "project_id"]) {
     if (
       input[key] !== undefined &&
       input[key] !== null &&

@@ -9,8 +9,10 @@ export type AIConfig = {
 // Haiku 5.5 counts ~30% more tokens than earlier models for the same text; leave room for
 // three suggestions plus details in Hindi or Hinglish.
 export const MAX_OUTPUT_TOKENS = 1000;
-// 12k knowledge + 8 x 1.5k messages: reserve above their UTF-8 byte length plus prompt/schema overhead.
+// 12k knowledge + 7.5k live inventory + 14 x 1.5k messages: reserve above their UTF-8 byte length plus prompt/schema overhead.
 export const MAX_INPUT_TOKENS = 110_000;
+// Company knowledge (12,000) plus the live projects inventory the database appends (7,500).
+const MAX_KNOWLEDGE = 20_000;
 export function aiConfig(
   env: Record<string, string | undefined>,
 ): AIConfig | null {
@@ -196,7 +198,7 @@ export async function generateAIDraft(
   now: Date = new Date(),
 ): Promise<DraftResponse> {
   if (
-    knowledge.length > 12000 ||
+    knowledge.length > MAX_KNOWLEDGE ||
     history.length > 14 ||
     history.some((m) => typeof m.text !== "string" || m.text.length > 1500)
   )
@@ -299,7 +301,7 @@ export async function generateFollowUpDraft(
   lead: FollowUpLead,
   request: typeof fetch = fetch,
 ): Promise<FollowUpDraft> {
-  if (knowledge.length > 12000) throw new Error("Draft context exceeds limits");
+  if (knowledge.length > MAX_KNOWLEDGE) throw new Error("Draft context exceeds limits");
   const call = await structuredCall(
     config,
     {

@@ -127,6 +127,12 @@ export function LeadDetail({
           <dt>Source</dt>
           <dd>{current.source || "Manual"}</dd>
         </div>
+        {current.project_id && (
+          <div>
+            <dt>Project</dt>
+            <dd>{data.projects?.find((p) => p.id === current.project_id)?.name ?? "—"}</dd>
+          </div>
+        )}
         <div>
           <dt>Owner</dt>
           <dd>

@@ -4,6 +4,7 @@ export type View =
   | "Overview"
   | "Leads"
   | "Clients"
+  | "Projects"
   | "Follow-ups"
   | "Reports"
   | "WhatsApp"
