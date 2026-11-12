@@ -134,8 +134,8 @@ export function CRMHome() {
           <div className="space-y-5 text-body leading-8">
             <p>
               When a lead’s follow-up date passes with no logged contact,
-              Veyrn CRM drafts and sends a follow-up email automatically,
-              using your own company and property information.
+              Veyrn CRM sends a WhatsApp follow-up automatically, and the AI
+              answers from your own company and property information.
             </p>
             <p>
               Your team stays in control. Automatic follow-ups stop the

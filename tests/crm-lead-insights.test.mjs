@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile, readdir } from "node:fs/promises";
 import { PGlite } from "@electric-sql/pglite";
-import { aiConfig, generateLeadInsight, generateFollowUpDraft } from "../src/lib/crm/ai-provider.ts";
+import { aiConfig, generateLeadInsight } from "../src/lib/crm/ai-provider.ts";
 
 const env = {
   CRM_AI_ENABLED: "true",
@@ -67,14 +67,6 @@ test("Claude returns a lead insight as a forced tool call, costed from token usa
     generateLeadInsight(config, context, async () => Response.json({ stop_reason: "tool_use", content: [] })),
     /Invalid provider usage/,
   );
-  // Existing AI features work on Claude too.
-  const email = await generateFollowUpDraft(
-    config,
-    "Facts",
-    { name: "Priya", company: "", service: "2BHK", notes: "" },
-    claude({ email_subject: "Still looking?", email_body: "Hi Priya…", needs_human: false, reason: "Quiet lead" }),
-  );
-  assert.equal(email.emailSubject, "Still looking?");
 });
 
 test("insight context, saving and visibility follow workspace rules", async (t) => {

@@ -11,7 +11,6 @@ import { AIUsagePanel } from "../AIUsage";
 import { CalendarSettings } from "../CalendarSettings";
 import { WhatsAppSettings } from "../WhatsAppSettings";
 import { WhatsAppFollowUps } from "../WhatsAppFollowUps";
-import { FollowUpSettings } from "../FollowUpSettings";
 import { LeadCapture } from "../LeadCapture";
 
 export function Settings() {
@@ -22,7 +21,6 @@ export function Settings() {
       <AIUsagePanel demo={demo} role={data.user.role} />
       <AISettings demo={demo} role={data.user.role} />
       <LeadCapture demo={demo} role={data.user.role} />
-      <FollowUpSettings demo={demo} role={data.user.role} />
       <div className="crm-overview-grid">
         <div>
           <section className="crm-panel">

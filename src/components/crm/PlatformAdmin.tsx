@@ -60,7 +60,6 @@ const PLAN: Record<string, string> = { pro: "Pro", pro_plus: "Pro Plus" };
 const PERIOD: Record<number, string> = { 1: "monthly", 3: "quarterly", 12: "annual" };
 const WORKER: Record<string, string> = {
   "whatsapp-followups": "WhatsApp follow-ups",
-  followups: "Email follow-ups (AI)",
   replies: "AI auto-replies",
 };
 // Relative to when the overview was generated (not Date.now()), so the server render and the

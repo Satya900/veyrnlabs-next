@@ -87,7 +87,7 @@ export default function CRMSoftwarePage() {
               [
                 "02",
                 "Let AI draft the follow-up",
-                "When a lead goes quiet, an AI-drafted email goes out automatically, written from your own company and property information.",
+                "When a lead goes quiet, a WhatsApp follow-up goes out automatically, and the AI answers from your own company and property information.",
               ],
               [
                 "03",
