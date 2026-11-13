@@ -97,8 +97,10 @@ export async function POST(request: Request) {
         caption,
         image: file.mime.startsWith("image/"),
       };
-      // Recorded in the chat as a line of text, with the same window, opt-out and access checks.
-      prepared = await db.rpc("crm_prepare_manual_reply", {
+      // Recorded in the chat as a line of text, with the same window, opt-out and access checks
+      // as a typed reply, but it doesn't pause the AI: questions about the brochure still get
+      // instant answers.
+      prepared = await db.rpc("crm_prepare_file_reply", {
         actor: auth.member.id,
         conversation: body.conversation,
         reply_text: `📎 ${projectName ? `${projectName}: ` : ""}${file.name}${caption ? `\n${caption}` : ""}`.slice(0, 3000),
