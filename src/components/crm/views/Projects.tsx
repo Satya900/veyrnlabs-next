@@ -301,15 +301,25 @@ function ProjectEditor({ project, units, files, onClose, onSaved, onDeleted }: {
         <div className="crm-unit-editor">
           <div className="crm-unit-head">
             <strong>Unit types and prices</strong>
-            <small>Type prices like 85 L or 1.2 Cr. Leave empty for &ldquo;price on request&rdquo;.</small>
+            <small>Type prices like 85 L or 1.2 Cr. For one price, fill only &ldquo;Price from&rdquo;. Leave both empty for &ldquo;price on request&rdquo;.</small>
           </div>
           <div className="crm-unit-rows">
+            {rows.length > 0 && (
+              <div className="crm-unit-row crm-unit-labels" aria-hidden="true">
+                <span>Unit type</span>
+                <span>Size</span>
+                <span>Price from</span>
+                <span>Price to (optional)</span>
+                <span>Availability</span>
+                <span />
+              </div>
+            )}
             {rows.map((r, i) => (
               <div key={i} className="crm-unit-row">
                 <input aria-label="Unit type" value={r.name} maxLength={60} placeholder="3BHK" onChange={(e) => setRow(i, { name: e.target.value })} />
                 <input aria-label="Size" value={r.size} maxLength={60} placeholder="1,650 sq ft" onChange={(e) => setRow(i, { size: e.target.value })} />
-                <input aria-label="Price from" value={r.price_min} maxLength={30} placeholder="From" onChange={(e) => setRow(i, { price_min: e.target.value })} />
-                <input aria-label="Price to" value={r.price_max} maxLength={30} placeholder="To" onChange={(e) => setRow(i, { price_max: e.target.value })} />
+                <input aria-label="Price from" value={r.price_min} maxLength={30} placeholder="From: 85 L" onChange={(e) => setRow(i, { price_min: e.target.value })} />
+                <input aria-label="Price to" value={r.price_max} maxLength={30} placeholder="To: 95 L" onChange={(e) => setRow(i, { price_max: e.target.value })} />
                 <select aria-label="Availability" value={r.availability} onChange={(e) => setRow(i, { availability: e.target.value as ProjectUnit["availability"] })}>
                   {AVAILABILITY.map((a) => (
                     <option key={a} value={a}>{AVAIL[a]}</option>

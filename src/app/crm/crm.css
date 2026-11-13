@@ -2470,6 +2470,9 @@
 .crm-unit-row { display: grid; grid-template-columns: 1.1fr 1.2fr 1fr 1fr 1.1fr auto; gap: 8px; }
 .crm-root .crm-unit-row :is(input, select) { height: 36px; padding: 0 10px; font-size: 13px; min-width: 0; }
 .crm-root .crm-unit-row button { height: 36px; width: 36px; padding: 0; }
+.crm-unit-labels { margin-bottom: -4px; }
+.crm-unit-labels span { font-size: 11px; font-weight: 500; color: var(--color-mute); }
+.crm-unit-labels span:last-child { width: 36px; }
 .crm-unit-editor > button, .crm-project-actions button { justify-self: start; }
 .crm-project-actions { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 20px; }
 .crm-project-editor .crm-error, .crm-project-editor .crm-success { margin: 0 20px; padding: 10px 12px; border: 1px solid; border-radius: 8px; font-size: 13px; }
@@ -2494,6 +2497,7 @@
 .crm-root .crm-file-picker li button { height: 28px; padding: 0 10px; font-size: 12px; flex-shrink: 0; }
 @media (max-width: 760px) {
   .crm-unit-row { grid-template-columns: 1fr 1fr; }
+  .crm-unit-labels { display: none; }
   .crm-root .crm-unit-row button { width: 100%; }
   .crm-project-card header { flex-direction: column; }
 }
