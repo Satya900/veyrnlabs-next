@@ -312,6 +312,8 @@ test("crm_prepare_auto_booking and crm_finish_auto_booking enforce entitlement, 
       [owner],
     )
   ).rows[0].id;
+  // The AI answers from Projects: automatic replies need one.
+  await db.query("insert into crm_projects(organization_id,name) values($1,'Sunrise Lakeside')", [org]);
   await db.query(
     "select crm_open_usage_period($1,'pro_plus',1,now(),now()+interval '1 month',50000,100,50,0)",
     [org],
@@ -502,6 +504,8 @@ test("automatic jobs require opt-in and revalidate takeover, knowledge, ownershi
       [owner],
     )
   ).rows[0].id;
+  // The AI answers from Projects: automatic replies need one.
+  await db.query("insert into crm_projects(organization_id,name) values($1,'Sunrise Lakeside')", [org]);
   const otherOrg = (
     await db.query("select crm_provision_organization($1,'Other','Owner') id", [
       other,

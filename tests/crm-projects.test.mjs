@@ -57,8 +57,12 @@ test("projects feed the AI live inventory and stay inside their workspace", asyn
   await db.query("select crm_receive_whatsapp($1::jsonb)", [JSON.stringify([{ waba_id: "111", phone_number_id: "222", message_id: "m1", sender: "919111111111", contact_name: "Buyer", message_type: "text", body: "3BHK price?", sent_at: new Date().toISOString() }])]);
   await db.query("select crm_open_usage_period($1,'pro_plus',1,now()-interval '1 day',now()+interval '27 days',10000,5,20)", [org]);
   const chat = (await db.query("select id from crm_whatsapp_conversations where organization_id=$1", [org])).rows[0].id;
+  await db.query("update crm_leads set project_id=$1 where id=(select lead_id from crm_whatsapp_conversations where id=$2)", [project, chat]);
   const job = (await db.query("select crm_start_ai_draft($1,$2,'test-model',100) j", [owner, chat])).rows[0].j;
-  assert.match(job.knowledge, /^We sell homes in Bengaluru\. Ask for budget\.\n\nPROJECTS AND AVAILABILITY/);
+  assert.match(job.knowledge, /\n- \[This customer's project\] Prestige Lakeside/);
+  // Settings text is no longer read: the AI answers from Projects only.
+  assert.match(job.knowledge, /^PROJECTS AND AVAILABILITY/);
+  assert.doesNotMatch(job.knowledge, /We sell homes/);
   assert.match(job.knowledge, /3BHK 1,650 sq ft ₹1\.25 Cr \(few left\)/);
 
   // Leads can be tagged; deleting a project only clears the tag.
@@ -82,6 +86,25 @@ test("projects feed the AI live inventory and stay inside their workspace", asyn
   await assert.rejects(db.query("select crm_inventory_text($1)", [org]), /permission denied/);
   await login(other);
   assert.deepEqual((await db.query("select name from crm_projects")).rows, [{ name: "Theirs" }]);
+
+  // The lead's own project comes first and is marked, ahead of projects sorted before it.
+  await login("", "service_role");
+  await db.query("insert into crm_projects(organization_id,name) values($1,'Aaa Heights')", [org]);
+  const focused = (await db.query("select crm_inventory_text($1,$2) t", [org, project])).rows[0].t;
+  assert.match(focused, /^PROJECTS AND AVAILABILITY[^\n]*\n- \[This customer's project\] Prestige Lakeside/);
+  assert.match((await db.query("select crm_inventory_text($1) t", [org])).rows[0].t, /\n- Aaa Heights/);
+  // Reply suggestions read Projects (with the chat lead's project first), not the Settings text.
+  const context = (await db.query("select crm_lead_insight_context($1,$2) c", [owner, chat])).rows[0].c;
+  assert.match(context.knowledge, /^PROJECTS AND AVAILABILITY[^\n]*\n- \[This customer's project\] Prestige Lakeside/);
+  assert.doesNotMatch(context.knowledge, /We sell homes/);
+
+  // Drafts need no Settings text; automatic replies need an active project.
+  await db.query("update crm_projects set archived=true where name='Theirs'");
+  await login(other);
+  await db.query("select crm_set_ai_drafts(true)");
+  await assert.rejects(db.query("select crm_set_auto_replies(true)"), /Add at least one project/);
+  await login(team);
+  await assert.rejects(db.query("select crm_set_ai_drafts(true)"), /Admin access/);
 
   await login("", "service_role");
   await db.query("delete from crm_projects where id=$1", [project]);

@@ -1,6 +1,7 @@
 "use client";
 import { crmFetch } from "./activity";
 import { useState } from "react";
+import { useWorkspaceContext } from "./context";
 type AutoAccess = {
   plan: "pro" | "pro_plus" | null;
   allowed: boolean;
@@ -17,8 +18,9 @@ const JOB_STATUS: Record<string, string> = {
   failed: "Failed",
 };
 export function AISettings({ role, demo }: { role: string; demo: boolean }) {
+  const { changeView } = useWorkspaceContext();
   const [loaded, setLoaded] = useState(false);
-  const [knowledge, setKnowledge] = useState("");
+  const [projects, setProjects] = useState(0);
   const [enabled, setEnabled] = useState(false);
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -38,7 +40,7 @@ export function AISettings({ role, demo }: { role: string; demo: boolean }) {
           <div>
             <h2>AI assistant</h2>
             <p>
-              Your workspace owner or admin can configure company knowledge and
+              The AI answers from your Projects. Your workspace owner or admin can
               enable reply drafts.
             </p>
           </div>
@@ -126,7 +128,7 @@ export function AISettings({ role, demo }: { role: string; demo: boolean }) {
       const response = await crmFetch("/api/crm/ai", { cache: "no-store" });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error);
-      setKnowledge(result.settings.knowledge);
+      setProjects(Number(result.projects) || 0);
       setEnabled(result.settings.drafts_enabled);
       setReady(result.provider_ready);
       setAuto(Boolean(result.settings.auto_enabled));
@@ -147,7 +149,8 @@ export function AISettings({ role, demo }: { role: string; demo: boolean }) {
         <div>
           <h2>AI assistant</h2>
           <p>
-            Prepare replies using your own company and property information.
+            Replies and suggestions use your Projects: prices, sizes, availability,
+            possession, RERA and brochures.
           </p>
         </div>
         <button aria-busy={busy} disabled={busy || demo} onClick={() => void load()}>
@@ -170,11 +173,7 @@ export function AISettings({ role, demo }: { role: string; demo: boolean }) {
                 const response = await crmFetch("/api/crm/ai", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    action: "settings",
-                    knowledge,
-                    enabled,
-                  }),
+                  body: JSON.stringify({ action: "settings", enabled }),
                 });
                 const result = await response.json();
                 if (!response.ok) throw new Error(result.error);
@@ -188,20 +187,16 @@ export function AISettings({ role, demo }: { role: string; demo: boolean }) {
               }
             }}
           >
-            <label>
-              Company, properties and FAQs
-              <textarea
-                value={knowledge}
-                onChange={(e) => setKnowledge(e.target.value)}
-                maxLength={12000}
-                rows={12}
-                placeholder="Add your company introduction, areas served, property details, current prices, availability, office hours, contact details and FAQs. Keep these facts up to date."
-              />
-            </label>
-            <small>
-              {knowledge.length.toLocaleString()} / 12,000 characters. Include
-              only information you want used in customer replies.
-            </small>
+            <div className="crm-ai-source">
+              <p>
+                {projects > 0
+                  ? `The AI answers from your ${projects} active project${projects === 1 ? "" : "s"}. Change a price or mark a unit sold out there, and the next reply uses it.`
+                  : "Add your first project: the AI answers only from your Projects, and says the agent will confirm anything they don't cover."}
+              </p>
+              <button type="button" onClick={() => changeView("Projects")}>
+                {projects > 0 ? "Open Projects" : "Add a project"}
+              </button>
+            </div>
             <label className="crm-ai-check">
               <input
                 type="checkbox"
@@ -215,7 +210,7 @@ export function AISettings({ role, demo }: { role: string; demo: boolean }) {
             </p>
             {!ready && (
               <p>
-                AI provider setup is pending. You can save your knowledge now.
+                AI provider setup is pending.
               </p>
             )}
             <button aria-busy={busy} className="crm-primary" disabled={busy}>
@@ -230,7 +225,7 @@ export function AISettings({ role, demo }: { role: string; demo: boolean }) {
                 <strong>Reply to customers automatically</strong>
                 <small>
                   The AI answers new WhatsApp messages within seconds, in the customer&apos;s own
-                  language, using only the knowledge above. It hands the chat to your team when a
+                  language, using only your Projects. It hands the chat to your team when a
                   customer asks for a person, wants to negotiate, complains or says STOP, and stays
                   quiet for 30 minutes after anyone on your team replies.
                 </small>
@@ -241,7 +236,7 @@ export function AISettings({ role, demo }: { role: string; demo: boolean }) {
                 disabled={
                   busy ||
                   (role !== "owner" && role !== "admin") ||
-                  (!auto && (!autoReady || !enabled || (access !== null && !access.allowed && !access.can_start_trial)))
+                  (!auto && (!autoReady || !enabled || projects === 0 || (access !== null && !access.allowed && !access.can_start_trial)))
                 }
                 aria-busy={busy}
                 onClick={() => void automate(!auto)}
@@ -259,7 +254,10 @@ export function AISettings({ role, demo }: { role: string; demo: boolean }) {
               </p>
             )}
             {!auto && !enabled && (
-              <small className="crm-muted">Save your knowledge with reply drafts allowed first.</small>
+              <small className="crm-muted">Allow reply drafts and save first.</small>
+            )}
+            {!auto && enabled && projects === 0 && (
+              <small className="crm-muted">Add a project first: the AI answers only from your Projects.</small>
             )}
             {!auto && enabled && !autoReady && (
               <small className="crm-muted">

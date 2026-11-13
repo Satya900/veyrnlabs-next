@@ -15,6 +15,8 @@ test("AI auto-replies: Pro Plus, or Pro during a 14-day trial", async (t) => {
   await db.query("insert into auth.users values($1,'owner@test.invalid',now())", [owner]);
   await db.exec("set role service_role");
   const org = (await db.query("select crm_provision_organization($1,'Sunrise Realty','Owner') id", [owner])).rows[0].id;
+  // The AI answers from Projects: automatic replies need one.
+  await db.query("insert into crm_projects(organization_id,name) values($1,'Sunrise Lakeside')", [org]);
   await db.query(
     "insert into crm_usage_periods(organization_id,starts_at,ends_at,revenue_paise,overhead_paise,ai_limit,whatsapp_limit) values($1,now()-interval '1 day',now()+interval '29 days',49900,10000,1000,100)",
     [org],
@@ -86,6 +88,8 @@ test("AI off for a contact blocks replies, insights, drafts and resume; new unkn
   for (const id of [owner, stranger]) await db.query("insert into auth.users values($1,$2,now())", [id, id + "@test.invalid"]);
   await db.exec("set role service_role");
   const org = (await db.query("select crm_provision_organization($1,'Sunrise Realty','Owner') id", [owner])).rows[0].id;
+  // The AI answers from Projects: automatic replies need one.
+  await db.query("insert into crm_projects(organization_id,name) values($1,'Sunrise Lakeside')", [org]);
   await db.query("select crm_provision_organization($1,'Other','Owner')", [stranger]);
   await db.query("insert into crm_subscriptions(organization_id,plan,billing_months,active) values($1,'pro_plus',1,true)", [org]);
   await db.query(
