@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFile, readdir } from "node:fs/promises";
 import { PGlite } from "@electric-sql/pglite";
 import { processAutoReply } from "../src/lib/crm/auto-worker.ts";
-// Jobs become claimable 6 seconds after the message; age queued ones as real time would.
+// Jobs become claimable 3 seconds after the message; age queued ones as real time would.
 const ageQueued = async (db) => {
   const role = (await db.query("select current_user u")).rows[0].u;
   await db.exec("reset role");
@@ -374,7 +374,13 @@ test("crm_prepare_auto_booking and crm_finish_auto_booking enforce entitlement, 
     "an unassigned lead is rejected before checking anything about a calendar",
     async () => {
       await incoming();
-      const j = await claim();
+      // A new message waits out the 3-second burst window, then is claimable (not 6 seconds).
+      assert.equal((await db.query("select crm_claim_auto_reply($1) j", [org])).rows[0].j, null);
+      await db.exec("reset role");
+      await db.query("update crm_auto_jobs set created_at=created_at-interval '3.5 seconds' where status='queued'");
+      await db.exec("set role service_role");
+      const j = (await db.query("select crm_claim_auto_reply($1) j", [org])).rows[0].j;
+      assert.ok(j?.id);
       await start(j);
       await assert.rejects(prepare(j), /Assign this lead to an agent/);
       // Release the job (without pausing the conversation) so the next sub-test's claim

@@ -26,7 +26,7 @@ with expected_fn(sig, h) as (values
   ('public.crm_capture_lead(submission uuid, contact_name text, contact_email text, contact_company text, contact_service text, contact_notes text)', '23ee8d0ad0b91b0f58819a7ca7799148'),
   ('public.crm_capture_workspace_lead(capture_token text, contact_name text, contact_phone text, contact_email text, looking_for text, budget_inr numeric, contact_notes text, lead_source text)', '5796510649cabf8968dad963155fe77b'),
   ('public.crm_check_seat_allowance()', '3c0e78441d9759e8a1140c7cb9f658dd'),
-  ('public.crm_claim_auto_reply(org uuid)', 'bc037ed0e5f8b11bafde5e240ed953ea'),
+  ('public.crm_claim_auto_reply(org uuid)', 'a3d8beef8bd6723311df3e82e7bee238'),
   ('public.crm_claim_followup(maximum_cost bigint)', 'c99ce03b0e4f23b103c1f1d529920432'),
   ('public.crm_claim_lead_welcome(cost_paise bigint)', '6e90ec736d54cf196325fbfaf9ea3aa6'),
   ('public.crm_claim_whatsapp_followup(cost_paise bigint)', 'ec2af3421594603eaaa0ed1f5bbea543'),

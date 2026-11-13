@@ -18,12 +18,12 @@ export async function runAutoReplies({ maxJobs, deadline }: { maxJobs: number; d
   try {
     // Leave room for one more AI call and send before the platform's time limit.
     while (results.length < maxJobs && Date.now() < deadline) {
-      // Jobs become claimable 6 seconds after the message, so quick bursts get one reply.
+      // Jobs become claimable 3 seconds after the message, so quick bursts get one reply.
       const { data: pending, error: queueError } = await db
         .from("crm_auto_jobs")
         .select("id,organization_id,conversation_id")
         .eq("status", "queued")
-        .lte("created_at", new Date(Date.now() - 6000).toISOString())
+        .lte("created_at", new Date(Date.now() - 3000).toISOString())
         .order("created_at")
         .limit(1)
         .maybeSingle();
@@ -74,14 +74,14 @@ export async function runAutoReplies({ maxJobs, deadline }: { maxJobs: number; d
 }
 
 /**
- * For webhooks: after answering the provider, wait out the 6-second burst window and send any
+ * For webhooks: after answering the provider, wait out the 3-second burst window and send any
  * automatic reply now instead of at the next cron run. Failures are left for the cron worker,
  * which reports them in worker health.
  */
 export function replySoon() {
   if (process.env.CRM_AUTO_REPLIES_ENABLED !== "true") return;
   after(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 7000));
+    await new Promise((resolve) => setTimeout(resolve, 3500));
     await runAutoReplies({ maxJobs: 3, deadline: Date.now() + 40_000 }).catch(() => {});
   });
 }
