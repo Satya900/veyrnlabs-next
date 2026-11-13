@@ -72,6 +72,7 @@ with expected_fn(sig, h) as (values
   ('public.crm_platform_overview()', '5437fc096b8ba850f20aecc72ae654d2'),
   ('public.crm_prepare_auto_booking(job uuid, token uuid, start_iso timestamp with time zone, end_iso timestamp with time zone)', '375129ef53820803f31210f15d33a094'),
   ('public.crm_prepare_auto_reply(job uuid, token uuid, scoped_org uuid, scoped_phone text, scoped_waba text, cost_paise bigint)', '14858658044e5bd9a5e35c0102bb5a61'),
+  ('public.crm_prepare_file_reply(actor uuid, conversation uuid, reply_text text, request uuid, scoped_org uuid, scoped_phone text, scoped_waba text, cost_paise bigint)', '944b1cea1d1ca693be88832288baf6f0'),
   ('public.crm_prepare_followup_send(job uuid, token uuid, requested_channel text, cost_paise bigint)', '4b8c3ae7edaf1171e2f4228648477c3a'),
   ('public.crm_prepare_manual_reply(actor uuid, conversation uuid, reply_text text, request uuid, scoped_org uuid, scoped_phone text, scoped_waba text, cost_paise bigint)', 'b4aa8967dc5416835d26f55c14633406'),
   ('public.crm_prepare_visit(lead uuid, start_iso timestamp with time zone, end_iso timestamp with time zone)', 'a0d7b9b73bb50b3c65eb7ccdfcaa3fc0'),

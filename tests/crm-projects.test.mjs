@@ -98,6 +98,24 @@ test("projects feed the AI live inventory and stay inside their workspace", asyn
   assert.match(context.knowledge, /^PROJECTS AND AVAILABILITY[^\n]*\n- \[This customer's project\] Prestige Lakeside/);
   assert.doesNotMatch(context.knowledge, /We sell homes/);
 
+  // A brochure sent from the inbox doesn't pause the AI; a typed reply still does (30 minutes).
+  await login(owner);
+  await db.query("select crm_set_auto_replies(true)");
+  await login("", "service_role");
+  await db.query("update crm_whatsapp_conversations set ai_disabled=false where id=$1", [chat]);
+  const send = async (fn, text) =>
+    (await db.query(`select ${fn}($1,$2,$3,$4,$5,'222','111',50) j`, [owner, chat, text, crypto.randomUUID(), org])).rows[0].j;
+  const receive = async (id, body) => {
+    await db.query("select crm_receive_whatsapp($1::jsonb)", [JSON.stringify([{ waba_id: "111", phone_number_id: "222", message_id: id, sender: "919111111111", contact_name: "Buyer", message_type: "text", body, sent_at: new Date().toISOString() }])]);
+    return (await db.query("select count(*)::int n from crm_auto_jobs j join crm_whatsapp_messages m on m.id=j.source_message_id where m.message_id=$1", [id])).rows[0].n;
+  };
+  const file = await send("crm_prepare_file_reply", "📎 Prestige Lakeside: Lakeside brochure");
+  assert.equal((await db.query("select origin from crm_whatsapp_outbox where id=$1", [file.id])).rows[0].origin, "file");
+  assert.equal(await receive("m2", "Is the 3BHK east facing?"), 1);
+  const typed = await send("crm_prepare_manual_reply", "Let me check and call you.");
+  assert.equal((await db.query("select origin from crm_whatsapp_outbox where id=$1", [typed.id])).rows[0].origin, "manual");
+  assert.equal(await receive("m3", "Ok"), 0);
+
   // Drafts need no Settings text; automatic replies need an active project.
   await db.query("update crm_projects set archived=true where name='Theirs'");
   await login(other);

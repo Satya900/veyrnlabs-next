@@ -421,6 +421,7 @@ type Entry =
   | { side: "out"; id: string; at: string; reply: Outgoing };
 const ORIGIN: Record<string, string> = {
   manual: "You",
+  file: "You · file",
   followup: "Automatic follow-up",
   automatic: "Auto-reply",
   reviewed: "AI reply",
