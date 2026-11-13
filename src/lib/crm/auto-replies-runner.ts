@@ -2,6 +2,7 @@ import { after } from "next/server";
 import { supabase } from "./server";
 import { processAutoReply } from "./auto-worker";
 import { tenantSendConfig } from "./whatsapp-tenant";
+import { acknowledgeMessage } from "./whatsapp-send";
 
 /**
  * Answers queued automatic WhatsApp replies across every workspace, one at a time, until the
@@ -74,6 +75,36 @@ export async function runAutoReplies({ maxJobs, deadline }: { maxJobs: number; d
 }
 
 /**
+ * Blue ticks (and "typing…" on Meta) for messages the AI is about to answer: only chats with a
+ * queued automatic reply, so nobody sees "read" on a chat no reply is coming to. Best effort.
+ */
+export async function acknowledgeQueued() {
+  const db = supabase(undefined, true);
+  const { data: jobs } = await db
+    .from("crm_auto_jobs")
+    .select("organization_id,source_message_id")
+    .eq("status", "queued")
+    .gte("created_at", new Date(Date.now() - 20_000).toISOString())
+    .limit(20);
+  if (!jobs?.length) return 0;
+  const { data: messages } = await db
+    .from("crm_whatsapp_messages")
+    .select("id,message_id")
+    .in("id", jobs.map((j) => j.source_message_id));
+  const configs = new Map<string, Awaited<ReturnType<typeof tenantSendConfig>>>();
+  let acknowledged = 0;
+  for (const job of jobs) {
+    const message = messages?.find((m) => m.id === job.source_message_id);
+    if (!message) continue;
+    if (!configs.has(job.organization_id))
+      configs.set(job.organization_id, await tenantSendConfig(undefined, job.organization_id));
+    const config = configs.get(job.organization_id);
+    if (config && (await acknowledgeMessage(config, message.message_id))) acknowledged++;
+  }
+  return acknowledged;
+}
+
+/**
  * For webhooks: after answering the provider, wait out the 3-second burst window and send any
  * automatic reply now instead of at the next cron run. Failures are left for the cron worker,
  * which reports them in worker health.
@@ -81,7 +112,10 @@ export async function runAutoReplies({ maxJobs, deadline }: { maxJobs: number; d
 export function replySoon() {
   if (process.env.CRM_AUTO_REPLIES_ENABLED !== "true") return;
   after(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 3500));
+    const started = Date.now();
+    // The customer sees their message was read while the reply is written.
+    await acknowledgeQueued().catch(() => 0);
+    await new Promise((resolve) => setTimeout(resolve, Math.max(0, 3500 - (Date.now() - started))));
     await runAutoReplies({ maxJobs: 3, deadline: Date.now() + 40_000 }).catch(() => {});
   });
 }

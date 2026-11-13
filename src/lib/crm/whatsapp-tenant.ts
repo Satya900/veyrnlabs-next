@@ -20,7 +20,7 @@ export async function tenantSendConfig(
   if (!org) return null;
   const { data: connection } = await db
     .from("crm_whatsapp_connections")
-    .select("active,phone_number_id,waba_id,provider,provider_app")
+    .select("active,phone_number_id,waba_id,provider,provider_app,provider_app_id")
     .eq("organization_id", org)
     .maybeSingle();
   if (!connection?.active) return null;
@@ -48,6 +48,7 @@ export async function tenantSendConfig(
         WHATSAPP_SEND_WABA_ID: connection.waba_id,
         WHATSAPP_SEND_PROVIDER: connection.provider,
         WHATSAPP_SEND_APP: connection.provider_app ?? "",
+        WHATSAPP_SEND_APP_ID: connection.provider_app_id ?? "",
       });
     } catch {
       return null;

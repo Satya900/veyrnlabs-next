@@ -24,6 +24,7 @@ type Setup = {
     display_phone: string;
     provider?: "meta" | "gupshup";
     provider_app?: string | null;
+    provider_app_id?: string | null;
   };
   callbackUrl?: string | null;
   gupshupReady?: boolean;
