@@ -69,6 +69,12 @@ test("projects feed the AI live inventory and stay inside their workspace", asyn
 
   // Every member reads their own workspace's inventory, nobody else's, and can't write it.
   await login(team);
+  // Members tag leads with a project from the lead form, on new and existing leads.
+  await db.query("update crm_leads set project_id=null where id=$1", [lead]);
+  await db.query("update crm_leads set project_id=$1 where id=$2", [project, lead]);
+  assert.equal((await db.query("select project_id from crm_leads where id=$1", [lead])).rows[0].project_id, project);
+  const added = (await db.query("insert into crm_leads(name,stage_id,owner_id,project_id) values('Ravi',$1,$2,$3) returning project_id", [stage, team, project])).rows[0];
+  assert.equal(added.project_id, project);
   assert.equal((await db.query("select count(*)::int n from crm_projects")).rows[0].n, 2);
   assert.equal((await db.query("select count(*)::int n from crm_project_units")).rows[0].n, 3);
   assert.equal((await db.query("select count(*)::int n from crm_project_files")).rows[0].n, 1);
