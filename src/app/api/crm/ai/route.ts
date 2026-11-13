@@ -83,7 +83,7 @@ export async function GET(request: Request) {
     return Response.json({ error: "Admin access required." }, { status: 403 });
   const { data, error } = await auth.db
     .from("crm_ai_settings")
-    .select("organization_id,knowledge,drafts_enabled,auto_enabled,ai_new_chats")
+    .select("organization_id,drafts_enabled,auto_enabled,ai_new_chats")
     .maybeSingle();
   if (error)
     return Response.json(
@@ -100,6 +100,11 @@ export async function GET(request: Request) {
       { error: "Automatic reply setup requires its migration." },
       { status: 503, headers },
     );
+  // The AI answers from Projects; Settings shows how many it has to work with.
+  const projects = await auth.db
+    .from("crm_projects")
+    .select("id", { count: "exact", head: true })
+    .eq("archived", false);
   // Before the plan-features migration this returns an error; treat access as unknown.
   const access = await supabase(undefined, true).rpc("crm_auto_reply_access", { org: auth.organizationId });
   return Response.json(
@@ -107,7 +112,8 @@ export async function GET(request: Request) {
       auto_access: access.error ? null : access.data,
       jobs: jobs.data,
       worker_healthy: await workerHealthy(),
-      settings: data ?? { knowledge: "", drafts_enabled: false },
+      settings: data ?? { drafts_enabled: false },
+      projects: projects.count ?? 0,
       provider_ready: Boolean(aiConfig(process.env)),
       automation_ready:
         process.env.CRM_AUTO_REPLIES_ENABLED === "true" &&
@@ -172,19 +178,8 @@ export async function POST(request: Request) {
           { error: "Admin access required." },
           { status: 403 },
         );
-      if (
-        typeof body.knowledge !== "string" ||
-        body.knowledge.length > 12000 ||
-        typeof body.enabled !== "boolean" ||
-        (body.enabled && body.knowledge.trim().length < 20)
-      )
-        throw new Error(
-          "Add company and property details before enabling drafts (20–12,000 characters).",
-        );
-      const { error } = await auth.db.rpc("crm_save_ai_settings", {
-        company_knowledge: body.knowledge.trim(),
-        enabled: body.enabled,
-      });
+      if (typeof body.enabled !== "boolean") throw new Error("Invalid setting.");
+      const { error } = await auth.db.rpc("crm_set_ai_drafts", { enabled: body.enabled });
       if (error) throw new Error("Unable to save AI settings.");
       return Response.json({ ok: true }, { headers });
     }
@@ -253,7 +248,7 @@ export async function POST(request: Request) {
       return Response.json(
         {
           error:
-            "AI provider and cost rates are not configured yet. Your admin can still save company knowledge.",
+            "AI provider and cost rates are not configured yet.",
         },
         { status: 503 },
       );
