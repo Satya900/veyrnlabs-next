@@ -35,7 +35,7 @@ const plans = [
       `${count(CRM_PLANS.pro.aiActions)} AI actions a month, ${count(CRM_PLANS.pro.firstMonthAiActions)} in your first month`,
       "AI reads every WhatsApp chat: one-tap reply suggestions, lead details and Hot / Warm / Cold scores",
       "WhatsApp inbox with automatic follow-ups from your own number",
-      "AI-drafted follow-up emails for leads that go quiet",
+      "AI replies on WhatsApp in the customer's own language",
       "Lead records, sales pipeline and CSV import",
       "Manual site-visit scheduling",
       "Try AI auto-replies free for 14 days",
@@ -153,7 +153,7 @@ export function Pricing() {
             ))}
             {[
               "No AI assistant",
-              "No WhatsApp or email automation",
+              "No WhatsApp automation",
               "No site-visit scheduling",
             ].map((limit) => (
               <li key={limit} className={styles.limit}>

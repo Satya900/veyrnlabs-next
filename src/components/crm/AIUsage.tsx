@@ -8,7 +8,7 @@ export type AIUsageData = {
   period: { starts_at: string; ends_at: string; trial: boolean } | null;
   ai?: { used: number; limit: number; topup?: number };
   whatsapp?: { used: number; limit: number };
-  breakdown?: { insights: number; auto_replies: number; drafts: number; emails: number };
+  breakdown?: { insights: number; auto_replies: number; drafts: number };
 };
 
 /** Fire after anything that spends an AI action so every meter on the page updates. */
@@ -119,7 +119,6 @@ export function AIUsagePanel({ demo, role }: { demo: boolean; role: string }) {
         ["Chat insights and reply suggestions", "Summary, Hot / Warm / Cold and lead details when a chat has new messages", usage.breakdown.insights],
         ["Automatic replies", "Replies the AI wrote by itself, including ones it handed to your team instead of sending", usage.breakdown.auto_replies],
         ["Reply drafts", "Drafts generated from the AI reply assistant", usage.breakdown.drafts],
-        ["Follow-up emails", "AI-written emails for leads that went quiet", usage.breakdown.emails],
       ]
     : [];
   return (
@@ -129,7 +128,7 @@ export function AIUsagePanel({ demo, role }: { demo: boolean; role: string }) {
           <h2>AI usage</h2>
           <p>
             Shared by everyone in this workspace. One AI action is one insight refresh, automatic
-            reply, reply draft or follow-up email. Chats with AI off use none.
+            reply or reply draft. Chats with AI off use none.
           </p>
         </div>
         {!demo && (

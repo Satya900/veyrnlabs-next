@@ -46,8 +46,7 @@ export async function GET() {
   let aiUsed = 0,
     whatsappUsed = 0,
     insights = 0,
-    drafts = 0,
-    emails = 0;
+    drafts = 0;
   for (const e of events.data) {
     if (e.kind === "whatsapp") {
       whatsappUsed += e.units;
@@ -56,7 +55,6 @@ export async function GET() {
     aiUsed += e.units;
     if (e.event_key.startsWith("insight:")) insights += e.units;
     else if (e.event_key.startsWith("ai-draft:")) drafts += e.units;
-    else emails += e.units;
   }
   const autoReplies = Math.min(drafts, automatic.count ?? 0);
   return Response.json(
@@ -73,7 +71,6 @@ export async function GET() {
         insights,
         auto_replies: autoReplies,
         drafts: drafts - autoReplies,
-        emails,
       },
     },
     { headers },

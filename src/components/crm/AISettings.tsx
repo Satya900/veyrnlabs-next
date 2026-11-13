@@ -211,8 +211,7 @@ export function AISettings({ role, demo }: { role: string; demo: boolean }) {
               Allow team members to generate reply drafts
             </label>
             <p>
-              Drafts consume your shared AI allowance. This knowledge is also
-              used to draft automatic follow-up emails, below.
+              Drafts consume your shared AI allowance.
             </p>
             {!ready && (
               <p>

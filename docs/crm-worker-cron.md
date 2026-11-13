@@ -9,7 +9,6 @@ never sent twice.
 | Queue | Endpoint | Does |
 |---|---|---|
 | WhatsApp follow-ups | `POST /api/internal/crm/whatsapp-followups` | Sends due template follow-ups (a batch per call) |
-| Email follow-ups | `POST /api/internal/crm/follow-ups` | AI-drafted follow-up emails (needs AI enabled) |
 | AI auto-replies | `POST /api/internal/crm/auto-replies` | Automatic WhatsApp replies, up to 10 per call (needs AI and `CRM_AUTO_REPLIES_ENABLED=true`). The WhatsApp webhooks also start this worker about 7 seconds after each incoming message, so the cron run is the safety net. |
 
 Each request needs `Authorization: Bearer <CRM_WORKER_SECRET>`, the same value as in Vercel.
@@ -62,8 +61,6 @@ Each request needs `Authorization: Bearer <CRM_WORKER_SECRET>`, the same value a
      $$
    );
    ```
-   When AI email follow-ups are switched on, schedule `follow-ups` the same way
-   with their own job names.
 
 ## Checking it
 

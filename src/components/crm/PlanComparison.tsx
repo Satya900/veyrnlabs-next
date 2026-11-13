@@ -25,7 +25,7 @@ export const PLAN_HIGHLIGHTS: Record<PlanId, string[]> = {
 export function PlanComparison({ plan, active, role }: { plan: PlanId | null; active: boolean; role: string }) {
   const current = active ? plan : null;
   return <section className="crm-panel">
-    <div className="crm-panel-heading"><div><h2>Choose how your team works</h2><p>Both plans include your pipeline, WhatsApp inbox and follow-ups, and AI that reads every chat for you. One AI action is one insight refresh, reply draft or follow-up email.</p></div></div>
+    <div className="crm-panel-heading"><div><h2>Choose how your team works</h2><p>Both plans include your pipeline, WhatsApp inbox and follow-ups, and AI that reads every chat for you. One AI action is one insight refresh, automatic reply or reply draft.</p></div></div>
     <div className="crm-settings-body">
       <div className="crm-plan-comparison">
         {(["pro", "pro_plus"] as const).map((id) => <article key={id} className={current === id ? "crm-plan-card is-current" : "crm-plan-card"}>
