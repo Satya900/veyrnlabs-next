@@ -66,6 +66,29 @@ export async function sendGupshupText(
   return { status: "unknown", messageId: null };
 }
 
+/**
+ * Blue ticks for an incoming message (and every earlier one in the chat). The self-serve API
+ * has no typing indicator; it needs the app's ID, not its name. Returns whether Gupshup took it.
+ * Docs: https://docs.gupshup.io/reference/mark-message-as-read
+ */
+export async function markGupshupRead(
+  apiKey: string,
+  appId: string,
+  messageId: string,
+  request: typeof fetch = fetch,
+): Promise<boolean> {
+  if (!apiKey.trim() || !/^[0-9a-f-]{36}$/i.test(appId) || !/^[A-Za-z0-9._=+/-]{1,300}$/.test(messageId)) return false;
+  try {
+    const response = await request(
+      `https://api.gupshup.io/wa/app/${appId}/msg/${encodeURIComponent(messageId)}/read`,
+      { method: "PUT", headers: { apikey: apiKey }, signal: AbortSignal.timeout(5000) },
+    );
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
 export type MediaMessage = { url: string; filename: string; caption: string; image: boolean };
 
 /**

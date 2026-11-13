@@ -1,4 +1,4 @@
-import { sendGupshupMedia, sendGupshupText, type MediaMessage } from "./whatsapp-gupshup.ts";
+import { markGupshupRead, sendGupshupMedia, sendGupshupText, type MediaMessage } from "./whatsapp-gupshup.ts";
 
 export type SendConfig = NonNullable<ReturnType<typeof sendConfig>>;
 export function sendConfig(env: Record<string, string | undefined>) {
@@ -28,6 +28,8 @@ export function sendConfig(env: Record<string, string | undefined>) {
     cost,
     provider,
     app: env.WHATSAPP_SEND_APP ?? "",
+    // Gupshup's app ID, needed only to mark messages read; empty when not added yet.
+    appId: /^[0-9a-f-]{36}$/i.test(env.WHATSAPP_SEND_APP_ID ?? "") ? env.WHATSAPP_SEND_APP_ID! : "",
   } as const;
 }
 
@@ -42,6 +44,20 @@ export function sendReply(
   return send.provider === "gupshup"
     ? sendGupshupText(send.token, send.app, phone, recipient, body, request)
     : sendWhatsAppReply(send.token, phone, recipient, body, request);
+}
+/**
+ * Shows the customer their message was seen while the AI writes the reply: blue ticks, plus
+ * "typing…" where the provider supports it (Meta; Gupshup's self-serve API has read only).
+ * Best effort: returns false instead of throwing, and never affects the reply itself.
+ */
+export function acknowledgeMessage(
+  send: Pick<SendConfig, "provider" | "token" | "appId" | "phone">,
+  messageId: string,
+  request: typeof fetch = fetch,
+) {
+  return send.provider === "gupshup"
+    ? markGupshupRead(send.token, send.appId, messageId, request)
+    : markWhatsAppReadTyping(send.token, send.phone, messageId, request);
 }
 /** Sends a brochure or image by link through whichever provider the workspace connected. */
 export function sendMedia(
@@ -148,4 +164,30 @@ export async function sendWhatsAppMedia(
     /* A timeout can happen after Meta accepts a message. */
   }
   return { status: "unknown", messageId: null };
+}
+
+/** Meta: marks the message read and shows "typing…" until the reply is sent (at most 25 s). */
+export async function markWhatsAppReadTyping(
+  token: string,
+  phone: string,
+  messageId: string,
+  request: typeof fetch = fetch,
+): Promise<boolean> {
+  if (!token.trim() || !/^\d+$/.test(phone) || !/^[A-Za-z0-9._=+/-]{1,300}$/.test(messageId)) return false;
+  try {
+    const response = await request(`https://graph.facebook.com/v25.0/${phone}/messages`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      signal: AbortSignal.timeout(5000),
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        status: "read",
+        message_id: messageId,
+        typing_indicator: { type: "text" },
+      }),
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
 }

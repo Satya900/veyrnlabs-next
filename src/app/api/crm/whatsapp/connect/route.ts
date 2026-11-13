@@ -14,7 +14,7 @@ export async function GET(request: Request) {
     return Response.json({ error: "Admin access required." }, { status: 403 });
   const { data, error } = await auth.db
     .from("crm_whatsapp_connections")
-    .select("display_phone,active,provider,provider_app")
+    .select("display_phone,active,provider,provider_app,provider_app_id")
     .maybeSingle();
   // The callback URL embeds the webhook's only credential, so only the owner sees it.
   let callbackUrl: string | null = null;
@@ -92,6 +92,26 @@ export async function POST(request: Request) {
             : "The connection couldn't be saved. The number may belong to another workspace.",
         );
       return Response.json({ ok: true });
+    }
+    if (body.action === "gupshupAppId") {
+      // Only the app's ID; it identifies the app but can't send anything on its own.
+      const appId = typeof body.appId === "string" ? body.appId.trim().toLowerCase() : "";
+      if (appId && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(appId))
+        throw new Error("Paste the App ID from Gupshup. It looks like 1b73dad6-1234-5678-9abc-60981da19f70.");
+      const { data, error } = await supabase(undefined, true)
+        .from("crm_whatsapp_connections")
+        .update({ provider_app_id: appId || null })
+        .eq("organization_id", auth.organizationId)
+        .eq("provider", "gupshup")
+        .select("id");
+      if (error) throw new Error("Couldn't save the App ID. Apply the latest migration.");
+      if (!data.length) throw new Error("Connect your Gupshup app first.");
+      return Response.json({
+        ok: true,
+        message: appId
+          ? "Saved. Customers now see blue ticks as soon as the AI starts replying."
+          : "App ID removed. Blue ticks are off.",
+      });
     }
     if (body.action === "gupshupTest") {
       const to = typeof body.to === "string" ? body.to.replace(/[\s+()-]/g, "") : "";

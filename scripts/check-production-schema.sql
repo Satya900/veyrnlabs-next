@@ -428,6 +428,7 @@ with expected_fn(sig, h) as (values
   ('crm_whatsapp_connections', 'phone_number_id'),
   ('crm_whatsapp_connections', 'provider'),
   ('crm_whatsapp_connections', 'provider_app'),
+  ('crm_whatsapp_connections', 'provider_app_id'),
   ('crm_whatsapp_connections', 'waba_id'),
   ('crm_whatsapp_conversations', 'ai_disabled'),
   ('crm_whatsapp_conversations', 'ai_paused'),

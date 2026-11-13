@@ -7,6 +7,7 @@ type Connection = {
   display_phone: string;
   provider?: "meta" | "gupshup";
   provider_app?: string | null;
+  provider_app_id?: string | null;
 };
 
 /** Owner-only: connect the workspace's own Gupshup app, then wire its callback and test it. */
@@ -112,6 +113,42 @@ export function GupshupConnect({
                 {busy ? "Sending…" : "Send test"}
               </button>
             </div>
+          </div>
+        </form>
+        <form
+          className="crm-provider-step"
+          onSubmit={async (e) => {
+            e.preventDefault();
+            const appId = String(new FormData(e.currentTarget).get("appId") ?? "");
+            const result = await post({ action: "gupshupAppId", appId });
+            if (result) {
+              setMessage(result.message ?? "Saved.");
+              await onChanged();
+            }
+          }}
+        >
+          <span className="crm-provider-step-number">3</span>
+          <div>
+            <strong>Blue ticks while the AI replies</strong>
+            <small>
+              Customers see their message turn blue within seconds, so they know it was read.
+              Copy the App ID from Gupshup → your app (the long code under the app name). It
+              isn&apos;t a password and can&apos;t send messages.
+            </small>
+            <div className="crm-copy-field">
+              <input
+                name="appId"
+                defaultValue={connection?.provider_app_id ?? ""}
+                autoComplete="off"
+                spellCheck={false}
+                placeholder="1b73dad6-1234-5678-9abc-60981da19f70"
+                aria-label="Gupshup App ID"
+              />
+              <button className="crm-primary" disabled={busy} aria-busy={busy}>
+                {busy ? "Saving…" : "Save"}
+              </button>
+            </div>
+            {connection?.provider_app_id && <small className="crm-success">On: messages are marked read when the AI replies.</small>}
           </div>
         </form>
         {message && <p role="status" className="crm-success">{message}</p>}
