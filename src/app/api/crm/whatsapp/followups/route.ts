@@ -3,14 +3,27 @@ import { sendGupshupTemplate } from "@/lib/crm/whatsapp-gupshup";
 import { tenantSendConfig } from "@/lib/crm/whatsapp-tenant";
 
 const headers = { "Cache-Control": "private, no-store" };
-const SOURCES = ["lead_first_name", "lead_name", "agent_name", "business_name", "service", "follow_up_date"];
+const SOURCES = [
+  "lead_first_name",
+  "lead_name",
+  "agent_name",
+  "business_name",
+  "service",
+  "follow_up_date",
+  "visit_date",
+  "visit_time",
+  "project_name",
+];
 
 export async function GET() {
   const auth = await session();
   if (!auth || auth.member.role === "team")
     return Response.json({ error: "Admin access required." }, { status: 403 });
   const [settings, templates, jobs, connection] = await Promise.all([
-    auth.db.from("crm_whatsapp_followup_settings").select("enabled,template_id,country_code").maybeSingle(),
+    auth.db
+      .from("crm_whatsapp_followup_settings")
+      .select("enabled,template_id,country_code,visit_reminder_template_id,visit_feedback_template_id")
+      .maybeSingle(),
     auth.db.from("crm_whatsapp_templates").select("id,label,provider_template_id,body,params").order("created_at"),
     auth.db
       .from("crm_whatsapp_followup_jobs")
@@ -23,7 +36,13 @@ export async function GET() {
     return Response.json({ error: "Apply the WhatsApp follow-ups migration first." }, { status: 503, headers });
   return Response.json(
     {
-      settings: settings.data ?? { enabled: false, template_id: null, country_code: "91" },
+      settings: settings.data ?? {
+        enabled: false,
+        template_id: null,
+        country_code: "91",
+        visit_reminder_template_id: null,
+        visit_feedback_template_id: null,
+      },
       templates: templates.data,
       recent: jobs.data,
       gupshupConnected: connection.data?.provider === "gupshup" && connection.data.active,
@@ -69,11 +88,13 @@ export async function POST(request: Request) {
       if (typeof body.id !== "string") throw new Error("Choose a template.");
       const { data: settings } = await db
         .from("crm_whatsapp_followup_settings")
-        .select("template_id")
+        .select("template_id,visit_reminder_template_id,visit_feedback_template_id")
         .eq("organization_id", org)
         .maybeSingle();
       if (settings?.template_id === body.id)
         throw new Error("This template is used for follow-ups. Choose another one first.");
+      if (settings?.visit_reminder_template_id === body.id || settings?.visit_feedback_template_id === body.id)
+        throw new Error("This template is used for site visit messages. Choose another one first.");
       const { error } = await db
         .from("crm_whatsapp_templates")
         .delete()
@@ -110,6 +131,9 @@ export async function POST(request: Request) {
         business_name: org_?.name ?? "your business",
         service: "your enquiry",
         follow_up_date: new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", timeZone: "Asia/Kolkata" }),
+        visit_date: new Date(Date.now() + 86_400_000).toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: "Asia/Kolkata" }),
+        visit_time: "11:00 AM",
+        project_name: "Sunrise Lakeside",
       };
       const result = await sendGupshupTemplate(
         config.token,
@@ -151,6 +175,25 @@ export async function POST(request: Request) {
         updated_at: new Date().toISOString(),
       });
       if (error) throw new Error("Settings couldn't be saved.");
+      return Response.json({ ok: true }, { headers });
+    }
+    if (body.action === "saveVisitMessages") {
+      // Either may be empty (that message is off). Both must be this workspace's templates.
+      const pick = (value: unknown) => (typeof value === "string" && value ? value : null);
+      const reminderId = pick(body.reminderTemplateId);
+      const feedbackId = pick(body.feedbackTemplateId);
+      const chosen = [reminderId, feedbackId].filter((id): id is string => id !== null);
+      if (chosen.length) {
+        const { data } = await db.from("crm_whatsapp_templates").select("id").eq("organization_id", org).in("id", chosen);
+        if ((data?.length ?? 0) !== new Set(chosen).size) throw new Error("Choose one of your templates.");
+      }
+      const { error } = await db.from("crm_whatsapp_followup_settings").upsert({
+        organization_id: org,
+        visit_reminder_template_id: reminderId,
+        visit_feedback_template_id: feedbackId,
+        updated_at: new Date().toISOString(),
+      });
+      if (error) throw new Error("Couldn't save. Apply the site visits migration first.");
       return Response.json({ ok: true }, { headers });
     }
     throw new Error("Unknown action.");
