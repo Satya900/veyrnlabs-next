@@ -5,7 +5,13 @@ import { crmFetch } from "./activity";
 type Template = { id: string; label: string; provider_template_id: string; body: string; params: string[] };
 type Job = { id: string; lead_id: string; status: string; reason: string; created_at: string };
 type State = {
-  settings: { enabled: boolean; template_id: string | null; country_code: string };
+  settings: {
+    enabled: boolean;
+    template_id: string | null;
+    country_code: string;
+    visit_reminder_template_id?: string | null;
+    visit_feedback_template_id?: string | null;
+  };
   templates: Template[];
   recent: Job[];
   gupshupConnected: boolean;
@@ -18,6 +24,9 @@ const SOURCES: Record<string, string> = {
   business_name: "Your business name",
   service: "What they enquired about",
   follow_up_date: "Follow-up date",
+  visit_date: "Site visit date",
+  visit_time: "Site visit time",
+  project_name: "Site visit project",
 };
 // Worded as a reply to the customer's own enquiry, so WhatsApp can approve it as Utility.
 const SUGGESTED = {
@@ -25,6 +34,21 @@ const SUGGESTED = {
   body: "Hi {{1}}, this is {{2}} from {{3}}. Following up on your enquiry about {{4}}. Would you like to schedule a site visit or get more details? Just reply here.",
   params: ["lead_first_name", "agent_name", "business_name", "service"],
 };
+// Site visit messages, worded as service updates so WhatsApp approves them as Utility.
+const VISIT_TEMPLATES = [
+  {
+    label: "Site visit reminder",
+    body: "Hi {{1}}, a reminder of your site visit to {{2}} on {{3}} at {{4}}. Reply here if you need directions or want to change the time.",
+    params: ["lead_first_name", "project_name", "visit_date", "visit_time"],
+    use: "Sent the evening before (6 PM) and 2 hours before the visit.",
+  },
+  {
+    label: "Site visit feedback",
+    body: "Hi {{1}}, thank you for your interest in {{2}}. How was your site visit? If you couldn't make it, just reply and we'll find a new time.",
+    params: ["lead_first_name", "project_name"],
+    use: "Sent about 3 hours after the visit. Their reply is saved on the visit.",
+  },
+];
 const STATUS: Record<string, string> = {
   processing: "Sending",
   sent: "Sent",
@@ -38,6 +62,7 @@ export function WhatsAppFollowUps({ role, demo }: { role: string; demo: boolean 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [label, setLabel] = useState(SUGGESTED.label);
   const [body, setBody] = useState(SUGGESTED.body);
   const [params, setParams] = useState<string[]>(SUGGESTED.params);
   const [testing, setTesting] = useState<string | null>(null);
@@ -138,7 +163,12 @@ export function WhatsAppFollowUps({ role, demo }: { role: string; demo: boolean 
                   },
                   "Template added.",
                 );
-                if (ok) (e.target as HTMLFormElement).reset();
+                if (ok) {
+                  (e.target as HTMLFormElement).reset();
+                  setLabel(SUGGESTED.label);
+                  setBody(SUGGESTED.body);
+                  setParams(SUGGESTED.params);
+                }
               }}
             >
               <span className="crm-provider-step-number">2</span>
@@ -147,7 +177,7 @@ export function WhatsAppFollowUps({ role, demo }: { role: string; demo: boolean 
                 <small>Copy the template ID from Gupshup → Templates, and paste the text exactly as approved.</small>
                 <label>
                   Name
-                  <input name="label" defaultValue={SUGGESTED.label} maxLength={80} required />
+                  <input name="label" value={label} onChange={(e) => setLabel(e.target.value)} maxLength={80} required />
                 </label>
                 <label>
                   Gupshup template ID
@@ -282,6 +312,74 @@ export function WhatsAppFollowUps({ role, demo }: { role: string; demo: boolean 
                 </label>
                 <button className="crm-primary">Save</button>
                 {role !== "owner" && <small>Only the workspace owner can change this.</small>}
+              </fieldset>
+            </form>
+
+            <form
+              className="crm-provider-step"
+              onSubmit={(e) => {
+                e.preventDefault();
+                const form = new FormData(e.currentTarget);
+                void post(
+                  {
+                    action: "saveVisitMessages",
+                    reminderTemplateId: form.get("reminder"),
+                    feedbackTemplateId: form.get("feedback"),
+                  },
+                  "Site visit messages saved.",
+                );
+              }}
+            >
+              <span className="crm-provider-step-number">4</span>
+              <fieldset className="crm-followup-form" disabled={busy}>
+                <strong>Site visit reminders and feedback</strong>
+                <small>
+                  For visits scheduled on a lead. Create these two templates in Gupshup (Utility), add
+                  them in step 2 with <b>Use this text</b>, then choose them here.
+                </small>
+                {VISIT_TEMPLATES.map((t) => (
+                  <div key={t.label} className="crm-followup-wide crm-visit-template">
+                    <small>
+                      <b>{t.label}.</b> {t.use}
+                    </small>
+                    <div className="crm-copy-field">
+                      <input readOnly value={t.body} aria-label={`${t.label} text`} onFocus={(e) => e.target.select()} />
+                      <button type="button" onClick={() => void navigator.clipboard.writeText(t.body)}>
+                        Copy
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setLabel(t.label);
+                          setBody(t.body);
+                          setParams(t.params);
+                          setMessage(`"${t.label}" is filled in step 2. Paste its Gupshup template ID there and add it.`);
+                        }}
+                      >
+                        Use this text
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                <label>
+                  Reminder template
+                  <select name="reminder" defaultValue={state.settings.visit_reminder_template_id ?? ""} key={`r${state.settings.visit_reminder_template_id ?? ""}`}>
+                    <option value="">Off</option>
+                    {state.templates.map((t) => (
+                      <option key={t.id} value={t.id}>{t.label}</option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Feedback template
+                  <select name="feedback" defaultValue={state.settings.visit_feedback_template_id ?? ""} key={`f${state.settings.visit_feedback_template_id ?? ""}`}>
+                    <option value="">Off</option>
+                    {state.templates.map((t) => (
+                      <option key={t.id} value={t.id}>{t.label}</option>
+                    ))}
+                  </select>
+                </label>
+                <button className="crm-primary">Save</button>
               </fieldset>
             </form>
 
