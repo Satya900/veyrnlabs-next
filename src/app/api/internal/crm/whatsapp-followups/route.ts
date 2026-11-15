@@ -48,8 +48,8 @@ export async function POST(request: Request) {
     const started = Date.now();
     const counts: Record<string, number> = {};
     let processed = 0;
-    // Welcomes to new leads first (they're time-sensitive), then follow-ups.
-    for (const claim of ["crm_claim_lead_welcome", "crm_claim_whatsapp_followup"] as const) {
+    // Welcomes to new leads and visit reminders first (they're time-sensitive), then follow-ups.
+    for (const claim of ["crm_claim_lead_welcome", "crm_claim_visit_message", "crm_claim_whatsapp_followup"] as const) {
       while (processed < 25 && Date.now() - started < 35_000) {
         const { status } = await processWhatsAppFollowUp(
           cost,

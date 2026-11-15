@@ -4,6 +4,7 @@ import type { Lead, Workspace as Data } from "@/lib/crm/model";
 import { datetime } from "@/lib/crm/workspace";
 import type { WorkspaceChanges } from "@/lib/crm/workspace";
 import { ScheduleVisit } from "./ScheduleVisit";
+import { SiteVisits } from "./SiteVisits";
 import { ScoreBadge } from "./ScoreBadge";
 
 export function LeadDetail({
@@ -180,17 +181,25 @@ export function LeadDetail({
         />
         <button disabled={busy}>Save activity</button>
       </form>
-      {data.plan.active &&
-        (canAct ? (
-          <ScheduleVisit leadId={current.id} />
-        ) : (
-          <p className="crm-plan-notice">
-            Site visits for this lead are booked by{" "}
-            {data.members.find((m) => m.id === current.owner_id)?.name ??
-              "an owner or admin until someone is assigned"}
-            .
-          </p>
-        ))}
+      {data.plan.active && (
+        <>
+          <SiteVisits key={current.id} leadId={current.id} projectId={current.project_id} canAct={canAct} />
+          {!canAct && (
+            <p className="crm-plan-notice">
+              Site visits for this lead are booked by{" "}
+              {data.members.find((m) => m.id === current.owner_id)?.name ??
+                "an owner or admin until someone is assigned"}
+              .
+            </p>
+          )}
+          {canAct && data.plan.plan === "pro_plus" && (
+            <details className="crm-calendar-booking">
+              <summary>Or book through Google Calendar</summary>
+              <ScheduleVisit leadId={current.id} />
+            </details>
+          )}
+        </>
+      )}
       <h3>Schedule a task</h3>
       <form
         className="crm-task-form"
