@@ -44,7 +44,7 @@ const VISIT_TEMPLATES = [
   },
   {
     label: "Site visit feedback",
-    body: "Hi {{1}}, thank you for your interest in {{2}}. How was your site visit? If you couldn't make it, just reply and we'll find a new time.",
+    body: "Hi {{1}}, how was your site visit to {{2}}? Reply here with your feedback or any questions. If you couldn't make it, reply and we'll find a new time.",
     params: ["lead_first_name", "project_name"],
     use: "Sent about 3 hours after the visit. Their reply is saved on the visit.",
   },
